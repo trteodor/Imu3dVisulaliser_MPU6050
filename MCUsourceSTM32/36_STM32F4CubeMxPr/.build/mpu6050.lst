@@ -1,0 +1,3667 @@
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"mpu6050.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.global	__aeabi_f2d
+  20              		.global	__aeabi_dadd
+  21              		.global	__aeabi_d2f
+  22              		.section	.text.scaleReceivedDataByDMA,"ax",%progbits
+  23              		.align	1
+  24              		.syntax unified
+  25              		.thumb
+  26              		.thumb_func
+  28              	scaleReceivedDataByDMA:
+  29              	.LFB131:
+  30              		.file 1 "Drivers/Imu/mpu6050.c"
+   1:Drivers/Imu/mpu6050.c **** /******************************************************************************************
+   2:Drivers/Imu/mpu6050.c ****  * @file mpu6050.c
+   3:Drivers/Imu/mpu6050.c ****  * @author teodor rosolowski, trteodor@gmail.com
+   4:Drivers/Imu/mpu6050.c ****  * 
+   5:Drivers/Imu/mpu6050.c ****  * @date 23.09.2023
+   6:Drivers/Imu/mpu6050.c ****  * @brief Source file contatning functionality related to IMU MPU6050 unit.
+   7:Drivers/Imu/mpu6050.c ****  * This file is distributed under MIT license
+   8:Drivers/Imu/mpu6050.c ****  *
+   9:Drivers/Imu/mpu6050.c ****  *******************************************************************************************/
+  10:Drivers/Imu/mpu6050.c **** 
+  11:Drivers/Imu/mpu6050.c **** 
+  12:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  13:Drivers/Imu/mpu6050.c **** /*                                 INCLUDES                                               */
+  14:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  15:Drivers/Imu/mpu6050.c **** #include <math.h>
+  16:Drivers/Imu/mpu6050.c **** #include "mpu6050.h"
+  17:Drivers/Imu/mpu6050.c **** #include "mpu6050defs.h"
+  18:Drivers/Imu/mpu6050.c **** 
+  19:Drivers/Imu/mpu6050.c **** #define EXTRA_GYRO_Z_OFF_SET 0.0046
+  20:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  21:Drivers/Imu/mpu6050.c **** /*                                 DEFINES                                                */
+  22:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  23:Drivers/Imu/mpu6050.c **** #define I2C_TIMEOUT 1000
+  24:Drivers/Imu/mpu6050.c **** 
+  25:Drivers/Imu/mpu6050.c **** #define MPU_ERR_SAMPLING_COUNTER	1000// max: 65536
+  26:Drivers/Imu/mpu6050.c **** 
+  27:Drivers/Imu/mpu6050.c **** #define CONF_SAMPLE_FREQ 0.001F
+  28:Drivers/Imu/mpu6050.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 2
+
+
+  29:Drivers/Imu/mpu6050.c **** #define acc     0
+  30:Drivers/Imu/mpu6050.c **** #define gyro    1
+  31:Drivers/Imu/mpu6050.c **** #define X       0
+  32:Drivers/Imu/mpu6050.c **** #define Y       1
+  33:Drivers/Imu/mpu6050.c **** #define Z       2
+  34:Drivers/Imu/mpu6050.c **** 
+  35:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  36:Drivers/Imu/mpu6050.c **** /*                                 DATA TYPES                                             */
+  37:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  38:Drivers/Imu/mpu6050.c **** 
+  39:Drivers/Imu/mpu6050.c **** 
+  40:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  41:Drivers/Imu/mpu6050.c **** /*                                 MACROS                                                 */
+  42:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  43:Drivers/Imu/mpu6050.c **** 
+  44:Drivers/Imu/mpu6050.c **** 
+  45:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  46:Drivers/Imu/mpu6050.c **** /*                                 PRIVATE STATIC VARIABLES                               */
+  47:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  48:Drivers/Imu/mpu6050.c **** 
+  49:Drivers/Imu/mpu6050.c **** const float mpuScale[] = {16384.34f, 131.072f}; // acc, gyro
+  50:Drivers/Imu/mpu6050.c **** uint8_t mpuRawDataBuffer[14];
+  51:Drivers/Imu/mpu6050.c **** float mpuDataScaled[2][3];
+  52:Drivers/Imu/mpu6050.c **** 
+  53:Drivers/Imu/mpu6050.c **** I2C_HandleTypeDef *i2c;
+  54:Drivers/Imu/mpu6050.c **** 
+  55:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  56:Drivers/Imu/mpu6050.c **** /*                         PRIVATE FUNCTION PROTOTYPES                                    */
+  57:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  58:Drivers/Imu/mpu6050.c **** 
+  59:Drivers/Imu/mpu6050.c **** static void scaleReceivedDataByDMA(void);
+  60:Drivers/Imu/mpu6050.c **** 
+  61:Drivers/Imu/mpu6050.c **** static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float inv
+  62:Drivers/Imu/mpu6050.c **** 
+  63:Drivers/Imu/mpu6050.c **** static float invSqrt(float x);
+  64:Drivers/Imu/mpu6050.c **** 
+  65:Drivers/Imu/mpu6050.c **** static void minus3dGravityVector(MpuData_t *RecMpuData);
+  66:Drivers/Imu/mpu6050.c **** 
+  67:Drivers/Imu/mpu6050.c **** static void getGyroscopeRAW(int16_t *gyroRaw);
+  68:Drivers/Imu/mpu6050.c **** 
+  69:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  70:Drivers/Imu/mpu6050.c **** /*                              FUNCTION DEFINITION                                       */
+  71:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+  72:Drivers/Imu/mpu6050.c **** 
+  73:Drivers/Imu/mpu6050.c **** static void getGyroscopeRAW(int16_t *gyroRaw)
+  74:Drivers/Imu/mpu6050.c **** {
+  75:Drivers/Imu/mpu6050.c **** 	uint8_t tmp[6];
+  76:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Read(i2c, MPU6050_ADDR, MPU6050_RA_GYRO_XOUT_H, 1, tmp, 6, I2C_TIMEOUT);
+  77:Drivers/Imu/mpu6050.c **** 
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[X] = (((int16_t)tmp[0]) << 8) | tmp[1];
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+  80:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+  81:Drivers/Imu/mpu6050.c **** }
+  82:Drivers/Imu/mpu6050.c **** 
+  83:Drivers/Imu/mpu6050.c **** static void scaleReceivedDataByDMA(void)
+  84:Drivers/Imu/mpu6050.c **** {
+  31              		.loc 1 84 1 view -0
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 3
+
+
+  32              		.cfi_startproc
+  33              		@ args = 0, pretend = 0, frame = 0
+  34              		@ frame_needed = 0, uses_anonymous_args = 0
+  35 0000 10B5     		push	{r4, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 8
+  38              		.cfi_offset 4, -8
+  39              		.cfi_offset 14, -4
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+  40              		.loc 1 85 2 view .LVU1
+  41              	.LBB2:
+  42              		.loc 1 85 6 view .LVU2
+  43              	.LVL0:
+  44              		.loc 1 85 14 is_stmt 0 view .LVU3
+  45 0002 0021     		movs	r1, #0
+  46              		.loc 1 85 2 view .LVU4
+  47 0004 23E0     		b	.L2
+  48              	.LVL1:
+  49              	.L3:
+  50              	.LBB3:
+  86:Drivers/Imu/mpu6050.c **** 	{
+  87:Drivers/Imu/mpu6050.c **** 		for(uint8_t axis = 0; axis < 3; axis++)
+  88:Drivers/Imu/mpu6050.c **** 		{
+  89:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[coordinat][axis] = ((float)((int16_t)((((int16_t)mpuRawDataBuffer[(coordinat*8)+(ax
+  51              		.loc 1 89 3 is_stmt 1 discriminator 3 view .LVU5
+  52              		.loc 1 89 96 is_stmt 0 discriminator 3 view .LVU6
+  53 0006 02EB8103 		add	r3, r2, r1, lsl #2
+  54 000a 5800     		lsls	r0, r3, #1
+  55              		.loc 1 89 82 discriminator 3 view .LVU7
+  56 000c 264C     		ldr	r4, .L8+8
+  57 000e 14F813C0 		ldrb	ip, [r4, r3, lsl #1]	@ zero_extendqisi2
+  58              		.loc 1 89 155 discriminator 3 view .LVU8
+  59 0012 0130     		adds	r0, r0, #1
+  60              		.loc 1 89 132 discriminator 3 view .LVU9
+  61 0014 235C     		ldrb	r3, [r4, r0]	@ zero_extendqisi2
+  62              		.loc 1 89 45 discriminator 3 view .LVU10
+  63 0016 43EA0C23 		orr	r3, r3, ip, lsl #8
+  64 001a 1BB2     		sxth	r3, r3
+  65              		.loc 1 89 37 discriminator 3 view .LVU11
+  66 001c 07EE903A 		vmov	s15, r3	@ int
+  67 0020 F8EEE77A 		vcvt.f32.s32	s15, s15
+  68              		.loc 1 89 171 discriminator 3 view .LVU12
+  69 0024 214B     		ldr	r3, .L8+12
+  70 0026 03EB8103 		add	r3, r3, r1, lsl #2
+  71 002a D3ED006A 		vldr.32	s13, [r3]
+  72              		.loc 1 89 161 discriminator 3 view .LVU13
+  73 002e 87EEA67A 		vdiv.f32	s14, s15, s13
+  74              		.loc 1 89 34 discriminator 3 view .LVU14
+  75 0032 01EB4103 		add	r3, r1, r1, lsl #1
+  76 0036 9818     		adds	r0, r3, r2
+  77 0038 1D4B     		ldr	r3, .L8+16
+  78 003a 03EB8003 		add	r3, r3, r0, lsl #2
+  79 003e 83ED007A 		vstr.32	s14, [r3]
+  87:Drivers/Imu/mpu6050.c **** 		{
+  80              		.loc 1 87 35 is_stmt 1 discriminator 3 view .LVU15
+  87:Drivers/Imu/mpu6050.c **** 		{
+  81              		.loc 1 87 39 is_stmt 0 discriminator 3 view .LVU16
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 4
+
+
+  82 0042 0132     		adds	r2, r2, #1
+  83              	.LVL2:
+  87:Drivers/Imu/mpu6050.c **** 		{
+  84              		.loc 1 87 39 discriminator 3 view .LVU17
+  85 0044 D2B2     		uxtb	r2, r2
+  86              	.LVL3:
+  87              	.L4:
+  87:Drivers/Imu/mpu6050.c **** 		{
+  88              		.loc 1 87 25 is_stmt 1 discriminator 1 view .LVU18
+  87:Drivers/Imu/mpu6050.c **** 		{
+  89              		.loc 1 87 3 is_stmt 0 discriminator 1 view .LVU19
+  90 0046 022A     		cmp	r2, #2
+  91 0048 DDD9     		bls	.L3
+  92              	.LBE3:
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+  93              		.loc 1 85 44 is_stmt 1 discriminator 2 view .LVU20
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+  94              		.loc 1 85 53 is_stmt 0 discriminator 2 view .LVU21
+  95 004a 0131     		adds	r1, r1, #1
+  96              	.LVL4:
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+  97              		.loc 1 85 53 discriminator 2 view .LVU22
+  98 004c C9B2     		uxtb	r1, r1
+  99              	.LVL5:
+ 100              	.L2:
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+ 101              		.loc 1 85 29 is_stmt 1 discriminator 1 view .LVU23
+  85:Drivers/Imu/mpu6050.c **** 	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+ 102              		.loc 1 85 2 is_stmt 0 discriminator 1 view .LVU24
+ 103 004e 0129     		cmp	r1, #1
+ 104 0050 01D8     		bhi	.L7
+ 105              	.LBB4:
+  87:Drivers/Imu/mpu6050.c **** 		{
+ 106              		.loc 1 87 15 view .LVU25
+ 107 0052 0022     		movs	r2, #0
+ 108 0054 F7E7     		b	.L4
+ 109              	.L7:
+ 110              	.LBE4:
+ 111              	.LBE2:
+  90:Drivers/Imu/mpu6050.c **** 		}
+  91:Drivers/Imu/mpu6050.c **** 	}	
+  92:Drivers/Imu/mpu6050.c **** 	
+  93:Drivers/Imu/mpu6050.c **** 	//Convert gyroscope degrees/sec to radians/sec
+  94:Drivers/Imu/mpu6050.c **** 	mpuDataScaled[gyro][X] *= 0.0174533f;
+ 112              		.loc 1 94 2 is_stmt 1 view .LVU26
+ 113              		.loc 1 94 25 is_stmt 0 view .LVU27
+ 114 0056 164C     		ldr	r4, .L8+16
+ 115 0058 D4ED037A 		vldr.32	s15, [r4, #12]
+ 116 005c 9FED157A 		vldr.32	s14, .L8+20
+ 117 0060 67EE877A 		vmul.f32	s15, s15, s14
+ 118 0064 C4ED037A 		vstr.32	s15, [r4, #12]
+  95:Drivers/Imu/mpu6050.c **** 	mpuDataScaled[gyro][Y] *= 0.0174533f;
+ 119              		.loc 1 95 2 is_stmt 1 view .LVU28
+ 120              		.loc 1 95 25 is_stmt 0 view .LVU29
+ 121 0068 D4ED047A 		vldr.32	s15, [r4, #16]
+ 122 006c 67EE877A 		vmul.f32	s15, s15, s14
+ 123 0070 C4ED047A 		vstr.32	s15, [r4, #16]
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 5
+
+
+  96:Drivers/Imu/mpu6050.c **** 	mpuDataScaled[gyro][Z] *= 0.0174533f;
+ 124              		.loc 1 96 2 is_stmt 1 view .LVU30
+ 125              		.loc 1 96 25 is_stmt 0 view .LVU31
+ 126 0074 D4ED057A 		vldr.32	s15, [r4, #20]
+ 127 0078 67EE877A 		vmul.f32	s15, s15, s14
+ 128 007c C4ED057A 		vstr.32	s15, [r4, #20]
+  97:Drivers/Imu/mpu6050.c **** 	mpuDataScaled[gyro][Z] = mpuDataScaled[gyro][Z] + EXTRA_GYRO_Z_OFF_SET;
+ 129              		.loc 1 97 2 is_stmt 1 view .LVU32
+ 130              		.loc 1 97 46 is_stmt 0 view .LVU33
+ 131 0080 17EE900A 		vmov	r0, s15
+ 132 0084 FFF7FEFF 		bl	__aeabi_f2d
+ 133              	.LVL6:
+ 134              		.loc 1 97 50 view .LVU34
+ 135 0088 05A3     		adr	r3, .L8
+ 136 008a D3E90023 		ldrd	r2, [r3]
+ 137 008e FFF7FEFF 		bl	__aeabi_dadd
+ 138              	.LVL7:
+ 139 0092 FFF7FEFF 		bl	__aeabi_d2f
+ 140              	.LVL8:
+ 141              		.loc 1 97 25 view .LVU35
+ 142 0096 6061     		str	r0, [r4, #20]	@ float
+  98:Drivers/Imu/mpu6050.c **** }
+ 143              		.loc 1 98 1 view .LVU36
+ 144 0098 10BD     		pop	{r4, pc}
+ 145              	.L9:
+ 146 009a 00BFAFF3 		.align	3
+ 146      0080
+ 147              	.L8:
+ 148 00a0 4850FC18 		.word	419188808
+ 149 00a4 73D7723F 		.word	1064490867
+ 150 00a8 00000000 		.word	.LANCHOR0
+ 151 00ac 00000000 		.word	.LANCHOR1
+ 152 00b0 00000000 		.word	.LANCHOR2
+ 153 00b4 39FA8E3C 		.word	1016003129
+ 154              		.cfi_endproc
+ 155              	.LFE131:
+ 157              		.section	.text.invSqrt,"ax",%progbits
+ 158              		.align	1
+ 159              		.syntax unified
+ 160              		.thumb
+ 161              		.thumb_func
+ 163              	invSqrt:
+ 164              	.LVL9:
+ 165              	.LFB132:
+  99:Drivers/Imu/mpu6050.c **** 
+ 100:Drivers/Imu/mpu6050.c **** static float invSqrt(float x) {
+ 166              		.loc 1 100 31 is_stmt 1 view -0
+ 167              		.cfi_startproc
+ 168              		@ args = 0, pretend = 0, frame = 0
+ 169              		@ frame_needed = 0, uses_anonymous_args = 0
+ 170              		@ link register save eliminated.
+ 101:Drivers/Imu/mpu6050.c ****   unsigned int i = 0x5F1F1412 - (*(unsigned int*)&x >> 1);
+ 171              		.loc 1 101 3 view .LVU38
+ 172              		.loc 1 101 34 is_stmt 0 view .LVU39
+ 173 0000 10EE102A 		vmov	r2, s0	@ int
+ 174              	.LVL10:
+ 102:Drivers/Imu/mpu6050.c ****   float tmp = *(float*)&i;
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 6
+
+
+ 175              		.loc 1 102 3 is_stmt 1 view .LVU40
+ 176              		.loc 1 102 9 is_stmt 0 view .LVU41
+ 177 0004 094B     		ldr	r3, .L11
+ 178 0006 A3EB5203 		sub	r3, r3, r2, lsr #1
+ 179              	.LVL11:
+ 180              		.loc 1 102 9 view .LVU42
+ 181 000a 07EE103A 		vmov	s14, r3	@ int
+ 182              	.LVL12:
+ 103:Drivers/Imu/mpu6050.c ****   float y = tmp * (1.69000231f - 0.714158168f * x * tmp * tmp);
+ 183              		.loc 1 103 3 is_stmt 1 view .LVU43
+ 184              		.loc 1 103 47 is_stmt 0 view .LVU44
+ 185 000e DFED087A 		vldr.32	s15, .L11+4
+ 186 0012 60EE277A 		vmul.f32	s15, s0, s15
+ 187              		.loc 1 103 51 view .LVU45
+ 188 0016 67EE877A 		vmul.f32	s15, s15, s14
+ 189              		.loc 1 103 57 view .LVU46
+ 190 001a 67EE877A 		vmul.f32	s15, s15, s14
+ 191              		.loc 1 103 32 view .LVU47
+ 192 001e 9FED050A 		vldr.32	s0, .L11+8
+ 193              	.LVL13:
+ 194              		.loc 1 103 32 view .LVU48
+ 195 0022 30EE670A 		vsub.f32	s0, s0, s15
+ 196              	.LVL14:
+ 104:Drivers/Imu/mpu6050.c ****   return y;
+ 197              		.loc 1 104 3 is_stmt 1 view .LVU49
+ 105:Drivers/Imu/mpu6050.c **** }
+ 198              		.loc 1 105 1 is_stmt 0 view .LVU50
+ 199 0026 20EE070A 		vmul.f32	s0, s0, s14
+ 200              	.LVL15:
+ 201              		.loc 1 105 1 view .LVU51
+ 202 002a 7047     		bx	lr
+ 203              	.L12:
+ 204              		.align	2
+ 205              	.L11:
+ 206 002c 12141F5F 		.word	1595872274
+ 207 0030 12D3363F 		.word	1060557586
+ 208 0034 FF51D83F 		.word	1071141375
+ 209              		.cfi_endproc
+ 210              	.LFE132:
+ 212              		.section	.text.lowPassAlfaFiltering,"ax",%progbits
+ 213              		.align	1
+ 214              		.syntax unified
+ 215              		.thumb
+ 216              		.thumb_func
+ 218              	lowPassAlfaFiltering:
+ 219              	.LVL16:
+ 220              	.LFB135:
+ 106:Drivers/Imu/mpu6050.c **** 
+ 107:Drivers/Imu/mpu6050.c **** static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float inv
+ 108:Drivers/Imu/mpu6050.c **** {
+ 109:Drivers/Imu/mpu6050.c **** 	static float q0 = 1.0f; //initialize quaternion for madgwick filter
+ 110:Drivers/Imu/mpu6050.c **** 	static float q1 = 0.0f;
+ 111:Drivers/Imu/mpu6050.c **** 	static float q2 = 0.0f;
+ 112:Drivers/Imu/mpu6050.c **** 	static float q3 = 0.0f;
+ 113:Drivers/Imu/mpu6050.c **** 	static float B_madgwick = 0.2;  //Madgwick filter parameter
+ 114:Drivers/Imu/mpu6050.c **** 
+ 115:Drivers/Imu/mpu6050.c **** 	//DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 7
+
+
+ 116:Drivers/Imu/mpu6050.c **** 	/*
+ 117:Drivers/Imu/mpu6050.c **** 	* See description of Madgwick() for more information. This is a 6DOF implimentation for when magne
+ 118:Drivers/Imu/mpu6050.c **** 	* available (for example when using the recommended MPU6050 IMU for the default setup).
+ 119:Drivers/Imu/mpu6050.c **** 	*/
+ 120:Drivers/Imu/mpu6050.c **** 	float recipNorm;
+ 121:Drivers/Imu/mpu6050.c **** 	float s0, s1, s2, s3;
+ 122:Drivers/Imu/mpu6050.c **** 	float qDot1, qDot2, qDot3, qDot4;
+ 123:Drivers/Imu/mpu6050.c **** 	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+ 124:Drivers/Imu/mpu6050.c **** 
+ 125:Drivers/Imu/mpu6050.c **** 
+ 126:Drivers/Imu/mpu6050.c **** 
+ 127:Drivers/Imu/mpu6050.c **** 	//Rate of change of quaternion from gyroscope
+ 128:Drivers/Imu/mpu6050.c **** 	qDot1 = 0.5f * (-q1 * mpuDataScaled[gyro][X] - q2 * mpuDataScaled[gyro][Y] - q3 * mpuDataScaled[gy
+ 129:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 130:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 131:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 132:Drivers/Imu/mpu6050.c **** 
+ 133:Drivers/Imu/mpu6050.c **** 	//Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisat
+ 134:Drivers/Imu/mpu6050.c **** 	if(!((mpuDataScaled[acc][X] == 0.0f) && (mpuDataScaled[acc][Y] == 0.0f) && (mpuDataScaled[acc][Z] 
+ 135:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 136:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(mpuDataScaled[acc][X] * mpuDataScaled[acc][X] + mpuDataScaled[acc][Y] * mpuDa
+ 137:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 138:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Y] *= recipNorm;
+ 139:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Z] *= recipNorm;
+ 140:Drivers/Imu/mpu6050.c **** 
+ 141:Drivers/Imu/mpu6050.c **** 		//Auxiliary variables to avoid repeated arithmetic
+ 142:Drivers/Imu/mpu6050.c **** 		_2q0 = 2.0f * q0;
+ 143:Drivers/Imu/mpu6050.c **** 		_2q1 = 2.0f * q1;
+ 144:Drivers/Imu/mpu6050.c **** 		_2q2 = 2.0f * q2;
+ 145:Drivers/Imu/mpu6050.c **** 		_2q3 = 2.0f * q3;
+ 146:Drivers/Imu/mpu6050.c **** 		_4q0 = 4.0f * q0;
+ 147:Drivers/Imu/mpu6050.c **** 		_4q1 = 4.0f * q1;
+ 148:Drivers/Imu/mpu6050.c **** 		_4q2 = 4.0f * q2;
+ 149:Drivers/Imu/mpu6050.c **** 		_8q1 = 8.0f * q1;
+ 150:Drivers/Imu/mpu6050.c **** 		_8q2 = 8.0f * q2;
+ 151:Drivers/Imu/mpu6050.c **** 		q0q0 = q0 * q0;
+ 152:Drivers/Imu/mpu6050.c **** 		q1q1 = q1 * q1;
+ 153:Drivers/Imu/mpu6050.c **** 		q2q2 = q2 * q2;
+ 154:Drivers/Imu/mpu6050.c **** 		q3q3 = q3 * q3;
+ 155:Drivers/Imu/mpu6050.c **** 
+ 156:Drivers/Imu/mpu6050.c **** 		//Gradient decent algorithm corrective step
+ 157:Drivers/Imu/mpu6050.c **** 		s0 = _4q0 * q2q2 + _2q2 * mpuDataScaled[acc][X] + _4q0 * q1q1 - _2q1 * mpuDataScaled[acc][Y];
+ 158:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 159:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 160:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 161:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 162:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 163:Drivers/Imu/mpu6050.c **** 		s1 *= recipNorm;
+ 164:Drivers/Imu/mpu6050.c **** 		s2 *= recipNorm;
+ 165:Drivers/Imu/mpu6050.c **** 		s3 *= recipNorm;
+ 166:Drivers/Imu/mpu6050.c **** 
+ 167:Drivers/Imu/mpu6050.c **** 		//Apply feedback step
+ 168:Drivers/Imu/mpu6050.c **** 		qDot1 -= B_madgwick * s0;
+ 169:Drivers/Imu/mpu6050.c **** 		qDot2 -= B_madgwick * s1;
+ 170:Drivers/Imu/mpu6050.c **** 		qDot3 -= B_madgwick * s2;
+ 171:Drivers/Imu/mpu6050.c **** 		qDot4 -= B_madgwick * s3;
+ 172:Drivers/Imu/mpu6050.c **** 	}
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 8
+
+
+ 173:Drivers/Imu/mpu6050.c **** 
+ 174:Drivers/Imu/mpu6050.c **** 	//Integrate rate of change of quaternion to yield quaternion
+ 175:Drivers/Imu/mpu6050.c **** 	q0 += qDot1 * invSampleFreq;
+ 176:Drivers/Imu/mpu6050.c **** 	q1 += qDot2 * invSampleFreq;
+ 177:Drivers/Imu/mpu6050.c **** 	q2 += qDot3 * invSampleFreq;
+ 178:Drivers/Imu/mpu6050.c **** 	q3 += qDot4 * invSampleFreq;
+ 179:Drivers/Imu/mpu6050.c **** 
+ 180:Drivers/Imu/mpu6050.c **** 	//Normalise quaternion
+ 181:Drivers/Imu/mpu6050.c **** 	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+ 182:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 183:Drivers/Imu/mpu6050.c **** 	q1 *= recipNorm;
+ 184:Drivers/Imu/mpu6050.c **** 	q2 *= recipNorm;
+ 185:Drivers/Imu/mpu6050.c **** 	q3 *= recipNorm;
+ 186:Drivers/Imu/mpu6050.c **** 
+ 187:Drivers/Imu/mpu6050.c **** 	//compute angles
+ 188:Drivers/Imu/mpu6050.c **** 	*roll = atan2(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
+ 189:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 190:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 191:Drivers/Imu/mpu6050.c **** }
+ 192:Drivers/Imu/mpu6050.c **** 
+ 193:Drivers/Imu/mpu6050.c **** static void minus3dGravityVector(MpuData_t *RecMpuData)
+ 194:Drivers/Imu/mpu6050.c **** {
+ 195:Drivers/Imu/mpu6050.c **** double alpha=  RecMpuData->yaw;    ;// some aribitar values for testing //yaw
+ 196:Drivers/Imu/mpu6050.c **** double beta=   RecMpuData->pitch    ;// some aribitar values for testing //pitch
+ 197:Drivers/Imu/mpu6050.c **** double theta = RecMpuData->roll ;// some aribitar values for testing //roll
+ 198:Drivers/Imu/mpu6050.c **** 
+ 199:Drivers/Imu/mpu6050.c **** double accel[3]=   {RecMpuData->accX,    RecMpuData->accY,      RecMpuData->accZ};
+ 200:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 201:Drivers/Imu/mpu6050.c **** double rG[3];
+ 202:Drivers/Imu/mpu6050.c **** //double rA[3];
+ 203:Drivers/Imu/mpu6050.c **** double mA[3];
+ 204:Drivers/Imu/mpu6050.c **** 
+ 205:Drivers/Imu/mpu6050.c **** double R[3][3] =
+ 206:Drivers/Imu/mpu6050.c **** {
+ 207:Drivers/Imu/mpu6050.c ****   { cos(alpha)*cos(beta) , cos(alpha)*sin(beta)*sin(theta) - sin(alpha)*cos(theta) , cos(alpha)*sin
+ 208:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 209:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 210:Drivers/Imu/mpu6050.c **** };
+ 211:Drivers/Imu/mpu6050.c **** 
+ 212:Drivers/Imu/mpu6050.c **** rG[0]= gravity[0]*R[0][0] + gravity[1]*R[0][1] + gravity[2]*R[0][2] ;
+ 213:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 214:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 215:Drivers/Imu/mpu6050.c **** 
+ 216:Drivers/Imu/mpu6050.c **** // rA[0]= accel[0]*R[0][0]   + accel[1]*R[0][1]   + accel[2]*R[0][2] ;
+ 217:Drivers/Imu/mpu6050.c **** // rA[1]= accel[0]*R[1][0]   + accel[1]*R[1][1]   + accel[2]*R[1][2] ;
+ 218:Drivers/Imu/mpu6050.c **** // rA[2]= accel[0]*R[2][0]   + accel[1]*R[2][1]   + accel[2]*R[2][2] ;
+ 219:Drivers/Imu/mpu6050.c **** 
+ 220:Drivers/Imu/mpu6050.c **** mA[0]= accel[0]-rG[0];
+ 221:Drivers/Imu/mpu6050.c **** mA[1]= rG[1] + accel[1];
+ 222:Drivers/Imu/mpu6050.c **** mA[2]= accel[2]-rG[2];
+ 223:Drivers/Imu/mpu6050.c **** 
+ 224:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccX = (float)mA[0];
+ 225:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccY = (float)mA[1];
+ 226:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccZ = (float)mA[2];
+ 227:Drivers/Imu/mpu6050.c **** 
+ 228:Drivers/Imu/mpu6050.c **** }
+ 229:Drivers/Imu/mpu6050.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 9
+
+
+ 230:Drivers/Imu/mpu6050.c **** static float lowPassAlfaFiltering(float FilteredState, float newRawVal,float alfa)
+ 231:Drivers/Imu/mpu6050.c **** {
+ 221              		.loc 1 231 1 is_stmt 1 view -0
+ 222              		.cfi_startproc
+ 223              		@ args = 0, pretend = 0, frame = 0
+ 224              		@ frame_needed = 0, uses_anonymous_args = 0
+ 225              		@ link register save eliminated.
+ 232:Drivers/Imu/mpu6050.c ****     return(newRawVal * alfa + FilteredState * (1.0F-alfa) );
+ 226              		.loc 1 232 5 view .LVU53
+ 227              		.loc 1 232 22 is_stmt 0 view .LVU54
+ 228 0000 60EE810A 		vmul.f32	s1, s1, s2
+ 229              	.LVL17:
+ 230              		.loc 1 232 52 view .LVU55
+ 231 0004 F7EE007A 		vmov.f32	s15, #1.0e+0
+ 232 0008 37EEC11A 		vsub.f32	s2, s15, s2
+ 233              	.LVL18:
+ 234              		.loc 1 232 45 view .LVU56
+ 235 000c 21EE000A 		vmul.f32	s0, s2, s0
+ 236              	.LVL19:
+ 233:Drivers/Imu/mpu6050.c **** }
+ 237              		.loc 1 233 1 view .LVU57
+ 238 0010 30EE800A 		vadd.f32	s0, s1, s0
+ 239 0014 7047     		bx	lr
+ 240              		.cfi_endproc
+ 241              	.LFE135:
+ 243              		.global	__aeabi_dsub
+ 244              		.global	__aeabi_dmul
+ 245              		.section	.text.TryComputeObjectPosition,"ax",%progbits
+ 246              		.align	1
+ 247              		.syntax unified
+ 248              		.thumb
+ 249              		.thumb_func
+ 251              	TryComputeObjectPosition:
+ 252              	.LVL20:
+ 253              	.LFB136:
+ 234:Drivers/Imu/mpu6050.c **** 
+ 235:Drivers/Imu/mpu6050.c **** static void TryComputeObjectPosition(MpuData_t *RecMpuData)
+ 236:Drivers/Imu/mpu6050.c **** {
+ 254              		.loc 1 236 1 is_stmt 1 view -0
+ 255              		.cfi_startproc
+ 256              		@ args = 0, pretend = 0, frame = 0
+ 257              		@ frame_needed = 0, uses_anonymous_args = 0
+ 258              		.loc 1 236 1 is_stmt 0 view .LVU59
+ 259 0000 D0B5     		push	{r4, r6, r7, lr}
+ 260              	.LCFI1:
+ 261              		.cfi_def_cfa_offset 16
+ 262              		.cfi_offset 4, -16
+ 263              		.cfi_offset 6, -12
+ 264              		.cfi_offset 7, -8
+ 265              		.cfi_offset 14, -4
+ 266 0002 2DED048B 		vpush.64	{d8, d9}
+ 267              	.LCFI2:
+ 268              		.cfi_def_cfa_offset 32
+ 269              		.cfi_offset 80, -32
+ 270              		.cfi_offset 81, -28
+ 271              		.cfi_offset 82, -24
+ 272              		.cfi_offset 83, -20
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 10
+
+
+ 273 0006 0446     		mov	r4, r0
+ 237:Drivers/Imu/mpu6050.c **** 	static float pAccX,pAccY,pAccZ;
+ 274              		.loc 1 237 2 is_stmt 1 view .LVU60
+ 238:Drivers/Imu/mpu6050.c **** 	static const float alfaHighPassF = 0.72F;
+ 275              		.loc 1 238 2 view .LVU61
+ 239:Drivers/Imu/mpu6050.c **** 
+ 240:Drivers/Imu/mpu6050.c **** 	RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX,RecMpuData->accX,0.3);
+ 276              		.loc 1 240 2 view .LVU62
+ 277              		.loc 1 240 25 is_stmt 0 view .LVU63
+ 278 0008 9FED999A 		vldr.32	s18, .L37+16
+ 279 000c B0EE491A 		vmov.f32	s2, s18
+ 280 0010 D0ED030A 		vldr.32	s1, [r0, #12]
+ 281 0014 90ED090A 		vldr.32	s0, [r0, #36]
+ 282 0018 FFF7FEFF 		bl	lowPassAlfaFiltering
+ 283              	.LVL21:
+ 284              		.loc 1 240 25 view .LVU64
+ 285 001c F0EE408A 		vmov.f32	s17, s0
+ 286              		.loc 1 240 23 view .LVU65
+ 287 0020 84ED090A 		vstr.32	s0, [r4, #36]
+ 241:Drivers/Imu/mpu6050.c **** 	RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY,RecMpuData->accY,0.3);
+ 288              		.loc 1 241 2 is_stmt 1 view .LVU66
+ 289              		.loc 1 241 25 is_stmt 0 view .LVU67
+ 290 0024 B0EE491A 		vmov.f32	s2, s18
+ 291 0028 D4ED040A 		vldr.32	s1, [r4, #16]
+ 292 002c 94ED0A0A 		vldr.32	s0, [r4, #40]
+ 293 0030 FFF7FEFF 		bl	lowPassAlfaFiltering
+ 294              	.LVL22:
+ 295 0034 B0EE408A 		vmov.f32	s16, s0
+ 296              		.loc 1 241 23 view .LVU68
+ 297 0038 84ED0A0A 		vstr.32	s0, [r4, #40]
+ 242:Drivers/Imu/mpu6050.c **** 	RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ,RecMpuData->accZ,0.3);
+ 298              		.loc 1 242 2 is_stmt 1 view .LVU69
+ 299              		.loc 1 242 25 is_stmt 0 view .LVU70
+ 300 003c B0EE491A 		vmov.f32	s2, s18
+ 301 0040 D4ED050A 		vldr.32	s1, [r4, #20]
+ 302 0044 94ED0B0A 		vldr.32	s0, [r4, #44]
+ 303 0048 FFF7FEFF 		bl	lowPassAlfaFiltering
+ 304              	.LVL23:
+ 305              		.loc 1 242 23 view .LVU71
+ 306 004c 84ED0B0A 		vstr.32	s0, [r4, #44]
+ 243:Drivers/Imu/mpu6050.c **** 
+ 244:Drivers/Imu/mpu6050.c ****     RecMpuData->jerkX = alfaHighPassF * (RecMpuData->jerkX + RecMpuData->fildAccX - pAccX);
+ 307              		.loc 1 244 5 is_stmt 1 view .LVU72
+ 308              		.loc 1 244 52 is_stmt 0 view .LVU73
+ 309 0050 D4ED0C6A 		vldr.32	s13, [r4, #48]
+ 310              		.loc 1 244 60 view .LVU74
+ 311 0054 78EEA66A 		vadd.f32	s13, s17, s13
+ 312              		.loc 1 244 83 view .LVU75
+ 313 0058 8649     		ldr	r1, .L37+20
+ 314 005a D1ED007A 		vldr.32	s15, [r1]
+ 315 005e 76EEE76A 		vsub.f32	s13, s13, s15
+ 316              		.loc 1 244 39 view .LVU76
+ 317 0062 DFED855A 		vldr.32	s11, .L37+24
+ 318 0066 66EEA56A 		vmul.f32	s13, s13, s11
+ 319              		.loc 1 244 23 view .LVU77
+ 320 006a C4ED0C6A 		vstr.32	s13, [r4, #48]
+ 245:Drivers/Imu/mpu6050.c ****     RecMpuData->jerkY = alfaHighPassF * (RecMpuData->jerkY + RecMpuData->fildAccY - pAccY);
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 11
+
+
+ 321              		.loc 1 245 5 is_stmt 1 view .LVU78
+ 322              		.loc 1 245 52 is_stmt 0 view .LVU79
+ 323 006e 94ED0D7A 		vldr.32	s14, [r4, #52]
+ 324              		.loc 1 245 60 view .LVU80
+ 325 0072 38EE077A 		vadd.f32	s14, s16, s14
+ 326              		.loc 1 245 83 view .LVU81
+ 327 0076 814A     		ldr	r2, .L37+28
+ 328 0078 D2ED007A 		vldr.32	s15, [r2]
+ 329 007c 37EE677A 		vsub.f32	s14, s14, s15
+ 330              		.loc 1 245 39 view .LVU82
+ 331 0080 27EE257A 		vmul.f32	s14, s14, s11
+ 332              		.loc 1 245 23 view .LVU83
+ 333 0084 84ED0D7A 		vstr.32	s14, [r4, #52]
+ 246:Drivers/Imu/mpu6050.c ****     RecMpuData->jerkZ = alfaHighPassF * (RecMpuData->jerkZ + RecMpuData->fildAccZ - pAccZ);
+ 334              		.loc 1 246 5 is_stmt 1 view .LVU84
+ 335              		.loc 1 246 52 is_stmt 0 view .LVU85
+ 336 0088 D4ED0E7A 		vldr.32	s15, [r4, #56]
+ 337              		.loc 1 246 60 view .LVU86
+ 338 008c 70EE277A 		vadd.f32	s15, s0, s15
+ 339              		.loc 1 246 83 view .LVU87
+ 340 0090 7B4B     		ldr	r3, .L37+32
+ 341 0092 93ED005A 		vldr.32	s10, [r3]
+ 342 0096 77EEC57A 		vsub.f32	s15, s15, s10
+ 343              		.loc 1 246 39 view .LVU88
+ 344 009a 67EEA57A 		vmul.f32	s15, s15, s11
+ 345              		.loc 1 246 23 view .LVU89
+ 346 009e C4ED0E7A 		vstr.32	s15, [r4, #56]
+ 247:Drivers/Imu/mpu6050.c **** 
+ 248:Drivers/Imu/mpu6050.c **** 	pAccX = RecMpuData->fildAccX;
+ 347              		.loc 1 248 2 is_stmt 1 view .LVU90
+ 348              		.loc 1 248 8 is_stmt 0 view .LVU91
+ 349 00a2 C1ED008A 		vstr.32	s17, [r1]
+ 249:Drivers/Imu/mpu6050.c **** 	pAccY = RecMpuData->fildAccY;
+ 350              		.loc 1 249 2 is_stmt 1 view .LVU92
+ 351              		.loc 1 249 8 is_stmt 0 view .LVU93
+ 352 00a6 82ED008A 		vstr.32	s16, [r2]
+ 250:Drivers/Imu/mpu6050.c **** 	pAccZ = RecMpuData->fildAccZ;
+ 353              		.loc 1 250 2 is_stmt 1 view .LVU94
+ 354              		.loc 1 250 8 is_stmt 0 view .LVU95
+ 355 00aa 83ED000A 		vstr.32	s0, [r3]
+ 251:Drivers/Imu/mpu6050.c **** 
+ 252:Drivers/Imu/mpu6050.c **** 	static const float alfaVelo = 0.99;
+ 356              		.loc 1 252 2 is_stmt 1 view .LVU96
+ 253:Drivers/Imu/mpu6050.c **** 
+ 254:Drivers/Imu/mpu6050.c ****     RecMpuData->velX = alfaVelo* RecMpuData->velX + ( (1.0F - alfaVelo) * RecMpuData->jerkX * (9.81
+ 357              		.loc 1 254 5 view .LVU97
+ 358              		.loc 1 254 44 is_stmt 0 view .LVU98
+ 359 00ae 94ED136A 		vldr.32	s12, [r4, #76]
+ 360              		.loc 1 254 32 view .LVU99
+ 361 00b2 DFED744A 		vldr.32	s9, .L37+36
+ 362 00b6 26EE246A 		vmul.f32	s12, s12, s9
+ 363              		.loc 1 254 73 view .LVU100
+ 364 00ba 9FED735A 		vldr.32	s10, .L37+40
+ 365 00be 66EE856A 		vmul.f32	s13, s13, s10
+ 366              		.loc 1 254 93 view .LVU101
+ 367 00c2 DFED725A 		vldr.32	s11, .L37+44
+ 368 00c6 66EEA56A 		vmul.f32	s13, s13, s11
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 12
+
+
+ 369              		.loc 1 254 51 view .LVU102
+ 370 00ca 76EE266A 		vadd.f32	s13, s12, s13
+ 371              		.loc 1 254 22 view .LVU103
+ 372 00ce C4ED136A 		vstr.32	s13, [r4, #76]
+ 255:Drivers/Imu/mpu6050.c ****     RecMpuData->velY = alfaVelo* RecMpuData->velY + ( (1.0F - alfaVelo) * RecMpuData->jerkY * (9.81
+ 373              		.loc 1 255 5 is_stmt 1 view .LVU104
+ 374              		.loc 1 255 44 is_stmt 0 view .LVU105
+ 375 00d2 D4ED148A 		vldr.32	s17, [r4, #80]
+ 376              		.loc 1 255 32 view .LVU106
+ 377 00d6 68EEA48A 		vmul.f32	s17, s17, s9
+ 378              		.loc 1 255 73 view .LVU107
+ 379 00da 27EE057A 		vmul.f32	s14, s14, s10
+ 380              		.loc 1 255 93 view .LVU108
+ 381 00de 27EE257A 		vmul.f32	s14, s14, s11
+ 382              		.loc 1 255 51 view .LVU109
+ 383 00e2 78EE878A 		vadd.f32	s17, s17, s14
+ 384              		.loc 1 255 22 view .LVU110
+ 385 00e6 C4ED148A 		vstr.32	s17, [r4, #80]
+ 256:Drivers/Imu/mpu6050.c ****     RecMpuData->velZ = alfaVelo* RecMpuData->velZ + ( (1.0F - alfaVelo) * RecMpuData->jerkZ * (9.81
+ 386              		.loc 1 256 5 is_stmt 1 view .LVU111
+ 387              		.loc 1 256 44 is_stmt 0 view .LVU112
+ 388 00ea 94ED158A 		vldr.32	s16, [r4, #84]
+ 389              		.loc 1 256 32 view .LVU113
+ 390 00ee 28EE248A 		vmul.f32	s16, s16, s9
+ 391              		.loc 1 256 73 view .LVU114
+ 392 00f2 67EE857A 		vmul.f32	s15, s15, s10
+ 393              		.loc 1 256 93 view .LVU115
+ 394 00f6 67EEA57A 		vmul.f32	s15, s15, s11
+ 395              		.loc 1 256 51 view .LVU116
+ 396 00fa 38EE278A 		vadd.f32	s16, s16, s15
+ 397              		.loc 1 256 22 view .LVU117
+ 398 00fe 84ED158A 		vstr.32	s16, [r4, #84]
+ 257:Drivers/Imu/mpu6050.c **** 
+ 258:Drivers/Imu/mpu6050.c **** 	if(RecMpuData->velX > 0.0F){
+ 399              		.loc 1 258 2 is_stmt 1 view .LVU118
+ 400              		.loc 1 258 4 is_stmt 0 view .LVU119
+ 401 0102 F5EEC06A 		vcmpe.f32	s13, #0
+ 402 0106 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 403 010a 72DD     		ble	.L33
+ 259:Drivers/Imu/mpu6050.c **** 		RecMpuData->velX = RecMpuData->velX - 0.0001;
+ 404              		.loc 1 259 3 is_stmt 1 view .LVU120
+ 405              		.loc 1 259 32 is_stmt 0 view .LVU121
+ 406 010c 16EE900A 		vmov	r0, s13
+ 407 0110 FFF7FEFF 		bl	__aeabi_f2d
+ 408              	.LVL24:
+ 409              		.loc 1 259 39 view .LVU122
+ 410 0114 52A3     		adr	r3, .L37
+ 411 0116 D3E90023 		ldrd	r2, [r3]
+ 412 011a FFF7FEFF 		bl	__aeabi_dsub
+ 413              	.LVL25:
+ 414 011e FFF7FEFF 		bl	__aeabi_d2f
+ 415              	.LVL26:
+ 416              		.loc 1 259 20 view .LVU123
+ 417 0122 E064     		str	r0, [r4, #76]	@ float
+ 418              	.L17:
+ 260:Drivers/Imu/mpu6050.c **** 	}else if(RecMpuData->velX < 0.0F){
+ 261:Drivers/Imu/mpu6050.c **** 		RecMpuData->velX = RecMpuData->velX + 0.0001;
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 13
+
+
+ 262:Drivers/Imu/mpu6050.c **** 	}
+ 263:Drivers/Imu/mpu6050.c **** 	if(RecMpuData->velY > 0.0F){
+ 419              		.loc 1 263 2 is_stmt 1 view .LVU124
+ 420              		.loc 1 263 4 is_stmt 0 view .LVU125
+ 421 0124 F5EEC08A 		vcmpe.f32	s17, #0
+ 422 0128 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 423 012c 73DD     		ble	.L34
+ 264:Drivers/Imu/mpu6050.c **** 		RecMpuData->velY = RecMpuData->velY - 0.0001;
+ 424              		.loc 1 264 3 is_stmt 1 view .LVU126
+ 425              		.loc 1 264 32 is_stmt 0 view .LVU127
+ 426 012e 18EE900A 		vmov	r0, s17
+ 427 0132 FFF7FEFF 		bl	__aeabi_f2d
+ 428              	.LVL27:
+ 429              		.loc 1 264 39 view .LVU128
+ 430 0136 4AA3     		adr	r3, .L37
+ 431 0138 D3E90023 		ldrd	r2, [r3]
+ 432 013c FFF7FEFF 		bl	__aeabi_dsub
+ 433              	.LVL28:
+ 434 0140 FFF7FEFF 		bl	__aeabi_d2f
+ 435              	.LVL29:
+ 436              		.loc 1 264 20 view .LVU129
+ 437 0144 2065     		str	r0, [r4, #80]	@ float
+ 438              	.L21:
+ 265:Drivers/Imu/mpu6050.c **** 	}else if(RecMpuData->velY < 0.0F){
+ 266:Drivers/Imu/mpu6050.c **** 		RecMpuData->velY = RecMpuData->velY + 0.0001;
+ 267:Drivers/Imu/mpu6050.c **** 	}
+ 268:Drivers/Imu/mpu6050.c **** 		if(RecMpuData->velZ > 0.0F){
+ 439              		.loc 1 268 3 is_stmt 1 view .LVU130
+ 440              		.loc 1 268 5 is_stmt 0 view .LVU131
+ 441 0146 B5EEC08A 		vcmpe.f32	s16, #0
+ 442 014a F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 443 014e 74DD     		ble	.L35
+ 269:Drivers/Imu/mpu6050.c **** 		RecMpuData->velZ = RecMpuData->velZ - 0.0001;
+ 444              		.loc 1 269 3 is_stmt 1 view .LVU132
+ 445              		.loc 1 269 32 is_stmt 0 view .LVU133
+ 446 0150 18EE100A 		vmov	r0, s16
+ 447 0154 FFF7FEFF 		bl	__aeabi_f2d
+ 448              	.LVL30:
+ 449              		.loc 1 269 39 view .LVU134
+ 450 0158 41A3     		adr	r3, .L37
+ 451 015a D3E90023 		ldrd	r2, [r3]
+ 452 015e FFF7FEFF 		bl	__aeabi_dsub
+ 453              	.LVL31:
+ 454 0162 FFF7FEFF 		bl	__aeabi_d2f
+ 455              	.LVL32:
+ 456              		.loc 1 269 20 view .LVU135
+ 457 0166 6065     		str	r0, [r4, #84]	@ float
+ 458              	.L25:
+ 270:Drivers/Imu/mpu6050.c **** 	}else if(RecMpuData->velZ < 0.0F){
+ 271:Drivers/Imu/mpu6050.c **** 		RecMpuData->velZ = RecMpuData->velZ + 0.0001;
+ 272:Drivers/Imu/mpu6050.c **** 	}
+ 273:Drivers/Imu/mpu6050.c **** 
+ 274:Drivers/Imu/mpu6050.c ****     RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX* 0.1);
+ 459              		.loc 1 274 5 is_stmt 1 view .LVU136
+ 460              		.loc 1 274 34 is_stmt 0 view .LVU137
+ 461 0168 A06D     		ldr	r0, [r4, #88]	@ float
+ 462 016a FFF7FEFF 		bl	__aeabi_f2d
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 14
+
+
+ 463              	.LVL33:
+ 464 016e 0646     		mov	r6, r0
+ 465 0170 0F46     		mov	r7, r1
+ 466              		.loc 1 274 54 view .LVU138
+ 467 0172 E06C     		ldr	r0, [r4, #76]	@ float
+ 468 0174 FFF7FEFF 		bl	__aeabi_f2d
+ 469              	.LVL34:
+ 470              		.loc 1 274 60 view .LVU139
+ 471 0178 3BA3     		adr	r3, .L37+8
+ 472 017a D3E90023 		ldrd	r2, [r3]
+ 473 017e FFF7FEFF 		bl	__aeabi_dmul
+ 474              	.LVL35:
+ 475 0182 0246     		mov	r2, r0
+ 476 0184 0B46     		mov	r3, r1
+ 477              		.loc 1 274 41 view .LVU140
+ 478 0186 3046     		mov	r0, r6
+ 479 0188 3946     		mov	r1, r7
+ 480 018a FFF7FEFF 		bl	__aeabi_dadd
+ 481              	.LVL36:
+ 482 018e FFF7FEFF 		bl	__aeabi_d2f
+ 483              	.LVL37:
+ 484              		.loc 1 274 22 view .LVU141
+ 485 0192 A065     		str	r0, [r4, #88]	@ float
+ 275:Drivers/Imu/mpu6050.c ****     RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY* 0.1);
+ 486              		.loc 1 275 5 is_stmt 1 view .LVU142
+ 487              		.loc 1 275 34 is_stmt 0 view .LVU143
+ 488 0194 E06D     		ldr	r0, [r4, #92]	@ float
+ 489 0196 FFF7FEFF 		bl	__aeabi_f2d
+ 490              	.LVL38:
+ 491 019a 0646     		mov	r6, r0
+ 492 019c 0F46     		mov	r7, r1
+ 493              		.loc 1 275 54 view .LVU144
+ 494 019e 206D     		ldr	r0, [r4, #80]	@ float
+ 495 01a0 FFF7FEFF 		bl	__aeabi_f2d
+ 496              	.LVL39:
+ 497              		.loc 1 275 60 view .LVU145
+ 498 01a4 30A3     		adr	r3, .L37+8
+ 499 01a6 D3E90023 		ldrd	r2, [r3]
+ 500 01aa FFF7FEFF 		bl	__aeabi_dmul
+ 501              	.LVL40:
+ 502 01ae 0246     		mov	r2, r0
+ 503 01b0 0B46     		mov	r3, r1
+ 504              		.loc 1 275 41 view .LVU146
+ 505 01b2 3046     		mov	r0, r6
+ 506 01b4 3946     		mov	r1, r7
+ 507 01b6 FFF7FEFF 		bl	__aeabi_dadd
+ 508              	.LVL41:
+ 509 01ba FFF7FEFF 		bl	__aeabi_d2f
+ 510              	.LVL42:
+ 511              		.loc 1 275 22 view .LVU147
+ 512 01be E065     		str	r0, [r4, #92]	@ float
+ 276:Drivers/Imu/mpu6050.c ****     RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ* 0.1);
+ 513              		.loc 1 276 5 is_stmt 1 view .LVU148
+ 514              		.loc 1 276 34 is_stmt 0 view .LVU149
+ 515 01c0 206E     		ldr	r0, [r4, #96]	@ float
+ 516 01c2 FFF7FEFF 		bl	__aeabi_f2d
+ 517              	.LVL43:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 15
+
+
+ 518 01c6 0646     		mov	r6, r0
+ 519 01c8 0F46     		mov	r7, r1
+ 520              		.loc 1 276 54 view .LVU150
+ 521 01ca 606D     		ldr	r0, [r4, #84]	@ float
+ 522 01cc FFF7FEFF 		bl	__aeabi_f2d
+ 523              	.LVL44:
+ 524              		.loc 1 276 60 view .LVU151
+ 525 01d0 25A3     		adr	r3, .L37+8
+ 526 01d2 D3E90023 		ldrd	r2, [r3]
+ 527 01d6 FFF7FEFF 		bl	__aeabi_dmul
+ 528              	.LVL45:
+ 529 01da 0246     		mov	r2, r0
+ 530 01dc 0B46     		mov	r3, r1
+ 531              		.loc 1 276 41 view .LVU152
+ 532 01de 3046     		mov	r0, r6
+ 533 01e0 3946     		mov	r1, r7
+ 534 01e2 FFF7FEFF 		bl	__aeabi_dadd
+ 535              	.LVL46:
+ 536 01e6 FFF7FEFF 		bl	__aeabi_d2f
+ 537              	.LVL47:
+ 538              		.loc 1 276 22 view .LVU153
+ 539 01ea 2066     		str	r0, [r4, #96]	@ float
+ 277:Drivers/Imu/mpu6050.c **** 
+ 278:Drivers/Imu/mpu6050.c **** 
+ 279:Drivers/Imu/mpu6050.c **** }
+ 540              		.loc 1 279 1 view .LVU154
+ 541 01ec BDEC048B 		vldm	sp!, {d8-d9}
+ 542              	.LCFI3:
+ 543              		.cfi_remember_state
+ 544              		.cfi_restore 82
+ 545              		.cfi_restore 83
+ 546              		.cfi_restore 80
+ 547              		.cfi_restore 81
+ 548              		.cfi_def_cfa_offset 16
+ 549 01f0 D0BD     		pop	{r4, r6, r7, pc}
+ 550              	.LVL48:
+ 551              	.L33:
+ 552              	.LCFI4:
+ 553              		.cfi_restore_state
+ 260:Drivers/Imu/mpu6050.c **** 		RecMpuData->velX = RecMpuData->velX + 0.0001;
+ 554              		.loc 1 260 8 is_stmt 1 view .LVU155
+ 260:Drivers/Imu/mpu6050.c **** 		RecMpuData->velX = RecMpuData->velX + 0.0001;
+ 555              		.loc 1 260 10 is_stmt 0 view .LVU156
+ 556 01f2 F5EEC06A 		vcmpe.f32	s13, #0
+ 557 01f6 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 558 01fa 93D5     		bpl	.L17
+ 261:Drivers/Imu/mpu6050.c **** 	}
+ 559              		.loc 1 261 3 is_stmt 1 view .LVU157
+ 261:Drivers/Imu/mpu6050.c **** 	}
+ 560              		.loc 1 261 32 is_stmt 0 view .LVU158
+ 561 01fc 16EE900A 		vmov	r0, s13
+ 562 0200 FFF7FEFF 		bl	__aeabi_f2d
+ 563              	.LVL49:
+ 261:Drivers/Imu/mpu6050.c **** 	}
+ 564              		.loc 1 261 39 view .LVU159
+ 565 0204 16A3     		adr	r3, .L37
+ 566 0206 D3E90023 		ldrd	r2, [r3]
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 16
+
+
+ 567 020a FFF7FEFF 		bl	__aeabi_dadd
+ 568              	.LVL50:
+ 569 020e FFF7FEFF 		bl	__aeabi_d2f
+ 570              	.LVL51:
+ 261:Drivers/Imu/mpu6050.c **** 	}
+ 571              		.loc 1 261 20 view .LVU160
+ 572 0212 E064     		str	r0, [r4, #76]	@ float
+ 573 0214 86E7     		b	.L17
+ 574              	.L34:
+ 265:Drivers/Imu/mpu6050.c **** 		RecMpuData->velY = RecMpuData->velY + 0.0001;
+ 575              		.loc 1 265 8 is_stmt 1 view .LVU161
+ 265:Drivers/Imu/mpu6050.c **** 		RecMpuData->velY = RecMpuData->velY + 0.0001;
+ 576              		.loc 1 265 10 is_stmt 0 view .LVU162
+ 577 0216 F5EEC08A 		vcmpe.f32	s17, #0
+ 578 021a F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 579 021e 92D5     		bpl	.L21
+ 266:Drivers/Imu/mpu6050.c **** 	}
+ 580              		.loc 1 266 3 is_stmt 1 view .LVU163
+ 266:Drivers/Imu/mpu6050.c **** 	}
+ 581              		.loc 1 266 32 is_stmt 0 view .LVU164
+ 582 0220 18EE900A 		vmov	r0, s17
+ 583 0224 FFF7FEFF 		bl	__aeabi_f2d
+ 584              	.LVL52:
+ 266:Drivers/Imu/mpu6050.c **** 	}
+ 585              		.loc 1 266 39 view .LVU165
+ 586 0228 0DA3     		adr	r3, .L37
+ 587 022a D3E90023 		ldrd	r2, [r3]
+ 588 022e FFF7FEFF 		bl	__aeabi_dadd
+ 589              	.LVL53:
+ 590 0232 FFF7FEFF 		bl	__aeabi_d2f
+ 591              	.LVL54:
+ 266:Drivers/Imu/mpu6050.c **** 	}
+ 592              		.loc 1 266 20 view .LVU166
+ 593 0236 2065     		str	r0, [r4, #80]	@ float
+ 594 0238 85E7     		b	.L21
+ 595              	.L35:
+ 270:Drivers/Imu/mpu6050.c **** 		RecMpuData->velZ = RecMpuData->velZ + 0.0001;
+ 596              		.loc 1 270 8 is_stmt 1 view .LVU167
+ 270:Drivers/Imu/mpu6050.c **** 		RecMpuData->velZ = RecMpuData->velZ + 0.0001;
+ 597              		.loc 1 270 10 is_stmt 0 view .LVU168
+ 598 023a B5EEC08A 		vcmpe.f32	s16, #0
+ 599 023e F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 600 0242 91D5     		bpl	.L25
+ 271:Drivers/Imu/mpu6050.c **** 	}
+ 601              		.loc 1 271 3 is_stmt 1 view .LVU169
+ 271:Drivers/Imu/mpu6050.c **** 	}
+ 602              		.loc 1 271 32 is_stmt 0 view .LVU170
+ 603 0244 18EE100A 		vmov	r0, s16
+ 604 0248 FFF7FEFF 		bl	__aeabi_f2d
+ 605              	.LVL55:
+ 271:Drivers/Imu/mpu6050.c **** 	}
+ 606              		.loc 1 271 39 view .LVU171
+ 607 024c 04A3     		adr	r3, .L37
+ 608 024e D3E90023 		ldrd	r2, [r3]
+ 609 0252 FFF7FEFF 		bl	__aeabi_dadd
+ 610              	.LVL56:
+ 611 0256 FFF7FEFF 		bl	__aeabi_d2f
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 17
+
+
+ 612              	.LVL57:
+ 271:Drivers/Imu/mpu6050.c **** 	}
+ 613              		.loc 1 271 20 view .LVU172
+ 614 025a 6065     		str	r0, [r4, #84]	@ float
+ 615 025c 84E7     		b	.L25
+ 616              	.L38:
+ 617 025e 00BF     		.align	3
+ 618              	.L37:
+ 619 0260 2D431CEB 		.word	-350469331
+ 620 0264 E2361A3F 		.word	1058682594
+ 621 0268 9A999999 		.word	-1717986918
+ 622 026c 9999B93F 		.word	1069128089
+ 623 0270 9A99993E 		.word	1050253722
+ 624 0274 00000000 		.word	.LANCHOR3
+ 625 0278 EC51383F 		.word	1060655596
+ 626 027c 00000000 		.word	.LANCHOR4
+ 627 0280 00000000 		.word	.LANCHOR5
+ 628 0284 A4707D3F 		.word	1065185444
+ 629 0288 00D7233C 		.word	1008981760
+ 630 028c C3F51C41 		.word	1092416963
+ 631              		.cfi_endproc
+ 632              	.LFE136:
+ 634              		.section	.text.computeEulerAnglesMadgwickFilter,"ax",%progbits
+ 635              		.align	1
+ 636              		.syntax unified
+ 637              		.thumb
+ 638              		.thumb_func
+ 640              	computeEulerAnglesMadgwickFilter:
+ 641              	.LVL58:
+ 642              	.LFB133:
+ 108:Drivers/Imu/mpu6050.c **** 	static float q0 = 1.0f; //initialize quaternion for madgwick filter
+ 643              		.loc 1 108 1 is_stmt 1 view -0
+ 644              		.cfi_startproc
+ 645              		@ args = 0, pretend = 0, frame = 0
+ 646              		@ frame_needed = 0, uses_anonymous_args = 0
+ 108:Drivers/Imu/mpu6050.c **** 	static float q0 = 1.0f; //initialize quaternion for madgwick filter
+ 647              		.loc 1 108 1 is_stmt 0 view .LVU174
+ 648 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 649              	.LCFI5:
+ 650              		.cfi_def_cfa_offset 32
+ 651              		.cfi_offset 4, -32
+ 652              		.cfi_offset 5, -28
+ 653              		.cfi_offset 6, -24
+ 654              		.cfi_offset 7, -20
+ 655              		.cfi_offset 8, -16
+ 656              		.cfi_offset 9, -12
+ 657              		.cfi_offset 10, -8
+ 658              		.cfi_offset 14, -4
+ 659 0004 2DED0E8B 		vpush.64	{d8, d9, d10, d11, d12, d13, d14}
+ 660              	.LCFI6:
+ 661              		.cfi_def_cfa_offset 88
+ 662              		.cfi_offset 80, -88
+ 663              		.cfi_offset 81, -84
+ 664              		.cfi_offset 82, -80
+ 665              		.cfi_offset 83, -76
+ 666              		.cfi_offset 84, -72
+ 667              		.cfi_offset 85, -68
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 18
+
+
+ 668              		.cfi_offset 86, -64
+ 669              		.cfi_offset 87, -60
+ 670              		.cfi_offset 88, -56
+ 671              		.cfi_offset 89, -52
+ 672              		.cfi_offset 90, -48
+ 673              		.cfi_offset 91, -44
+ 674              		.cfi_offset 92, -40
+ 675              		.cfi_offset 93, -36
+ 676 0008 8246     		mov	r10, r0
+ 677 000a 8946     		mov	r9, r1
+ 678 000c 9046     		mov	r8, r2
+ 679 000e F0EE40CA 		vmov.f32	s25, s0
+ 109:Drivers/Imu/mpu6050.c **** 	static float q1 = 0.0f;
+ 680              		.loc 1 109 2 is_stmt 1 view .LVU175
+ 110:Drivers/Imu/mpu6050.c **** 	static float q2 = 0.0f;
+ 681              		.loc 1 110 2 view .LVU176
+ 111:Drivers/Imu/mpu6050.c **** 	static float q3 = 0.0f;
+ 682              		.loc 1 111 2 view .LVU177
+ 112:Drivers/Imu/mpu6050.c **** 	static float B_madgwick = 0.2;  //Madgwick filter parameter
+ 683              		.loc 1 112 2 view .LVU178
+ 113:Drivers/Imu/mpu6050.c **** 
+ 684              		.loc 1 113 2 view .LVU179
+ 120:Drivers/Imu/mpu6050.c **** 	float s0, s1, s2, s3;
+ 685              		.loc 1 120 2 view .LVU180
+ 121:Drivers/Imu/mpu6050.c **** 	float qDot1, qDot2, qDot3, qDot4;
+ 686              		.loc 1 121 2 view .LVU181
+ 122:Drivers/Imu/mpu6050.c **** 	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+ 687              		.loc 1 122 2 view .LVU182
+ 123:Drivers/Imu/mpu6050.c **** 
+ 688              		.loc 1 123 2 view .LVU183
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 689              		.loc 1 128 2 view .LVU184
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 690              		.loc 1 128 18 is_stmt 0 view .LVU185
+ 691 0012 E94B     		ldr	r3, .L43
+ 692 0014 93ED00DA 		vldr.32	s26, [r3]
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 693              		.loc 1 128 43 view .LVU186
+ 694 0018 E84B     		ldr	r3, .L43+4
+ 695 001a 93ED037A 		vldr.32	s14, [r3, #12]
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 696              		.loc 1 128 22 view .LVU187
+ 697 001e 2DEE479A 		vnmul.f32	s18, s26, s14
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 698              		.loc 1 128 73 view .LVU188
+ 699 0022 93ED04BA 		vldr.32	s22, [r3, #16]
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 700              		.loc 1 128 52 view .LVU189
+ 701 0026 E64A     		ldr	r2, .L43+8
+ 702              	.LVL59:
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 703              		.loc 1 128 52 view .LVU190
+ 704 0028 92ED00CA 		vldr.32	s24, [r2]
+ 705 002c 6BEE0C7A 		vmul.f32	s15, s22, s24
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 706              		.loc 1 128 47 view .LVU191
+ 707 0030 39EE679A 		vsub.f32	s18, s18, s15
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 19
+
+
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 708              		.loc 1 128 103 view .LVU192
+ 709 0034 D3ED057A 		vldr.32	s15, [r3, #20]
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 710              		.loc 1 128 82 view .LVU193
+ 711 0038 E24A     		ldr	r2, .L43+12
+ 712 003a 92ED00AA 		vldr.32	s20, [r2]
+ 713 003e 67EE8A6A 		vmul.f32	s13, s15, s20
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 714              		.loc 1 128 77 view .LVU194
+ 715 0042 39EE669A 		vsub.f32	s18, s18, s13
+ 128:Drivers/Imu/mpu6050.c **** 	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyr
+ 716              		.loc 1 128 8 view .LVU195
+ 717 0046 B6EE008A 		vmov.f32	s16, #5.0e-1
+ 718 004a 29EE089A 		vmul.f32	s18, s18, s16
+ 719              	.LVL60:
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 720              		.loc 1 129 2 is_stmt 1 view .LVU196
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 721              		.loc 1 129 21 is_stmt 0 view .LVU197
+ 722 004e DE4A     		ldr	r2, .L43+16
+ 723 0050 D2ED00DA 		vldr.32	s27, [r2]
+ 724 0054 67EE2D8A 		vmul.f32	s17, s14, s27
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 725              		.loc 1 129 51 view .LVU198
+ 726 0058 6CEE276A 		vmul.f32	s13, s24, s15
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 727              		.loc 1 129 46 view .LVU199
+ 728 005c 78EEA68A 		vadd.f32	s17, s17, s13
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 729              		.loc 1 129 81 view .LVU200
+ 730 0060 6BEE0A6A 		vmul.f32	s13, s22, s20
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 731              		.loc 1 129 76 view .LVU201
+ 732 0064 78EEE68A 		vsub.f32	s17, s17, s13
+ 129:Drivers/Imu/mpu6050.c **** 	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyr
+ 733              		.loc 1 129 8 view .LVU202
+ 734 0068 68EE888A 		vmul.f32	s17, s17, s16
+ 735              	.LVL61:
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 736              		.loc 1 130 2 is_stmt 1 view .LVU203
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 737              		.loc 1 130 21 is_stmt 0 view .LVU204
+ 738 006c 6BEE2D9A 		vmul.f32	s19, s22, s27
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 739              		.loc 1 130 51 view .LVU205
+ 740 0070 6DEE276A 		vmul.f32	s13, s26, s15
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 741              		.loc 1 130 46 view .LVU206
+ 742 0074 79EEE69A 		vsub.f32	s19, s19, s13
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 743              		.loc 1 130 81 view .LVU207
+ 744 0078 67EE0A6A 		vmul.f32	s13, s14, s20
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ 745              		.loc 1 130 76 view .LVU208
+ 746 007c 79EEA69A 		vadd.f32	s19, s19, s13
+ 130:Drivers/Imu/mpu6050.c **** 	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyr
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 20
+
+
+ 747              		.loc 1 130 8 view .LVU209
+ 748 0080 69EE889A 		vmul.f32	s19, s19, s16
+ 749              	.LVL62:
+ 131:Drivers/Imu/mpu6050.c **** 
+ 750              		.loc 1 131 2 is_stmt 1 view .LVU210
+ 131:Drivers/Imu/mpu6050.c **** 
+ 751              		.loc 1 131 21 is_stmt 0 view .LVU211
+ 752 0084 67EEAD7A 		vmul.f32	s15, s15, s27
+ 131:Drivers/Imu/mpu6050.c **** 
+ 753              		.loc 1 131 51 view .LVU212
+ 754 0088 2DEE0BBA 		vmul.f32	s22, s26, s22
+ 131:Drivers/Imu/mpu6050.c **** 
+ 755              		.loc 1 131 46 view .LVU213
+ 756 008c 37EE8BBA 		vadd.f32	s22, s15, s22
+ 131:Drivers/Imu/mpu6050.c **** 
+ 757              		.loc 1 131 81 view .LVU214
+ 758 0090 27EE0C7A 		vmul.f32	s14, s14, s24
+ 131:Drivers/Imu/mpu6050.c **** 
+ 759              		.loc 1 131 76 view .LVU215
+ 760 0094 3BEE47BA 		vsub.f32	s22, s22, s14
+ 131:Drivers/Imu/mpu6050.c **** 
+ 761              		.loc 1 131 8 view .LVU216
+ 762 0098 2BEE08BA 		vmul.f32	s22, s22, s16
+ 763              	.LVL63:
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 764              		.loc 1 134 2 is_stmt 1 view .LVU217
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 765              		.loc 1 134 26 is_stmt 0 view .LVU218
+ 766 009c D3ED00AA 		vldr.32	s21, [r3]
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 767              		.loc 1 134 4 view .LVU219
+ 768 00a0 F5EE40AA 		vcmp.f32	s21, #0
+ 769 00a4 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 770 00a8 0ED1     		bne	.L40
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 771              		.loc 1 134 61 discriminator 1 view .LVU220
+ 772 00aa D3ED017A 		vldr.32	s15, [r3, #4]
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 773              		.loc 1 134 39 discriminator 1 view .LVU221
+ 774 00ae F5EE407A 		vcmp.f32	s15, #0
+ 775 00b2 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 776 00b6 07D1     		bne	.L40
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 777              		.loc 1 134 96 discriminator 2 view .LVU222
+ 778 00b8 D3ED027A 		vldr.32	s15, [r3, #8]
+ 134:Drivers/Imu/mpu6050.c **** 		//Normalise accelerometer measurement
+ 779              		.loc 1 134 5 discriminator 2 view .LVU223
+ 780 00bc F5EE407A 		vcmp.f32	s15, #0
+ 781 00c0 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 782 00c4 00F0BF80 		beq	.L41
+ 783              	.L40:
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 784              		.loc 1 136 3 is_stmt 1 view .LVU224
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 785              		.loc 1 136 45 is_stmt 0 view .LVU225
+ 786 00c8 6AEEAA7A 		vmul.f32	s15, s21, s21
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 21
+
+
+ 787              		.loc 1 136 89 view .LVU226
+ 788 00cc BB4C     		ldr	r4, .L43+4
+ 789 00ce 94ED01EA 		vldr.32	s28, [r4, #4]
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 790              		.loc 1 136 93 view .LVU227
+ 791 00d2 2EEE0E0A 		vmul.f32	s0, s28, s28
+ 792              	.LVL64:
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 793              		.loc 1 136 69 view .LVU228
+ 794 00d6 77EE807A 		vadd.f32	s15, s15, s0
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 795              		.loc 1 136 137 view .LVU229
+ 796 00da 94ED028A 		vldr.32	s16, [r4, #8]
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 797              		.loc 1 136 141 view .LVU230
+ 798 00de 28EE080A 		vmul.f32	s0, s16, s16
+ 136:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][X] *= recipNorm;
+ 799              		.loc 1 136 15 view .LVU231
+ 800 00e2 37EE800A 		vadd.f32	s0, s15, s0
+ 801 00e6 FFF7FEFF 		bl	invSqrt
+ 802              	.LVL65:
+ 137:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Y] *= recipNorm;
+ 803              		.loc 1 137 3 is_stmt 1 view .LVU232
+ 137:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Y] *= recipNorm;
+ 804              		.loc 1 137 25 is_stmt 0 view .LVU233
+ 805 00ea 2AEE806A 		vmul.f32	s12, s21, s0
+ 806 00ee 84ED006A 		vstr.32	s12, [r4]
+ 138:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Z] *= recipNorm;
+ 807              		.loc 1 138 3 is_stmt 1 view .LVU234
+ 138:Drivers/Imu/mpu6050.c **** 		mpuDataScaled[acc][Z] *= recipNorm;
+ 808              		.loc 1 138 25 is_stmt 0 view .LVU235
+ 809 00f2 6EEE005A 		vmul.f32	s11, s28, s0
+ 810 00f6 C4ED015A 		vstr.32	s11, [r4, #4]
+ 139:Drivers/Imu/mpu6050.c **** 
+ 811              		.loc 1 139 3 is_stmt 1 view .LVU236
+ 139:Drivers/Imu/mpu6050.c **** 
+ 812              		.loc 1 139 25 is_stmt 0 view .LVU237
+ 813 00fa 28EE000A 		vmul.f32	s0, s16, s0
+ 814              	.LVL66:
+ 139:Drivers/Imu/mpu6050.c **** 
+ 815              		.loc 1 139 25 view .LVU238
+ 816 00fe 84ED020A 		vstr.32	s0, [r4, #8]
+ 142:Drivers/Imu/mpu6050.c **** 		_2q1 = 2.0f * q1;
+ 817              		.loc 1 142 3 is_stmt 1 view .LVU239
+ 142:Drivers/Imu/mpu6050.c **** 		_2q1 = 2.0f * q1;
+ 818              		.loc 1 142 8 is_stmt 0 view .LVU240
+ 819 0102 7DEEAD7A 		vadd.f32	s15, s27, s27
+ 143:Drivers/Imu/mpu6050.c **** 		_2q2 = 2.0f * q2;
+ 820              		.loc 1 143 3 is_stmt 1 view .LVU241
+ 143:Drivers/Imu/mpu6050.c **** 		_2q2 = 2.0f * q2;
+ 821              		.loc 1 143 8 is_stmt 0 view .LVU242
+ 822 0106 7DEE0D3A 		vadd.f32	s7, s26, s26
+ 144:Drivers/Imu/mpu6050.c **** 		_2q3 = 2.0f * q3;
+ 823              		.loc 1 144 3 is_stmt 1 view .LVU243
+ 144:Drivers/Imu/mpu6050.c **** 		_2q3 = 2.0f * q3;
+ 824              		.loc 1 144 8 is_stmt 0 view .LVU244
+ 825 010a 3CEE0C4A 		vadd.f32	s8, s24, s24
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 22
+
+
+ 145:Drivers/Imu/mpu6050.c **** 		_4q0 = 4.0f * q0;
+ 826              		.loc 1 145 3 is_stmt 1 view .LVU245
+ 145:Drivers/Imu/mpu6050.c **** 		_4q0 = 4.0f * q0;
+ 827              		.loc 1 145 8 is_stmt 0 view .LVU246
+ 828 010e 7AEE0A2A 		vadd.f32	s5, s20, s20
+ 146:Drivers/Imu/mpu6050.c **** 		_4q1 = 4.0f * q1;
+ 829              		.loc 1 146 3 is_stmt 1 view .LVU247
+ 146:Drivers/Imu/mpu6050.c **** 		_4q1 = 4.0f * q1;
+ 830              		.loc 1 146 8 is_stmt 0 view .LVU248
+ 831 0112 F1EE004A 		vmov.f32	s9, #4.0e+0
+ 832 0116 6DEEA40A 		vmul.f32	s1, s27, s9
+ 833              	.LVL67:
+ 147:Drivers/Imu/mpu6050.c **** 		_4q2 = 4.0f * q2;
+ 834              		.loc 1 147 3 is_stmt 1 view .LVU249
+ 147:Drivers/Imu/mpu6050.c **** 		_4q2 = 4.0f * q2;
+ 835              		.loc 1 147 8 is_stmt 0 view .LVU250
+ 836 011a 6DEE241A 		vmul.f32	s3, s26, s9
+ 837              	.LVL68:
+ 148:Drivers/Imu/mpu6050.c **** 		_8q1 = 8.0f * q1;
+ 838              		.loc 1 148 3 is_stmt 1 view .LVU251
+ 148:Drivers/Imu/mpu6050.c **** 		_8q1 = 8.0f * q1;
+ 839              		.loc 1 148 8 is_stmt 0 view .LVU252
+ 840 011e 2CEE243A 		vmul.f32	s6, s24, s9
+ 841              	.LVL69:
+ 149:Drivers/Imu/mpu6050.c **** 		_8q2 = 8.0f * q2;
+ 842              		.loc 1 149 3 is_stmt 1 view .LVU253
+ 149:Drivers/Imu/mpu6050.c **** 		_8q2 = 8.0f * q2;
+ 843              		.loc 1 149 8 is_stmt 0 view .LVU254
+ 844 0122 B2EE008A 		vmov.f32	s16, #8.0e+0
+ 845 0126 2DEE081A 		vmul.f32	s2, s26, s16
+ 846              	.LVL70:
+ 150:Drivers/Imu/mpu6050.c **** 		q0q0 = q0 * q0;
+ 847              		.loc 1 150 3 is_stmt 1 view .LVU255
+ 150:Drivers/Imu/mpu6050.c **** 		q0q0 = q0 * q0;
+ 848              		.loc 1 150 8 is_stmt 0 view .LVU256
+ 849 012a 2CEE088A 		vmul.f32	s16, s24, s16
+ 850              	.LVL71:
+ 151:Drivers/Imu/mpu6050.c **** 		q1q1 = q1 * q1;
+ 851              		.loc 1 151 3 is_stmt 1 view .LVU257
+ 151:Drivers/Imu/mpu6050.c **** 		q1q1 = q1 * q1;
+ 852              		.loc 1 151 8 is_stmt 0 view .LVU258
+ 853 012e 2DEEAD7A 		vmul.f32	s14, s27, s27
+ 854              	.LVL72:
+ 152:Drivers/Imu/mpu6050.c **** 		q2q2 = q2 * q2;
+ 855              		.loc 1 152 3 is_stmt 1 view .LVU259
+ 152:Drivers/Imu/mpu6050.c **** 		q2q2 = q2 * q2;
+ 856              		.loc 1 152 8 is_stmt 0 view .LVU260
+ 857 0132 6DEE0D6A 		vmul.f32	s13, s26, s26
+ 858              	.LVL73:
+ 153:Drivers/Imu/mpu6050.c **** 		q3q3 = q3 * q3;
+ 859              		.loc 1 153 3 is_stmt 1 view .LVU261
+ 153:Drivers/Imu/mpu6050.c **** 		q3q3 = q3 * q3;
+ 860              		.loc 1 153 8 is_stmt 0 view .LVU262
+ 861 0136 2CEE0C5A 		vmul.f32	s10, s24, s24
+ 862              	.LVL74:
+ 154:Drivers/Imu/mpu6050.c **** 
+ 863              		.loc 1 154 3 is_stmt 1 view .LVU263
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 23
+
+
+ 154:Drivers/Imu/mpu6050.c **** 
+ 864              		.loc 1 154 8 is_stmt 0 view .LVU264
+ 865 013a 2AEE0A2A 		vmul.f32	s4, s20, s20
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 866              		.loc 1 157 3 is_stmt 1 view .LVU265
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 867              		.loc 1 157 13 is_stmt 0 view .LVU266
+ 868 013e 60EE85BA 		vmul.f32	s23, s1, s10
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 869              		.loc 1 157 27 view .LVU267
+ 870 0142 66EE04AA 		vmul.f32	s21, s12, s8
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 871              		.loc 1 157 20 view .LVU268
+ 872 0146 7BEEAABA 		vadd.f32	s23, s23, s21
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 873              		.loc 1 157 58 view .LVU269
+ 874 014a 60EEA60A 		vmul.f32	s1, s1, s13
+ 875              	.LVL75:
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 876              		.loc 1 157 51 view .LVU270
+ 877 014e 7BEEA0BA 		vadd.f32	s23, s23, s1
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 878              		.loc 1 157 72 view .LVU271
+ 879 0152 65EEA30A 		vmul.f32	s1, s11, s7
+ 157:Drivers/Imu/mpu6050.c **** 		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y]
+ 880              		.loc 1 157 6 view .LVU272
+ 881 0156 7BEEE0BA 		vsub.f32	s23, s23, s1
+ 882              	.LVL76:
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 883              		.loc 1 158 3 is_stmt 1 view .LVU273
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 884              		.loc 1 158 13 is_stmt 0 view .LVU274
+ 885 015a 61EE82AA 		vmul.f32	s21, s3, s4
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 886              		.loc 1 158 27 view .LVU275
+ 887 015e 66EE220A 		vmul.f32	s1, s12, s5
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 888              		.loc 1 158 20 view .LVU276
+ 889 0162 7AEEE0AA 		vsub.f32	s21, s21, s1
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 890              		.loc 1 158 58 view .LVU277
+ 891 0166 27EE247A 		vmul.f32	s14, s14, s9
+ 892              	.LVL77:
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 893              		.loc 1 158 65 view .LVU278
+ 894 016a 6DEE070A 		vmul.f32	s1, s26, s14
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 895              		.loc 1 158 51 view .LVU279
+ 896 016e 7AEEA0AA 		vadd.f32	s21, s21, s1
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 897              		.loc 1 158 77 view .LVU280
+ 898 0172 65EEA70A 		vmul.f32	s1, s11, s15
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 899              		.loc 1 158 70 view .LVU281
+ 900 0176 7AEEE0AA 		vsub.f32	s21, s21, s1
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 901              		.loc 1 158 101 view .LVU282
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 24
+
+
+ 902 017a 7AEEE1AA 		vsub.f32	s21, s21, s3
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 903              		.loc 1 158 115 view .LVU283
+ 904 017e 61EE260A 		vmul.f32	s1, s2, s13
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 905              		.loc 1 158 108 view .LVU284
+ 906 0182 7AEEA0AA 		vadd.f32	s21, s21, s1
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 907              		.loc 1 158 129 view .LVU285
+ 908 0186 21EE051A 		vmul.f32	s2, s2, s10
+ 909              	.LVL78:
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 910              		.loc 1 158 122 view .LVU286
+ 911 018a 7AEE81AA 		vadd.f32	s21, s21, s2
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 912              		.loc 1 158 143 view .LVU287
+ 913 018e 60EE211A 		vmul.f32	s3, s0, s3
+ 914              	.LVL79:
+ 158:Drivers/Imu/mpu6050.c **** 		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y]
+ 915              		.loc 1 158 6 view .LVU288
+ 916 0192 7AEEA1AA 		vadd.f32	s21, s21, s3
+ 917              	.LVL80:
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 918              		.loc 1 159 3 is_stmt 1 view .LVU289
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 919              		.loc 1 159 20 is_stmt 0 view .LVU290
+ 920 0196 2CEE077A 		vmul.f32	s14, s24, s14
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 921              		.loc 1 159 32 view .LVU291
+ 922 019a 66EE277A 		vmul.f32	s15, s12, s15
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 923              		.loc 1 159 25 view .LVU292
+ 924 019e 77EE277A 		vadd.f32	s15, s14, s15
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 925              		.loc 1 159 63 view .LVU293
+ 926 01a2 23EE022A 		vmul.f32	s4, s6, s4
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 927              		.loc 1 159 56 view .LVU294
+ 928 01a6 77EE827A 		vadd.f32	s15, s15, s4
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 929              		.loc 1 159 77 view .LVU295
+ 930 01aa 65EEA22A 		vmul.f32	s5, s11, s5
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 931              		.loc 1 159 70 view .LVU296
+ 932 01ae 77EEE27A 		vsub.f32	s15, s15, s5
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 933              		.loc 1 159 101 view .LVU297
+ 934 01b2 77EEC37A 		vsub.f32	s15, s15, s6
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 935              		.loc 1 159 115 view .LVU298
+ 936 01b6 28EE267A 		vmul.f32	s14, s16, s13
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 937              		.loc 1 159 108 view .LVU299
+ 938 01ba 77EE877A 		vadd.f32	s15, s15, s14
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 939              		.loc 1 159 129 view .LVU300
+ 940 01be 28EE058A 		vmul.f32	s16, s16, s10
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 25
+
+
+ 941              	.LVL81:
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 942              		.loc 1 159 122 view .LVU301
+ 943 01c2 77EE887A 		vadd.f32	s15, s15, s16
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 944              		.loc 1 159 143 view .LVU302
+ 945 01c6 20EE038A 		vmul.f32	s16, s0, s6
+ 159:Drivers/Imu/mpu6050.c **** 		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[ac
+ 946              		.loc 1 159 6 view .LVU303
+ 947 01ca 37EE888A 		vadd.f32	s16, s15, s16
+ 948              	.LVL82:
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 949              		.loc 1 160 3 is_stmt 1 view .LVU304
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 950              		.loc 1 160 13 is_stmt 0 view .LVU305
+ 951 01ce 26EEA4EA 		vmul.f32	s28, s13, s9
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 952              		.loc 1 160 20 view .LVU306
+ 953 01d2 2AEE0EEA 		vmul.f32	s28, s20, s28
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 954              		.loc 1 160 32 view .LVU307
+ 955 01d6 66EE233A 		vmul.f32	s7, s12, s7
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 956              		.loc 1 160 25 view .LVU308
+ 957 01da 3EEE63EA 		vsub.f32	s28, s28, s7
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 958              		.loc 1 160 63 view .LVU309
+ 959 01de 25EE245A 		vmul.f32	s10, s10, s9
+ 960              	.LVL83:
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 961              		.loc 1 160 70 view .LVU310
+ 962 01e2 2AEE055A 		vmul.f32	s10, s20, s10
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 963              		.loc 1 160 56 view .LVU311
+ 964 01e6 3EEE05EA 		vadd.f32	s28, s28, s10
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 965              		.loc 1 160 82 view .LVU312
+ 966 01ea 65EE845A 		vmul.f32	s11, s11, s8
+ 160:Drivers/Imu/mpu6050.c **** 		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+ 967              		.loc 1 160 6 view .LVU313
+ 968 01ee 3EEE65EA 		vsub.f32	s28, s28, s11
+ 969              	.LVL84:
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 970              		.loc 1 161 3 is_stmt 1 view .LVU314
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 971              		.loc 1 161 26 is_stmt 0 view .LVU315
+ 972 01f2 6BEEAB7A 		vmul.f32	s15, s23, s23
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 973              		.loc 1 161 36 view .LVU316
+ 974 01f6 2AEEAA0A 		vmul.f32	s0, s21, s21
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 975              		.loc 1 161 31 view .LVU317
+ 976 01fa 77EE807A 		vadd.f32	s15, s15, s0
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 977              		.loc 1 161 46 view .LVU318
+ 978 01fe 28EE080A 		vmul.f32	s0, s16, s16
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 26
+
+
+ 979              		.loc 1 161 41 view .LVU319
+ 980 0202 77EE807A 		vadd.f32	s15, s15, s0
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 981              		.loc 1 161 56 view .LVU320
+ 982 0206 2EEE0E0A 		vmul.f32	s0, s28, s28
+ 161:Drivers/Imu/mpu6050.c **** 		s0 *= recipNorm;
+ 983              		.loc 1 161 15 view .LVU321
+ 984 020a 37EE800A 		vadd.f32	s0, s15, s0
+ 985 020e FFF7FEFF 		bl	invSqrt
+ 986              	.LVL85:
+ 162:Drivers/Imu/mpu6050.c **** 		s1 *= recipNorm;
+ 987              		.loc 1 162 3 is_stmt 1 view .LVU322
+ 162:Drivers/Imu/mpu6050.c **** 		s1 *= recipNorm;
+ 988              		.loc 1 162 6 is_stmt 0 view .LVU323
+ 989 0212 6BEE80BA 		vmul.f32	s23, s23, s0
+ 990              	.LVL86:
+ 163:Drivers/Imu/mpu6050.c **** 		s2 *= recipNorm;
+ 991              		.loc 1 163 3 is_stmt 1 view .LVU324
+ 163:Drivers/Imu/mpu6050.c **** 		s2 *= recipNorm;
+ 992              		.loc 1 163 6 is_stmt 0 view .LVU325
+ 993 0216 6AEE80AA 		vmul.f32	s21, s21, s0
+ 994              	.LVL87:
+ 164:Drivers/Imu/mpu6050.c **** 		s3 *= recipNorm;
+ 995              		.loc 1 164 3 is_stmt 1 view .LVU326
+ 164:Drivers/Imu/mpu6050.c **** 		s3 *= recipNorm;
+ 996              		.loc 1 164 6 is_stmt 0 view .LVU327
+ 997 021a 28EE008A 		vmul.f32	s16, s16, s0
+ 998              	.LVL88:
+ 165:Drivers/Imu/mpu6050.c **** 
+ 999              		.loc 1 165 3 is_stmt 1 view .LVU328
+ 165:Drivers/Imu/mpu6050.c **** 
+ 1000              		.loc 1 165 6 is_stmt 0 view .LVU329
+ 1001 021e 2EEE00EA 		vmul.f32	s28, s28, s0
+ 1002              	.LVL89:
+ 168:Drivers/Imu/mpu6050.c **** 		qDot2 -= B_madgwick * s1;
+ 1003              		.loc 1 168 3 is_stmt 1 view .LVU330
+ 168:Drivers/Imu/mpu6050.c **** 		qDot2 -= B_madgwick * s1;
+ 1004              		.loc 1 168 23 is_stmt 0 view .LVU331
+ 1005 0222 9FED6A0A 		vldr.32	s0, .L43+20
+ 1006              	.LVL90:
+ 168:Drivers/Imu/mpu6050.c **** 		qDot2 -= B_madgwick * s1;
+ 1007              		.loc 1 168 23 view .LVU332
+ 1008 0226 6BEE80BA 		vmul.f32	s23, s23, s0
+ 1009              	.LVL91:
+ 168:Drivers/Imu/mpu6050.c **** 		qDot2 -= B_madgwick * s1;
+ 1010              		.loc 1 168 9 view .LVU333
+ 1011 022a 39EE6B9A 		vsub.f32	s18, s18, s23
+ 1012              	.LVL92:
+ 169:Drivers/Imu/mpu6050.c **** 		qDot3 -= B_madgwick * s2;
+ 1013              		.loc 1 169 3 is_stmt 1 view .LVU334
+ 169:Drivers/Imu/mpu6050.c **** 		qDot3 -= B_madgwick * s2;
+ 1014              		.loc 1 169 23 is_stmt 0 view .LVU335
+ 1015 022e 6AEE80AA 		vmul.f32	s21, s21, s0
+ 1016              	.LVL93:
+ 169:Drivers/Imu/mpu6050.c **** 		qDot3 -= B_madgwick * s2;
+ 1017              		.loc 1 169 9 view .LVU336
+ 1018 0232 78EEEA8A 		vsub.f32	s17, s17, s21
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 27
+
+
+ 1019              	.LVL94:
+ 170:Drivers/Imu/mpu6050.c **** 		qDot4 -= B_madgwick * s3;
+ 1020              		.loc 1 170 3 is_stmt 1 view .LVU337
+ 170:Drivers/Imu/mpu6050.c **** 		qDot4 -= B_madgwick * s3;
+ 1021              		.loc 1 170 23 is_stmt 0 view .LVU338
+ 1022 0236 28EE008A 		vmul.f32	s16, s16, s0
+ 1023              	.LVL95:
+ 170:Drivers/Imu/mpu6050.c **** 		qDot4 -= B_madgwick * s3;
+ 1024              		.loc 1 170 9 view .LVU339
+ 1025 023a 79EEC89A 		vsub.f32	s19, s19, s16
+ 1026              	.LVL96:
+ 171:Drivers/Imu/mpu6050.c **** 	}
+ 1027              		.loc 1 171 3 is_stmt 1 view .LVU340
+ 171:Drivers/Imu/mpu6050.c **** 	}
+ 1028              		.loc 1 171 23 is_stmt 0 view .LVU341
+ 1029 023e 2EEE00EA 		vmul.f32	s28, s28, s0
+ 1030              	.LVL97:
+ 171:Drivers/Imu/mpu6050.c **** 	}
+ 1031              		.loc 1 171 9 view .LVU342
+ 1032 0242 3BEE4EBA 		vsub.f32	s22, s22, s28
+ 1033              	.LVL98:
+ 1034              	.L41:
+ 175:Drivers/Imu/mpu6050.c **** 	q1 += qDot2 * invSampleFreq;
+ 1035              		.loc 1 175 2 is_stmt 1 view .LVU343
+ 175:Drivers/Imu/mpu6050.c **** 	q1 += qDot2 * invSampleFreq;
+ 1036              		.loc 1 175 14 is_stmt 0 view .LVU344
+ 1037 0246 29EE2C9A 		vmul.f32	s18, s18, s25
+ 1038              	.LVL99:
+ 175:Drivers/Imu/mpu6050.c **** 	q1 += qDot2 * invSampleFreq;
+ 1039              		.loc 1 175 5 view .LVU345
+ 1040 024a 7DEE89DA 		vadd.f32	s27, s27, s18
+ 1041 024e 5E4C     		ldr	r4, .L43+16
+ 1042 0250 C4ED00DA 		vstr.32	s27, [r4]
+ 176:Drivers/Imu/mpu6050.c **** 	q2 += qDot3 * invSampleFreq;
+ 1043              		.loc 1 176 2 is_stmt 1 view .LVU346
+ 176:Drivers/Imu/mpu6050.c **** 	q2 += qDot3 * invSampleFreq;
+ 1044              		.loc 1 176 14 is_stmt 0 view .LVU347
+ 1045 0254 68EEAC8A 		vmul.f32	s17, s17, s25
+ 1046              	.LVL100:
+ 176:Drivers/Imu/mpu6050.c **** 	q2 += qDot3 * invSampleFreq;
+ 1047              		.loc 1 176 5 view .LVU348
+ 1048 0258 7DEE288A 		vadd.f32	s17, s26, s17
+ 1049 025c 564E     		ldr	r6, .L43
+ 1050 025e C6ED008A 		vstr.32	s17, [r6]
+ 177:Drivers/Imu/mpu6050.c **** 	q3 += qDot4 * invSampleFreq;
+ 1051              		.loc 1 177 2 is_stmt 1 view .LVU349
+ 177:Drivers/Imu/mpu6050.c **** 	q3 += qDot4 * invSampleFreq;
+ 1052              		.loc 1 177 14 is_stmt 0 view .LVU350
+ 1053 0262 69EEAC9A 		vmul.f32	s19, s19, s25
+ 1054              	.LVL101:
+ 177:Drivers/Imu/mpu6050.c **** 	q3 += qDot4 * invSampleFreq;
+ 1055              		.loc 1 177 5 view .LVU351
+ 1056 0266 7CEE299A 		vadd.f32	s19, s24, s19
+ 1057 026a 554F     		ldr	r7, .L43+8
+ 1058 026c C7ED009A 		vstr.32	s19, [r7]
+ 178:Drivers/Imu/mpu6050.c **** 
+ 1059              		.loc 1 178 2 is_stmt 1 view .LVU352
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 28
+
+
+ 178:Drivers/Imu/mpu6050.c **** 
+ 1060              		.loc 1 178 14 is_stmt 0 view .LVU353
+ 1061 0270 2BEE2C8A 		vmul.f32	s16, s22, s25
+ 178:Drivers/Imu/mpu6050.c **** 
+ 1062              		.loc 1 178 5 view .LVU354
+ 1063 0274 3AEE088A 		vadd.f32	s16, s20, s16
+ 1064 0278 524D     		ldr	r5, .L43+12
+ 1065 027a 85ED008A 		vstr.32	s16, [r5]
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1066              		.loc 1 181 2 is_stmt 1 view .LVU355
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1067              		.loc 1 181 25 is_stmt 0 view .LVU356
+ 1068 027e 6DEEAD7A 		vmul.f32	s15, s27, s27
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1069              		.loc 1 181 35 view .LVU357
+ 1070 0282 28EEA80A 		vmul.f32	s0, s17, s17
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1071              		.loc 1 181 30 view .LVU358
+ 1072 0286 77EE807A 		vadd.f32	s15, s15, s0
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1073              		.loc 1 181 45 view .LVU359
+ 1074 028a 29EEA90A 		vmul.f32	s0, s19, s19
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1075              		.loc 1 181 40 view .LVU360
+ 1076 028e 77EE807A 		vadd.f32	s15, s15, s0
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1077              		.loc 1 181 55 view .LVU361
+ 1078 0292 28EE080A 		vmul.f32	s0, s16, s16
+ 181:Drivers/Imu/mpu6050.c **** 	q0 *= recipNorm;
+ 1079              		.loc 1 181 14 view .LVU362
+ 1080 0296 37EE800A 		vadd.f32	s0, s15, s0
+ 1081 029a FFF7FEFF 		bl	invSqrt
+ 1082              	.LVL102:
+ 182:Drivers/Imu/mpu6050.c **** 	q1 *= recipNorm;
+ 1083              		.loc 1 182 2 is_stmt 1 view .LVU363
+ 182:Drivers/Imu/mpu6050.c **** 	q1 *= recipNorm;
+ 1084              		.loc 1 182 5 is_stmt 0 view .LVU364
+ 1085 029e 6DEE80DA 		vmul.f32	s27, s27, s0
+ 1086 02a2 C4ED00DA 		vstr.32	s27, [r4]
+ 183:Drivers/Imu/mpu6050.c **** 	q2 *= recipNorm;
+ 1087              		.loc 1 183 2 is_stmt 1 view .LVU365
+ 183:Drivers/Imu/mpu6050.c **** 	q2 *= recipNorm;
+ 1088              		.loc 1 183 5 is_stmt 0 view .LVU366
+ 1089 02a6 68EE808A 		vmul.f32	s17, s17, s0
+ 1090 02aa C6ED008A 		vstr.32	s17, [r6]
+ 184:Drivers/Imu/mpu6050.c **** 	q3 *= recipNorm;
+ 1091              		.loc 1 184 2 is_stmt 1 view .LVU367
+ 184:Drivers/Imu/mpu6050.c **** 	q3 *= recipNorm;
+ 1092              		.loc 1 184 5 is_stmt 0 view .LVU368
+ 1093 02ae 69EE809A 		vmul.f32	s19, s19, s0
+ 1094 02b2 C7ED009A 		vstr.32	s19, [r7]
+ 185:Drivers/Imu/mpu6050.c **** 
+ 1095              		.loc 1 185 2 is_stmt 1 view .LVU369
+ 185:Drivers/Imu/mpu6050.c **** 
+ 1096              		.loc 1 185 5 is_stmt 0 view .LVU370
+ 1097 02b6 28EE008A 		vmul.f32	s16, s16, s0
+ 1098 02ba 85ED008A 		vstr.32	s16, [r5]
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 29
+
+
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1099              		.loc 1 188 2 is_stmt 1 view .LVU371
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1100              		.loc 1 188 18 is_stmt 0 view .LVU372
+ 1101 02be 6DEEA8DA 		vmul.f32	s27, s27, s17
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1102              		.loc 1 188 26 view .LVU373
+ 1103 02c2 29EE888A 		vmul.f32	s16, s19, s16
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1104              		.loc 1 188 22 view .LVU374
+ 1105 02c6 3DEE888A 		vadd.f32	s16, s27, s16
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1106              		.loc 1 188 40 view .LVU375
+ 1107 02ca 68EEA88A 		vmul.f32	s17, s17, s17
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1108              		.loc 1 188 36 view .LVU376
+ 1109 02ce B6EE009A 		vmov.f32	s18, #5.0e-1
+ 1110 02d2 79EE688A 		vsub.f32	s17, s18, s17
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1111              		.loc 1 188 48 view .LVU377
+ 1112 02d6 69EEA99A 		vmul.f32	s19, s19, s19
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1113              		.loc 1 188 10 view .LVU378
+ 1114 02da 78EEE97A 		vsub.f32	s15, s17, s19
+ 1115 02de 17EE900A 		vmov	r0, s15
+ 1116 02e2 FFF7FEFF 		bl	__aeabi_f2d
+ 1117              	.LVL103:
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1118              		.loc 1 188 10 view .LVU379
+ 1119 02e6 41EC1A0B 		vmov	d10, r0, r1
+ 1120 02ea 18EE100A 		vmov	r0, s16
+ 1121 02ee FFF7FEFF 		bl	__aeabi_f2d
+ 1122              	.LVL104:
+ 1123 02f2 B0EE4A1A 		vmov.f32	s2, s20
+ 1124 02f6 F0EE6A1A 		vmov.f32	s3, s21
+ 1125 02fa 41EC100B 		vmov	d0, r0, r1
+ 1126 02fe FFF7FEFF 		bl	atan2
+ 1127              	.LVL105:
+ 1128 0302 51EC100B 		vmov	r0, r1, d0
+ 1129 0306 FFF7FEFF 		bl	__aeabi_d2f
+ 1130              	.LVL106:
+ 188:Drivers/Imu/mpu6050.c **** 	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+ 1131              		.loc 1 188 8 view .LVU380
+ 1132 030a CAF80000 		str	r0, [r10]	@ float
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 1133              		.loc 1 189 2 is_stmt 1 view .LVU381
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 1134              		.loc 1 189 28 is_stmt 0 view .LVU382
+ 1135 030e D6ED007A 		vldr.32	s15, [r6]
+ 1136 0312 95ED007A 		vldr.32	s14, [r5]
+ 1137 0316 67EE877A 		vmul.f32	s15, s15, s14
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 1138              		.loc 1 189 36 view .LVU383
+ 1139 031a 94ED007A 		vldr.32	s14, [r4]
+ 1140 031e D7ED006A 		vldr.32	s13, [r7]
+ 1141 0322 27EE267A 		vmul.f32	s14, s14, s13
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 30
+
+
+ 1142              		.loc 1 189 32 view .LVU384
+ 1143 0326 77EEC77A 		vsub.f32	s15, s15, s14
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 1144              		.loc 1 189 11 view .LVU385
+ 1145 032a 77EEA77A 		vadd.f32	s15, s15, s15
+ 1146 032e 17EE900A 		vmov	r0, s15
+ 1147 0332 FFF7FEFF 		bl	__aeabi_f2d
+ 1148              	.LVL107:
+ 1149 0336 41EC100B 		vmov	d0, r0, r1
+ 1150 033a FFF7FEFF 		bl	asin
+ 1151              	.LVL108:
+ 1152 033e 51EC100B 		vmov	r0, r1, d0
+ 1153 0342 FFF7FEFF 		bl	__aeabi_d2f
+ 1154              	.LVL109:
+ 189:Drivers/Imu/mpu6050.c **** 	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+ 1155              		.loc 1 189 9 view .LVU386
+ 1156 0346 C9F80000 		str	r0, [r9]	@ float
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1157              		.loc 1 190 2 is_stmt 1 view .LVU387
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1158              		.loc 1 190 18 is_stmt 0 view .LVU388
+ 1159 034a 97ED007A 		vldr.32	s14, [r7]
+ 1160 034e 96ED008A 		vldr.32	s16, [r6]
+ 1161 0352 27EE088A 		vmul.f32	s16, s14, s16
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1162              		.loc 1 190 26 view .LVU389
+ 1163 0356 D5ED007A 		vldr.32	s15, [r5]
+ 1164 035a D4ED006A 		vldr.32	s13, [r4]
+ 1165 035e 67EEA66A 		vmul.f32	s13, s15, s13
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1166              		.loc 1 190 22 view .LVU390
+ 1167 0362 38EE268A 		vadd.f32	s16, s16, s13
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1168              		.loc 1 190 40 view .LVU391
+ 1169 0366 27EE077A 		vmul.f32	s14, s14, s14
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1170              		.loc 1 190 36 view .LVU392
+ 1171 036a 39EE477A 		vsub.f32	s14, s18, s14
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1172              		.loc 1 190 48 view .LVU393
+ 1173 036e 67EEA77A 		vmul.f32	s15, s15, s15
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1174              		.loc 1 190 10 view .LVU394
+ 1175 0372 77EE677A 		vsub.f32	s15, s14, s15
+ 1176 0376 17EE900A 		vmov	r0, s15
+ 1177 037a FFF7FEFF 		bl	__aeabi_f2d
+ 1178              	.LVL110:
+ 1179 037e 41EC190B 		vmov	d9, r0, r1
+ 1180 0382 18EE100A 		vmov	r0, s16
+ 1181 0386 FFF7FEFF 		bl	__aeabi_f2d
+ 1182              	.LVL111:
+ 1183 038a B0EE491A 		vmov.f32	s2, s18
+ 1184 038e F0EE691A 		vmov.f32	s3, s19
+ 1185 0392 41EC100B 		vmov	d0, r0, r1
+ 1186 0396 FFF7FEFF 		bl	atan2
+ 1187              	.LVL112:
+ 1188 039a 51EC100B 		vmov	r0, r1, d0
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 31
+
+
+ 1189 039e FFF7FEFF 		bl	__aeabi_d2f
+ 1190              	.LVL113:
+ 190:Drivers/Imu/mpu6050.c **** }
+ 1191              		.loc 1 190 7 view .LVU395
+ 1192 03a2 07EE900A 		vmov	s15, r0
+ 1193 03a6 F1EE677A 		vneg.f32	s15, s15
+ 1194 03aa C8ED007A 		vstr.32	s15, [r8]
+ 191:Drivers/Imu/mpu6050.c **** 
+ 1195              		.loc 1 191 1 view .LVU396
+ 1196 03ae BDEC0E8B 		vldm	sp!, {d8-d14}
+ 1197              	.LCFI7:
+ 1198              		.cfi_restore 92
+ 1199              		.cfi_restore 93
+ 1200              		.cfi_restore 90
+ 1201              		.cfi_restore 91
+ 1202              		.cfi_restore 88
+ 1203              		.cfi_restore 89
+ 1204              		.cfi_restore 86
+ 1205              		.cfi_restore 87
+ 1206              		.cfi_restore 84
+ 1207              		.cfi_restore 85
+ 1208              		.cfi_restore 82
+ 1209              		.cfi_restore 83
+ 1210              		.cfi_restore 80
+ 1211              		.cfi_restore 81
+ 1212              		.cfi_def_cfa_offset 32
+ 1213              	.LVL114:
+ 191:Drivers/Imu/mpu6050.c **** 
+ 1214              		.loc 1 191 1 view .LVU397
+ 1215 03b2 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 1216              	.LVL115:
+ 1217              	.L44:
+ 191:Drivers/Imu/mpu6050.c **** 
+ 1218              		.loc 1 191 1 view .LVU398
+ 1219 03b6 00BF     		.align	2
+ 1220              	.L43:
+ 1221 03b8 00000000 		.word	.LANCHOR6
+ 1222 03bc 00000000 		.word	.LANCHOR2
+ 1223 03c0 00000000 		.word	.LANCHOR7
+ 1224 03c4 00000000 		.word	.LANCHOR8
+ 1225 03c8 00000000 		.word	.LANCHOR9
+ 1226 03cc CDCC4C3E 		.word	1045220557
+ 1227              		.cfi_endproc
+ 1228              	.LFE133:
+ 1230              		.section	.text.minus3dGravityVector,"ax",%progbits
+ 1231              		.align	1
+ 1232              		.syntax unified
+ 1233              		.thumb
+ 1234              		.thumb_func
+ 1236              	minus3dGravityVector:
+ 1237              	.LVL116:
+ 1238              	.LFB134:
+ 194:Drivers/Imu/mpu6050.c **** double alpha=  RecMpuData->yaw;    ;// some aribitar values for testing //yaw
+ 1239              		.loc 1 194 1 is_stmt 1 view -0
+ 1240              		.cfi_startproc
+ 1241              		@ args = 0, pretend = 0, frame = 232
+ 1242              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 32
+
+
+ 194:Drivers/Imu/mpu6050.c **** double alpha=  RecMpuData->yaw;    ;// some aribitar values for testing //yaw
+ 1243              		.loc 1 194 1 is_stmt 0 view .LVU400
+ 1244 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 1245              	.LCFI8:
+ 1246              		.cfi_def_cfa_offset 32
+ 1247              		.cfi_offset 4, -32
+ 1248              		.cfi_offset 5, -28
+ 1249              		.cfi_offset 6, -24
+ 1250              		.cfi_offset 7, -20
+ 1251              		.cfi_offset 8, -16
+ 1252              		.cfi_offset 9, -12
+ 1253              		.cfi_offset 10, -8
+ 1254              		.cfi_offset 14, -4
+ 1255 0004 2DED108B 		vpush.64	{d8, d9, d10, d11, d12, d13, d14, d15}
+ 1256              	.LCFI9:
+ 1257              		.cfi_def_cfa_offset 96
+ 1258              		.cfi_offset 80, -96
+ 1259              		.cfi_offset 81, -92
+ 1260              		.cfi_offset 82, -88
+ 1261              		.cfi_offset 83, -84
+ 1262              		.cfi_offset 84, -80
+ 1263              		.cfi_offset 85, -76
+ 1264              		.cfi_offset 86, -72
+ 1265              		.cfi_offset 87, -68
+ 1266              		.cfi_offset 88, -64
+ 1267              		.cfi_offset 89, -60
+ 1268              		.cfi_offset 90, -56
+ 1269              		.cfi_offset 91, -52
+ 1270              		.cfi_offset 92, -48
+ 1271              		.cfi_offset 93, -44
+ 1272              		.cfi_offset 94, -40
+ 1273              		.cfi_offset 95, -36
+ 1274 0008 BAB0     		sub	sp, sp, #232
+ 1275              	.LCFI10:
+ 1276              		.cfi_def_cfa_offset 328
+ 1277 000a 8246     		mov	r10, r0
+ 195:Drivers/Imu/mpu6050.c **** double beta=   RecMpuData->pitch    ;// some aribitar values for testing //pitch
+ 1278              		.loc 1 195 1 is_stmt 1 view .LVU401
+ 195:Drivers/Imu/mpu6050.c **** double beta=   RecMpuData->pitch    ;// some aribitar values for testing //pitch
+ 1279              		.loc 1 195 8 is_stmt 0 view .LVU402
+ 1280 000c 806C     		ldr	r0, [r0, #72]	@ float
+ 1281              	.LVL117:
+ 195:Drivers/Imu/mpu6050.c **** double beta=   RecMpuData->pitch    ;// some aribitar values for testing //pitch
+ 1282              		.loc 1 195 8 view .LVU403
+ 1283 000e FFF7FEFF 		bl	__aeabi_f2d
+ 1284              	.LVL118:
+ 1285 0012 41EC190B 		vmov	d9, r0, r1
+ 1286              	.LVL119:
+ 195:Drivers/Imu/mpu6050.c **** double beta=   RecMpuData->pitch    ;// some aribitar values for testing //pitch
+ 1287              		.loc 1 195 36 is_stmt 1 view .LVU404
+ 196:Drivers/Imu/mpu6050.c **** double theta = RecMpuData->roll ;// some aribitar values for testing //roll
+ 1288              		.loc 1 196 1 view .LVU405
+ 196:Drivers/Imu/mpu6050.c **** double theta = RecMpuData->roll ;// some aribitar values for testing //roll
+ 1289              		.loc 1 196 8 is_stmt 0 view .LVU406
+ 1290 0016 DAF84400 		ldr	r0, [r10, #68]	@ float
+ 1291              	.LVL120:
+ 196:Drivers/Imu/mpu6050.c **** double theta = RecMpuData->roll ;// some aribitar values for testing //roll
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 33
+
+
+ 1292              		.loc 1 196 8 view .LVU407
+ 1293 001a FFF7FEFF 		bl	__aeabi_f2d
+ 1294              	.LVL121:
+ 1295 001e 41EC1A0B 		vmov	d10, r0, r1
+ 1296              	.LVL122:
+ 197:Drivers/Imu/mpu6050.c **** 
+ 1297              		.loc 1 197 1 is_stmt 1 view .LVU408
+ 197:Drivers/Imu/mpu6050.c **** 
+ 1298              		.loc 1 197 8 is_stmt 0 view .LVU409
+ 1299 0022 DAF84000 		ldr	r0, [r10, #64]	@ float
+ 1300              	.LVL123:
+ 197:Drivers/Imu/mpu6050.c **** 
+ 1301              		.loc 1 197 8 view .LVU410
+ 1302 0026 FFF7FEFF 		bl	__aeabi_f2d
+ 1303              	.LVL124:
+ 1304 002a 41EC180B 		vmov	d8, r0, r1
+ 1305              	.LVL125:
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1306              		.loc 1 199 1 is_stmt 1 view .LVU411
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1307              		.loc 1 199 31 is_stmt 0 view .LVU412
+ 1308 002e DAF80C00 		ldr	r0, [r10, #12]	@ float
+ 1309              	.LVL126:
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1310              		.loc 1 199 31 view .LVU413
+ 1311 0032 FFF7FEFF 		bl	__aeabi_f2d
+ 1312              	.LVL127:
+ 1313 0036 41EC1F0B 		vmov	d15, r0, r1
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1314              		.loc 1 199 8 view .LVU414
+ 1315 003a CDE93401 		strd	r0, [sp, #208]
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1316              		.loc 1 199 52 view .LVU415
+ 1317 003e DAF81000 		ldr	r0, [r10, #16]	@ float
+ 1318 0042 FFF7FEFF 		bl	__aeabi_f2d
+ 1319              	.LVL128:
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1320              		.loc 1 199 8 view .LVU416
+ 1321 0046 CDE90A01 		strd	r0, [sp, #40]
+ 1322 004a CDE93601 		strd	r0, [sp, #216]
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1323              		.loc 1 199 75 view .LVU417
+ 1324 004e DAF81400 		ldr	r0, [r10, #20]	@ float
+ 1325 0052 FFF7FEFF 		bl	__aeabi_f2d
+ 1326              	.LVL129:
+ 199:Drivers/Imu/mpu6050.c **** double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+ 1327              		.loc 1 199 8 view .LVU418
+ 1328 0056 CDE90C01 		strd	r0, [sp, #48]
+ 1329 005a CDE93801 		strd	r0, [sp, #224]
+ 200:Drivers/Imu/mpu6050.c **** double rG[3];
+ 1330              		.loc 1 200 1 is_stmt 1 view .LVU419
+ 200:Drivers/Imu/mpu6050.c **** double rG[3];
+ 1331              		.loc 1 200 8 is_stmt 0 view .LVU420
+ 1332 005e 4FF00008 		mov	r8, #0
+ 1333 0062 4FF00009 		mov	r9, #0
+ 1334 0066 CDE92E89 		strd	r8, [sp, #184]
+ 1335 006a CDE93089 		strd	r8, [sp, #192]
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 34
+
+
+ 1336 006e 0022     		movs	r2, #0
+ 1337 0070 B64B     		ldr	r3, .L47
+ 1338 0072 CDE93223 		strd	r2, [sp, #200]
+ 201:Drivers/Imu/mpu6050.c **** //double rA[3];
+ 1339              		.loc 1 201 1 is_stmt 1 view .LVU421
+ 203:Drivers/Imu/mpu6050.c **** 
+ 1340              		.loc 1 203 1 view .LVU422
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1341              		.loc 1 205 1 view .LVU423
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1342              		.loc 1 207 5 is_stmt 0 view .LVU424
+ 1343 0076 B0EE490A 		vmov.f32	s0, s18
+ 1344 007a F0EE690A 		vmov.f32	s1, s19
+ 1345 007e FFF7FEFF 		bl	cos
+ 1346              	.LVL130:
+ 1347 0082 57EC106B 		vmov	r6, r7, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1348              		.loc 1 207 16 view .LVU425
+ 1349 0086 B0EE4A0A 		vmov.f32	s0, s20
+ 1350 008a F0EE6A0A 		vmov.f32	s1, s21
+ 1351 008e FFF7FEFF 		bl	cos
+ 1352              	.LVL131:
+ 1353 0092 55EC104B 		vmov	r4, r5, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1354              		.loc 1 207 15 view .LVU426
+ 1355 0096 8DED060B 		vstr.64	d0, [sp, #24]
+ 1356 009a 10EE102A 		vmov	r2, s0	@ int
+ 1357 009e 2B46     		mov	r3, r5
+ 1358 00a0 3046     		mov	r0, r6
+ 1359 00a2 3946     		mov	r1, r7
+ 1360 00a4 FFF7FEFF 		bl	__aeabi_dmul
+ 1361              	.LVL132:
+ 1362 00a8 41EC1E0B 		vmov	d14, r0, r1
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1363              		.loc 1 205 8 view .LVU427
+ 1364 00ac CDE91001 		strd	r0, [sp, #64]
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1365              		.loc 1 207 39 view .LVU428
+ 1366 00b0 B0EE4A0A 		vmov.f32	s0, s20
+ 1367 00b4 F0EE6A0A 		vmov.f32	s1, s21
+ 1368 00b8 FFF7FEFF 		bl	sin
+ 1369              	.LVL133:
+ 1370 00bc 52EC101B 		vmov	r1, r2, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1371              		.loc 1 207 38 view .LVU429
+ 1372 00c0 8DED080B 		vstr.64	d0, [sp, #32]
+ 1373 00c4 1346     		mov	r3, r2
+ 1374 00c6 10EE102A 		vmov	r2, s0	@ int
+ 1375 00ca CDE90467 		strd	r6, [sp, #16]
+ 1376 00ce 3046     		mov	r0, r6
+ 1377 00d0 3946     		mov	r1, r7
+ 1378 00d2 FFF7FEFF 		bl	__aeabi_dmul
+ 1379              	.LVL134:
+ 1380 00d6 0646     		mov	r6, r0
+ 1381 00d8 0F46     		mov	r7, r1
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1382              		.loc 1 207 49 view .LVU430
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 35
+
+
+ 1383 00da B0EE480A 		vmov.f32	s0, s16
+ 1384 00de F0EE680A 		vmov.f32	s1, s17
+ 1385 00e2 FFF7FEFF 		bl	sin
+ 1386              	.LVL135:
+ 1387 00e6 54EC103B 		vmov	r3, r4, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1388              		.loc 1 207 48 view .LVU431
+ 1389 00ea 8DED000B 		vstr.64	d0, [sp]
+ 1390 00ee 10EE102A 		vmov	r2, s0	@ int
+ 1391 00f2 2346     		mov	r3, r4
+ 1392 00f4 3046     		mov	r0, r6
+ 1393 00f6 3946     		mov	r1, r7
+ 1394 00f8 FFF7FEFF 		bl	__aeabi_dmul
+ 1395              	.LVL136:
+ 1396 00fc CDE90E01 		strd	r0, [sp, #56]
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1397              		.loc 1 207 62 view .LVU432
+ 1398 0100 B0EE490A 		vmov.f32	s0, s18
+ 1399 0104 F0EE690A 		vmov.f32	s1, s19
+ 1400 0108 FFF7FEFF 		bl	sin
+ 1401              	.LVL137:
+ 1402 010c 55EC104B 		vmov	r4, r5, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1403              		.loc 1 207 73 view .LVU433
+ 1404 0110 B0EE480A 		vmov.f32	s0, s16
+ 1405 0114 F0EE680A 		vmov.f32	s1, s17
+ 1406 0118 FFF7FEFF 		bl	cos
+ 1407              	.LVL138:
+ 1408 011c 53EC102B 		vmov	r2, r3, d0
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1409              		.loc 1 207 72 view .LVU434
+ 1410 0120 8DED020B 		vstr.64	d0, [sp, #8]
+ 1411 0124 2046     		mov	r0, r4
+ 1412 0126 2946     		mov	r1, r5
+ 1413 0128 FFF7FEFF 		bl	__aeabi_dmul
+ 1414              	.LVL139:
+ 1415 012c 0246     		mov	r2, r0
+ 1416 012e 0B46     		mov	r3, r1
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1417              		.loc 1 207 60 view .LVU435
+ 1418 0130 DDE90E01 		ldrd	r0, [sp, #56]
+ 1419 0134 FFF7FEFF 		bl	__aeabi_dsub
+ 1420              	.LVL140:
+ 1421 0138 41EC1D0B 		vmov	d13, r0, r1
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1422              		.loc 1 205 8 view .LVU436
+ 1423 013c CDE91201 		strd	r0, [sp, #72]
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1424              		.loc 1 207 106 view .LVU437
+ 1425 0140 DDE90223 		ldrd	r2, [sp, #8]
+ 1426 0144 3046     		mov	r0, r6
+ 1427 0146 3946     		mov	r1, r7
+ 1428 0148 FFF7FEFF 		bl	__aeabi_dmul
+ 1429              	.LVL141:
+ 1430 014c 0646     		mov	r6, r0
+ 1431 014e 0F46     		mov	r7, r1
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 36
+
+
+ 1432              		.loc 1 207 130 view .LVU438
+ 1433 0150 2246     		mov	r2, r4
+ 1434 0152 2B46     		mov	r3, r5
+ 1435 0154 DDE90001 		ldrd	r0, [sp]
+ 1436 0158 FFF7FEFF 		bl	__aeabi_dmul
+ 1437              	.LVL142:
+ 1438 015c 0246     		mov	r2, r0
+ 1439 015e 0B46     		mov	r3, r1
+ 207:Drivers/Imu/mpu6050.c ****   { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin
+ 1440              		.loc 1 207 118 view .LVU439
+ 1441 0160 3046     		mov	r0, r6
+ 1442 0162 3946     		mov	r1, r7
+ 1443 0164 FFF7FEFF 		bl	__aeabi_dadd
+ 1444              	.LVL143:
+ 1445 0168 41EC1B0B 		vmov	d11, r0, r1
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1446              		.loc 1 205 8 view .LVU440
+ 1447 016c CDE91401 		strd	r0, [sp, #80]
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1448              		.loc 1 208 15 view .LVU441
+ 1449 0170 2246     		mov	r2, r4
+ 1450 0172 2B46     		mov	r3, r5
+ 1451 0174 DDE90601 		ldrd	r0, [sp, #24]
+ 1452 0178 FFF7FEFF 		bl	__aeabi_dmul
+ 1453              	.LVL144:
+ 1454 017c 41EC1C0B 		vmov	d12, r0, r1
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1455              		.loc 1 205 8 view .LVU442
+ 1456 0180 CDE91601 		strd	r0, [sp, #88]
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1457              		.loc 1 208 38 view .LVU443
+ 1458 0184 2246     		mov	r2, r4
+ 1459 0186 2B46     		mov	r3, r5
+ 1460 0188 DDE90801 		ldrd	r0, [sp, #32]
+ 1461 018c FFF7FEFF 		bl	__aeabi_dmul
+ 1462              	.LVL145:
+ 1463 0190 0446     		mov	r4, r0
+ 1464 0192 0D46     		mov	r5, r1
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1465              		.loc 1 208 48 view .LVU444
+ 1466 0194 0246     		mov	r2, r0
+ 1467 0196 0B46     		mov	r3, r1
+ 1468 0198 DDE90001 		ldrd	r0, [sp]
+ 1469 019c FFF7FEFF 		bl	__aeabi_dmul
+ 1470              	.LVL146:
+ 1471 01a0 0646     		mov	r6, r0
+ 1472 01a2 0F46     		mov	r7, r1
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1473              		.loc 1 208 72 view .LVU445
+ 1474 01a4 DDE90223 		ldrd	r2, [sp, #8]
+ 1475 01a8 DDE90401 		ldrd	r0, [sp, #16]
+ 1476 01ac FFF7FEFF 		bl	__aeabi_dmul
+ 1477              	.LVL147:
+ 1478 01b0 0246     		mov	r2, r0
+ 1479 01b2 0B46     		mov	r3, r1
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1480              		.loc 1 208 60 view .LVU446
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 37
+
+
+ 1481 01b4 3046     		mov	r0, r6
+ 1482 01b6 3946     		mov	r1, r7
+ 1483 01b8 FFF7FEFF 		bl	__aeabi_dadd
+ 1484              	.LVL148:
+ 1485 01bc 41EC1A0B 		vmov	d10, r0, r1
+ 1486              	.LVL149:
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1487              		.loc 1 205 8 view .LVU447
+ 1488 01c0 CDE91801 		strd	r0, [sp, #96]
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1489              		.loc 1 208 106 view .LVU448
+ 1490 01c4 2246     		mov	r2, r4
+ 1491 01c6 2B46     		mov	r3, r5
+ 1492 01c8 DDE90201 		ldrd	r0, [sp, #8]
+ 1493 01cc FFF7FEFF 		bl	__aeabi_dmul
+ 1494              	.LVL150:
+ 1495 01d0 0446     		mov	r4, r0
+ 1496 01d2 0D46     		mov	r5, r1
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1497              		.loc 1 208 130 view .LVU449
+ 1498 01d4 DDE90023 		ldrd	r2, [sp]
+ 1499 01d8 DDE90401 		ldrd	r0, [sp, #16]
+ 1500 01dc FFF7FEFF 		bl	__aeabi_dmul
+ 1501              	.LVL151:
+ 1502 01e0 0246     		mov	r2, r0
+ 1503 01e2 0B46     		mov	r3, r1
+ 208:Drivers/Imu/mpu6050.c ****   {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               
+ 1504              		.loc 1 208 118 view .LVU450
+ 1505 01e4 2046     		mov	r0, r4
+ 1506 01e6 2946     		mov	r1, r5
+ 1507 01e8 FFF7FEFF 		bl	__aeabi_dsub
+ 1508              	.LVL152:
+ 1509 01ec 41EC190B 		vmov	d9, r0, r1
+ 1510              	.LVL153:
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1511              		.loc 1 205 8 view .LVU451
+ 1512 01f0 CDE91A01 		strd	r0, [sp, #104]
+ 209:Drivers/Imu/mpu6050.c **** };
+ 1513              		.loc 1 209 11 view .LVU452
+ 1514 01f4 DDE90812 		ldrd	r1, [sp, #32]
+ 1515 01f8 0E46     		mov	r6, r1
+ 1516 01fa 02F10047 		add	r7, r2, #-2147483648
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1517              		.loc 1 205 8 view .LVU453
+ 1518 01fe CDE91C67 		strd	r6, [sp, #112]
+ 209:Drivers/Imu/mpu6050.c **** };
+ 1519              		.loc 1 209 55 view .LVU454
+ 1520 0202 DDE90023 		ldrd	r2, [sp]
+ 1521 0206 DDE90645 		ldrd	r4, [sp, #24]
+ 1522 020a 2046     		mov	r0, r4
+ 1523 020c 2946     		mov	r1, r5
+ 1524 020e FFF7FEFF 		bl	__aeabi_dmul
+ 1525              	.LVL154:
+ 1526 0212 41EC180B 		vmov	d8, r0, r1
+ 1527              	.LVL155:
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1528              		.loc 1 205 8 view .LVU455
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 38
+
+
+ 1529 0216 CDE91E01 		strd	r0, [sp, #120]
+ 209:Drivers/Imu/mpu6050.c **** };
+ 1530              		.loc 1 209 110 view .LVU456
+ 1531 021a DDE90223 		ldrd	r2, [sp, #8]
+ 1532 021e 2046     		mov	r0, r4
+ 1533 0220 2946     		mov	r1, r5
+ 1534 0222 FFF7FEFF 		bl	__aeabi_dmul
+ 1535              	.LVL156:
+ 205:Drivers/Imu/mpu6050.c **** {
+ 1536              		.loc 1 205 8 view .LVU457
+ 1537 0226 CDE90001 		strd	r0, [sp]
+ 1538 022a CDE92001 		strd	r0, [sp, #128]
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1539              		.loc 1 212 1 is_stmt 1 view .LVU458
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1540              		.loc 1 212 18 is_stmt 0 view .LVU459
+ 1541 022e 4246     		mov	r2, r8
+ 1542 0230 4B46     		mov	r3, r9
+ 1543 0232 51EC1E0B 		vmov	r0, r1, d14
+ 1544 0236 FFF7FEFF 		bl	__aeabi_dmul
+ 1545              	.LVL157:
+ 1546 023a 0446     		mov	r4, r0
+ 1547 023c 0D46     		mov	r5, r1
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1548              		.loc 1 212 39 view .LVU460
+ 1549 023e 4246     		mov	r2, r8
+ 1550 0240 4B46     		mov	r3, r9
+ 1551 0242 51EC1D0B 		vmov	r0, r1, d13
+ 1552 0246 FFF7FEFF 		bl	__aeabi_dmul
+ 1553              	.LVL158:
+ 1554 024a 0246     		mov	r2, r0
+ 1555 024c 0B46     		mov	r3, r1
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1556              		.loc 1 212 27 view .LVU461
+ 1557 024e 2046     		mov	r0, r4
+ 1558 0250 2946     		mov	r1, r5
+ 1559 0252 FFF7FEFF 		bl	__aeabi_dadd
+ 1560              	.LVL159:
+ 1561 0256 0246     		mov	r2, r0
+ 1562 0258 0B46     		mov	r3, r1
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1563              		.loc 1 212 48 view .LVU462
+ 1564 025a 51EC1B0B 		vmov	r0, r1, d11
+ 1565 025e FFF7FEFF 		bl	__aeabi_dadd
+ 1566              	.LVL160:
+ 1567 0262 0446     		mov	r4, r0
+ 1568 0264 0D46     		mov	r5, r1
+ 212:Drivers/Imu/mpu6050.c **** rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+ 1569              		.loc 1 212 6 view .LVU463
+ 1570 0266 CDE92845 		strd	r4, [sp, #160]
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1571              		.loc 1 213 1 is_stmt 1 view .LVU464
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1572              		.loc 1 213 18 is_stmt 0 view .LVU465
+ 1573 026a 4246     		mov	r2, r8
+ 1574 026c 4B46     		mov	r3, r9
+ 1575 026e 51EC1C0B 		vmov	r0, r1, d12
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 39
+
+
+ 1576 0272 FFF7FEFF 		bl	__aeabi_dmul
+ 1577              	.LVL161:
+ 1578 0276 CDE90201 		strd	r0, [sp, #8]
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1579              		.loc 1 213 39 view .LVU466
+ 1580 027a 4246     		mov	r2, r8
+ 1581 027c 4B46     		mov	r3, r9
+ 1582 027e 51EC1A0B 		vmov	r0, r1, d10
+ 1583 0282 FFF7FEFF 		bl	__aeabi_dmul
+ 1584              	.LVL162:
+ 1585 0286 0246     		mov	r2, r0
+ 1586 0288 0B46     		mov	r3, r1
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1587              		.loc 1 213 27 view .LVU467
+ 1588 028a DDE90201 		ldrd	r0, [sp, #8]
+ 1589 028e FFF7FEFF 		bl	__aeabi_dadd
+ 1590              	.LVL163:
+ 1591 0292 0246     		mov	r2, r0
+ 1592 0294 0B46     		mov	r3, r1
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1593              		.loc 1 213 48 view .LVU468
+ 1594 0296 51EC190B 		vmov	r0, r1, d9
+ 1595 029a FFF7FEFF 		bl	__aeabi_dadd
+ 1596              	.LVL164:
+ 1597 029e 41EC190B 		vmov	d9, r0, r1
+ 213:Drivers/Imu/mpu6050.c **** rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+ 1598              		.loc 1 213 6 view .LVU469
+ 1599 02a2 CDE92A01 		strd	r0, [sp, #168]
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1600              		.loc 1 214 1 is_stmt 1 view .LVU470
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1601              		.loc 1 214 18 is_stmt 0 view .LVU471
+ 1602 02a6 4246     		mov	r2, r8
+ 1603 02a8 4B46     		mov	r3, r9
+ 1604 02aa 3046     		mov	r0, r6
+ 1605 02ac 3946     		mov	r1, r7
+ 1606 02ae FFF7FEFF 		bl	__aeabi_dmul
+ 1607              	.LVL165:
+ 1608 02b2 0646     		mov	r6, r0
+ 1609 02b4 0F46     		mov	r7, r1
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1610              		.loc 1 214 39 view .LVU472
+ 1611 02b6 4246     		mov	r2, r8
+ 1612 02b8 4B46     		mov	r3, r9
+ 1613 02ba 51EC180B 		vmov	r0, r1, d8
+ 1614 02be FFF7FEFF 		bl	__aeabi_dmul
+ 1615              	.LVL166:
+ 1616 02c2 0246     		mov	r2, r0
+ 1617 02c4 0B46     		mov	r3, r1
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1618              		.loc 1 214 27 view .LVU473
+ 1619 02c6 3046     		mov	r0, r6
+ 1620 02c8 3946     		mov	r1, r7
+ 1621 02ca FFF7FEFF 		bl	__aeabi_dadd
+ 1622              	.LVL167:
+ 1623 02ce 0246     		mov	r2, r0
+ 1624 02d0 0B46     		mov	r3, r1
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 40
+
+
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1625              		.loc 1 214 48 view .LVU474
+ 1626 02d2 DDE90001 		ldrd	r0, [sp]
+ 1627 02d6 FFF7FEFF 		bl	__aeabi_dadd
+ 1628              	.LVL168:
+ 1629 02da 8046     		mov	r8, r0
+ 1630 02dc 8946     		mov	r9, r1
+ 214:Drivers/Imu/mpu6050.c **** 
+ 1631              		.loc 1 214 6 view .LVU475
+ 1632 02de CDE92C89 		strd	r8, [sp, #176]
+ 220:Drivers/Imu/mpu6050.c **** mA[1]= rG[1] + accel[1];
+ 1633              		.loc 1 220 1 is_stmt 1 view .LVU476
+ 220:Drivers/Imu/mpu6050.c **** mA[1]= rG[1] + accel[1];
+ 1634              		.loc 1 220 16 is_stmt 0 view .LVU477
+ 1635 02e2 2246     		mov	r2, r4
+ 1636 02e4 2B46     		mov	r3, r5
+ 1637 02e6 51EC1F0B 		vmov	r0, r1, d15
+ 1638 02ea FFF7FEFF 		bl	__aeabi_dsub
+ 1639              	.LVL169:
+ 1640 02ee 0646     		mov	r6, r0
+ 1641 02f0 0F46     		mov	r7, r1
+ 220:Drivers/Imu/mpu6050.c **** mA[1]= rG[1] + accel[1];
+ 1642              		.loc 1 220 6 view .LVU478
+ 1643 02f2 CDE92267 		strd	r6, [sp, #136]
+ 221:Drivers/Imu/mpu6050.c **** mA[2]= accel[2]-rG[2];
+ 1644              		.loc 1 221 1 is_stmt 1 view .LVU479
+ 221:Drivers/Imu/mpu6050.c **** mA[2]= accel[2]-rG[2];
+ 1645              		.loc 1 221 14 is_stmt 0 view .LVU480
+ 1646 02f6 53EC192B 		vmov	r2, r3, d9
+ 1647 02fa DDE90A01 		ldrd	r0, [sp, #40]
+ 1648 02fe FFF7FEFF 		bl	__aeabi_dadd
+ 1649              	.LVL170:
+ 1650 0302 41EC180B 		vmov	d8, r0, r1
+ 221:Drivers/Imu/mpu6050.c **** mA[2]= accel[2]-rG[2];
+ 1651              		.loc 1 221 6 view .LVU481
+ 1652 0306 CDE92401 		strd	r0, [sp, #144]
+ 222:Drivers/Imu/mpu6050.c **** 
+ 1653              		.loc 1 222 1 is_stmt 1 view .LVU482
+ 222:Drivers/Imu/mpu6050.c **** 
+ 1654              		.loc 1 222 16 is_stmt 0 view .LVU483
+ 1655 030a 4246     		mov	r2, r8
+ 1656 030c 4B46     		mov	r3, r9
+ 1657 030e DDE90C01 		ldrd	r0, [sp, #48]
+ 1658 0312 FFF7FEFF 		bl	__aeabi_dsub
+ 1659              	.LVL171:
+ 1660 0316 0446     		mov	r4, r0
+ 1661 0318 0D46     		mov	r5, r1
+ 222:Drivers/Imu/mpu6050.c **** 
+ 1662              		.loc 1 222 6 view .LVU484
+ 1663 031a CDE92645 		strd	r4, [sp, #152]
+ 224:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccY = (float)mA[1];
+ 1664              		.loc 1 224 1 is_stmt 1 view .LVU485
+ 224:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccY = (float)mA[1];
+ 1665              		.loc 1 224 30 is_stmt 0 view .LVU486
+ 1666 031e 3046     		mov	r0, r6
+ 1667 0320 3946     		mov	r1, r7
+ 1668 0322 FFF7FEFF 		bl	__aeabi_d2f
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 41
+
+
+ 1669              	.LVL172:
+ 224:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccY = (float)mA[1];
+ 1670              		.loc 1 224 28 view .LVU487
+ 1671 0326 CAF81800 		str	r0, [r10, #24]	@ float
+ 225:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccZ = (float)mA[2];
+ 1672              		.loc 1 225 1 is_stmt 1 view .LVU488
+ 225:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccZ = (float)mA[2];
+ 1673              		.loc 1 225 30 is_stmt 0 view .LVU489
+ 1674 032a 51EC180B 		vmov	r0, r1, d8
+ 1675 032e FFF7FEFF 		bl	__aeabi_d2f
+ 1676              	.LVL173:
+ 225:Drivers/Imu/mpu6050.c **** RecMpuData->normalizedAccZ = (float)mA[2];
+ 1677              		.loc 1 225 28 view .LVU490
+ 1678 0332 CAF81C00 		str	r0, [r10, #28]	@ float
+ 226:Drivers/Imu/mpu6050.c **** 
+ 1679              		.loc 1 226 1 is_stmt 1 view .LVU491
+ 226:Drivers/Imu/mpu6050.c **** 
+ 1680              		.loc 1 226 30 is_stmt 0 view .LVU492
+ 1681 0336 2046     		mov	r0, r4
+ 1682 0338 2946     		mov	r1, r5
+ 1683 033a FFF7FEFF 		bl	__aeabi_d2f
+ 1684              	.LVL174:
+ 226:Drivers/Imu/mpu6050.c **** 
+ 1685              		.loc 1 226 28 view .LVU493
+ 1686 033e CAF82000 		str	r0, [r10, #32]	@ float
+ 228:Drivers/Imu/mpu6050.c **** 
+ 1687              		.loc 1 228 1 view .LVU494
+ 1688 0342 3AB0     		add	sp, sp, #232
+ 1689              	.LCFI11:
+ 1690              		.cfi_def_cfa_offset 96
+ 1691              		@ sp needed
+ 1692 0344 BDEC108B 		vldm	sp!, {d8-d15}
+ 1693              	.LCFI12:
+ 1694              		.cfi_restore 94
+ 1695              		.cfi_restore 95
+ 1696              		.cfi_restore 92
+ 1697              		.cfi_restore 93
+ 1698              		.cfi_restore 90
+ 1699              		.cfi_restore 91
+ 1700              		.cfi_restore 88
+ 1701              		.cfi_restore 89
+ 1702              		.cfi_restore 86
+ 1703              		.cfi_restore 87
+ 1704              		.cfi_restore 84
+ 1705              		.cfi_restore 85
+ 1706              		.cfi_restore 82
+ 1707              		.cfi_restore 83
+ 1708              		.cfi_restore 80
+ 1709              		.cfi_restore 81
+ 1710              		.cfi_def_cfa_offset 32
+ 1711 0348 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 1712              	.LVL175:
+ 1713              	.L48:
+ 228:Drivers/Imu/mpu6050.c **** 
+ 1714              		.loc 1 228 1 view .LVU495
+ 1715              		.align	2
+ 1716              	.L47:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 42
+
+
+ 1717 034c 0000F03F 		.word	1072693248
+ 1718              		.cfi_endproc
+ 1719              	.LFE134:
+ 1721              		.section	.text.getGyroscopeRAW,"ax",%progbits
+ 1722              		.align	1
+ 1723              		.syntax unified
+ 1724              		.thumb
+ 1725              		.thumb_func
+ 1727              	getGyroscopeRAW:
+ 1728              	.LVL176:
+ 1729              	.LFB130:
+  74:Drivers/Imu/mpu6050.c **** 	uint8_t tmp[6];
+ 1730              		.loc 1 74 1 is_stmt 1 view -0
+ 1731              		.cfi_startproc
+ 1732              		@ args = 0, pretend = 0, frame = 8
+ 1733              		@ frame_needed = 0, uses_anonymous_args = 0
+  74:Drivers/Imu/mpu6050.c **** 	uint8_t tmp[6];
+ 1734              		.loc 1 74 1 is_stmt 0 view .LVU497
+ 1735 0000 10B5     		push	{r4, lr}
+ 1736              	.LCFI13:
+ 1737              		.cfi_def_cfa_offset 8
+ 1738              		.cfi_offset 4, -8
+ 1739              		.cfi_offset 14, -4
+ 1740 0002 86B0     		sub	sp, sp, #24
+ 1741              	.LCFI14:
+ 1742              		.cfi_def_cfa_offset 32
+ 1743 0004 0446     		mov	r4, r0
+  75:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Read(i2c, MPU6050_ADDR, MPU6050_RA_GYRO_XOUT_H, 1, tmp, 6, I2C_TIMEOUT);
+ 1744              		.loc 1 75 2 is_stmt 1 view .LVU498
+  76:Drivers/Imu/mpu6050.c **** 
+ 1745              		.loc 1 76 2 view .LVU499
+ 1746 0006 4FF47A73 		mov	r3, #1000
+ 1747 000a 0293     		str	r3, [sp, #8]
+ 1748 000c 0623     		movs	r3, #6
+ 1749 000e 0193     		str	r3, [sp, #4]
+ 1750 0010 04AB     		add	r3, sp, #16
+ 1751 0012 0093     		str	r3, [sp]
+ 1752 0014 0123     		movs	r3, #1
+ 1753 0016 4322     		movs	r2, #67
+ 1754 0018 D021     		movs	r1, #208
+ 1755 001a 0D48     		ldr	r0, .L51
+ 1756              	.LVL177:
+  76:Drivers/Imu/mpu6050.c **** 
+ 1757              		.loc 1 76 2 is_stmt 0 view .LVU500
+ 1758 001c 0068     		ldr	r0, [r0]
+ 1759 001e FFF7FEFF 		bl	HAL_I2C_Mem_Read
+ 1760              	.LVL178:
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+ 1761              		.loc 1 78 2 is_stmt 1 view .LVU501
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+ 1762              		.loc 1 78 29 is_stmt 0 view .LVU502
+ 1763 0022 9DF81020 		ldrb	r2, [sp, #16]	@ zero_extendqisi2
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+ 1764              		.loc 1 78 45 view .LVU503
+ 1765 0026 9DF81130 		ldrb	r3, [sp, #17]	@ zero_extendqisi2
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+ 1766              		.loc 1 78 40 view .LVU504
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 43
+
+
+ 1767 002a 43EA0223 		orr	r3, r3, r2, lsl #8
+  78:Drivers/Imu/mpu6050.c **** 	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+ 1768              		.loc 1 78 13 view .LVU505
+ 1769 002e 2380     		strh	r3, [r4]	@ movhi
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+ 1770              		.loc 1 79 2 is_stmt 1 view .LVU506
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+ 1771              		.loc 1 79 29 is_stmt 0 view .LVU507
+ 1772 0030 9DF81220 		ldrb	r2, [sp, #18]	@ zero_extendqisi2
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+ 1773              		.loc 1 79 45 view .LVU508
+ 1774 0034 9DF81330 		ldrb	r3, [sp, #19]	@ zero_extendqisi2
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+ 1775              		.loc 1 79 40 view .LVU509
+ 1776 0038 43EA0223 		orr	r3, r3, r2, lsl #8
+  79:Drivers/Imu/mpu6050.c **** 	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+ 1777              		.loc 1 79 13 view .LVU510
+ 1778 003c 6380     		strh	r3, [r4, #2]	@ movhi
+  80:Drivers/Imu/mpu6050.c **** }
+ 1779              		.loc 1 80 2 is_stmt 1 view .LVU511
+  80:Drivers/Imu/mpu6050.c **** }
+ 1780              		.loc 1 80 29 is_stmt 0 view .LVU512
+ 1781 003e 9DF81420 		ldrb	r2, [sp, #20]	@ zero_extendqisi2
+  80:Drivers/Imu/mpu6050.c **** }
+ 1782              		.loc 1 80 45 view .LVU513
+ 1783 0042 9DF81530 		ldrb	r3, [sp, #21]	@ zero_extendqisi2
+  80:Drivers/Imu/mpu6050.c **** }
+ 1784              		.loc 1 80 40 view .LVU514
+ 1785 0046 43EA0223 		orr	r3, r3, r2, lsl #8
+  80:Drivers/Imu/mpu6050.c **** }
+ 1786              		.loc 1 80 13 view .LVU515
+ 1787 004a A380     		strh	r3, [r4, #4]	@ movhi
+  81:Drivers/Imu/mpu6050.c **** 
+ 1788              		.loc 1 81 1 view .LVU516
+ 1789 004c 06B0     		add	sp, sp, #24
+ 1790              	.LCFI15:
+ 1791              		.cfi_def_cfa_offset 8
+ 1792              		@ sp needed
+ 1793 004e 10BD     		pop	{r4, pc}
+ 1794              	.LVL179:
+ 1795              	.L52:
+  81:Drivers/Imu/mpu6050.c **** 
+ 1796              		.loc 1 81 1 view .LVU517
+ 1797              		.align	2
+ 1798              	.L51:
+ 1799 0050 00000000 		.word	.LANCHOR10
+ 1800              		.cfi_endproc
+ 1801              	.LFE130:
+ 1803              		.section	.text.MPU6050_ReadDmaDataEndCallBack,"ax",%progbits
+ 1804              		.align	1
+ 1805              		.global	MPU6050_ReadDmaDataEndCallBack
+ 1806              		.syntax unified
+ 1807              		.thumb
+ 1808              		.thumb_func
+ 1810              	MPU6050_ReadDmaDataEndCallBack:
+ 1811              	.LVL180:
+ 1812              	.LFB137:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 44
+
+
+ 280:Drivers/Imu/mpu6050.c **** 
+ 281:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+ 282:Drivers/Imu/mpu6050.c **** /*                         PUBLIC FUNCTION DECLARATIONS                                   */
+ 283:Drivers/Imu/mpu6050.c **** /******************************************************************************************/
+ 284:Drivers/Imu/mpu6050.c **** extern void MPU6050_ReadDmaDataEndCallBack(MpuData_t *RecMpuData)
+ 285:Drivers/Imu/mpu6050.c **** {
+ 1813              		.loc 1 285 1 is_stmt 1 view -0
+ 1814              		.cfi_startproc
+ 1815              		@ args = 0, pretend = 0, frame = 0
+ 1816              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1817              		.loc 1 285 1 is_stmt 0 view .LVU519
+ 1818 0000 10B5     		push	{r4, lr}
+ 1819              	.LCFI16:
+ 1820              		.cfi_def_cfa_offset 8
+ 1821              		.cfi_offset 4, -8
+ 1822              		.cfi_offset 14, -4
+ 1823 0002 0446     		mov	r4, r0
+ 286:Drivers/Imu/mpu6050.c **** 	static float prvYaw,prvPitch,prvRoll;
+ 1824              		.loc 1 286 2 is_stmt 1 view .LVU520
+ 287:Drivers/Imu/mpu6050.c **** 
+ 288:Drivers/Imu/mpu6050.c **** 	scaleReceivedDataByDMA();
+ 1825              		.loc 1 288 2 view .LVU521
+ 1826 0004 FFF7FEFF 		bl	scaleReceivedDataByDMA
+ 1827              	.LVL181:
+ 289:Drivers/Imu/mpu6050.c **** 	computeEulerAnglesMadgwickFilter(&RecMpuData->roll, &RecMpuData->pitch, &RecMpuData->yaw, CONF_SAM
+ 1828              		.loc 1 289 2 view .LVU522
+ 1829 0008 9FED140A 		vldr.32	s0, .L55
+ 1830 000c 04F14802 		add	r2, r4, #72
+ 1831 0010 04F14401 		add	r1, r4, #68
+ 1832 0014 04F14000 		add	r0, r4, #64
+ 1833 0018 FFF7FEFF 		bl	computeEulerAnglesMadgwickFilter
+ 1834              	.LVL182:
+ 290:Drivers/Imu/mpu6050.c **** 	if(RecMpuData->roll == NAN){
+ 1835              		.loc 1 290 2 view .LVU523
+ 291:Drivers/Imu/mpu6050.c **** 		RecMpuData->roll = prvRoll;
+ 292:Drivers/Imu/mpu6050.c **** 	}
+ 293:Drivers/Imu/mpu6050.c **** 	if(RecMpuData->pitch == NAN){
+ 1836              		.loc 1 293 2 view .LVU524
+ 294:Drivers/Imu/mpu6050.c **** 		RecMpuData->pitch = prvPitch;
+ 295:Drivers/Imu/mpu6050.c **** 	}
+ 296:Drivers/Imu/mpu6050.c **** 	if(RecMpuData->yaw == NAN){
+ 1837              		.loc 1 296 2 view .LVU525
+ 297:Drivers/Imu/mpu6050.c **** 		RecMpuData->yaw = prvYaw;
+ 298:Drivers/Imu/mpu6050.c **** 	}
+ 299:Drivers/Imu/mpu6050.c **** 
+ 300:Drivers/Imu/mpu6050.c ****     minus3dGravityVector(RecMpuData);
+ 1838              		.loc 1 300 5 view .LVU526
+ 1839 001c 2046     		mov	r0, r4
+ 1840 001e FFF7FEFF 		bl	minus3dGravityVector
+ 1841              	.LVL183:
+ 301:Drivers/Imu/mpu6050.c ****     TryComputeObjectPosition(RecMpuData);
+ 1842              		.loc 1 301 5 view .LVU527
+ 1843 0022 2046     		mov	r0, r4
+ 1844 0024 FFF7FEFF 		bl	TryComputeObjectPosition
+ 1845              	.LVL184:
+ 302:Drivers/Imu/mpu6050.c **** 
+ 303:Drivers/Imu/mpu6050.c **** 	RecMpuData->gyroX = mpuDataScaled[gyro][X];
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 45
+
+
+ 1846              		.loc 1 303 2 view .LVU528
+ 1847              		.loc 1 303 41 is_stmt 0 view .LVU529
+ 1848 0028 0D4B     		ldr	r3, .L55+4
+ 1849 002a DA68     		ldr	r2, [r3, #12]	@ float
+ 1850              		.loc 1 303 20 view .LVU530
+ 1851 002c 2260     		str	r2, [r4]	@ float
+ 304:Drivers/Imu/mpu6050.c **** 	RecMpuData->gyroY = mpuDataScaled[gyro][Y];
+ 1852              		.loc 1 304 2 is_stmt 1 view .LVU531
+ 1853              		.loc 1 304 41 is_stmt 0 view .LVU532
+ 1854 002e 1A69     		ldr	r2, [r3, #16]	@ float
+ 1855              		.loc 1 304 20 view .LVU533
+ 1856 0030 6260     		str	r2, [r4, #4]	@ float
+ 305:Drivers/Imu/mpu6050.c **** 	RecMpuData->gyroZ = mpuDataScaled[gyro][Z];
+ 1857              		.loc 1 305 2 is_stmt 1 view .LVU534
+ 1858              		.loc 1 305 41 is_stmt 0 view .LVU535
+ 1859 0032 5A69     		ldr	r2, [r3, #20]	@ float
+ 1860              		.loc 1 305 20 view .LVU536
+ 1861 0034 A260     		str	r2, [r4, #8]	@ float
+ 306:Drivers/Imu/mpu6050.c **** 	RecMpuData->accX  = mpuDataScaled[acc][X];
+ 1862              		.loc 1 306 2 is_stmt 1 view .LVU537
+ 1863              		.loc 1 306 40 is_stmt 0 view .LVU538
+ 1864 0036 1A68     		ldr	r2, [r3]	@ float
+ 1865              		.loc 1 306 20 view .LVU539
+ 1866 0038 E260     		str	r2, [r4, #12]	@ float
+ 307:Drivers/Imu/mpu6050.c **** 	RecMpuData->accY  = mpuDataScaled[acc][Y];
+ 1867              		.loc 1 307 2 is_stmt 1 view .LVU540
+ 1868              		.loc 1 307 40 is_stmt 0 view .LVU541
+ 1869 003a 5A68     		ldr	r2, [r3, #4]	@ float
+ 1870              		.loc 1 307 20 view .LVU542
+ 1871 003c 2261     		str	r2, [r4, #16]	@ float
+ 308:Drivers/Imu/mpu6050.c **** 	RecMpuData->accZ  = mpuDataScaled[acc][Z];
+ 1872              		.loc 1 308 2 is_stmt 1 view .LVU543
+ 1873              		.loc 1 308 40 is_stmt 0 view .LVU544
+ 1874 003e 9B68     		ldr	r3, [r3, #8]	@ float
+ 1875              		.loc 1 308 20 view .LVU545
+ 1876 0040 6361     		str	r3, [r4, #20]	@ float
+ 309:Drivers/Imu/mpu6050.c **** 
+ 310:Drivers/Imu/mpu6050.c **** 	RecMpuData->flagUpdated = true;
+ 1877              		.loc 1 310 2 is_stmt 1 view .LVU546
+ 1878              		.loc 1 310 26 is_stmt 0 view .LVU547
+ 1879 0042 0123     		movs	r3, #1
+ 1880 0044 84F86430 		strb	r3, [r4, #100]
+ 311:Drivers/Imu/mpu6050.c **** 
+ 312:Drivers/Imu/mpu6050.c **** 
+ 313:Drivers/Imu/mpu6050.c **** 	prvYaw = RecMpuData->roll;
+ 1881              		.loc 1 313 2 is_stmt 1 view .LVU548
+ 1882              		.loc 1 313 21 is_stmt 0 view .LVU549
+ 1883 0048 236C     		ldr	r3, [r4, #64]	@ float
+ 1884              		.loc 1 313 9 view .LVU550
+ 1885 004a 064A     		ldr	r2, .L55+8
+ 1886 004c 1360     		str	r3, [r2]	@ float
+ 314:Drivers/Imu/mpu6050.c **** 	prvPitch = RecMpuData->pitch;
+ 1887              		.loc 1 314 2 is_stmt 1 view .LVU551
+ 1888              		.loc 1 314 23 is_stmt 0 view .LVU552
+ 1889 004e 616C     		ldr	r1, [r4, #68]	@ float
+ 1890              		.loc 1 314 11 view .LVU553
+ 1891 0050 054A     		ldr	r2, .L55+12
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 46
+
+
+ 1892 0052 1160     		str	r1, [r2]	@ float
+ 315:Drivers/Imu/mpu6050.c **** 	prvRoll = RecMpuData->roll;
+ 1893              		.loc 1 315 2 is_stmt 1 view .LVU554
+ 1894              		.loc 1 315 10 is_stmt 0 view .LVU555
+ 1895 0054 054A     		ldr	r2, .L55+16
+ 1896 0056 1360     		str	r3, [r2]	@ float
+ 316:Drivers/Imu/mpu6050.c **** }
+ 1897              		.loc 1 316 1 view .LVU556
+ 1898 0058 10BD     		pop	{r4, pc}
+ 1899              	.LVL185:
+ 1900              	.L56:
+ 1901              		.loc 1 316 1 view .LVU557
+ 1902 005a 00BF     		.align	2
+ 1903              	.L55:
+ 1904 005c 6F12833A 		.word	981668463
+ 1905 0060 00000000 		.word	.LANCHOR2
+ 1906 0064 00000000 		.word	.LANCHOR11
+ 1907 0068 00000000 		.word	.LANCHOR12
+ 1908 006c 00000000 		.word	.LANCHOR13
+ 1909              		.cfi_endproc
+ 1910              	.LFE137:
+ 1912              		.section	.text.MPU6050_DeviceReset,"ax",%progbits
+ 1913              		.align	1
+ 1914              		.global	MPU6050_DeviceReset
+ 1915              		.syntax unified
+ 1916              		.thumb
+ 1917              		.thumb_func
+ 1919              	MPU6050_DeviceReset:
+ 1920              	.LVL186:
+ 1921              	.LFB138:
+ 317:Drivers/Imu/mpu6050.c **** 
+ 318:Drivers/Imu/mpu6050.c **** extern void MPU6050_DeviceReset(uint8_t Reset)
+ 319:Drivers/Imu/mpu6050.c **** {
+ 1922              		.loc 1 319 1 is_stmt 1 view -0
+ 1923              		.cfi_startproc
+ 1924              		@ args = 0, pretend = 0, frame = 8
+ 1925              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1926              		.loc 1 319 1 is_stmt 0 view .LVU559
+ 1927 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 1928              	.LCFI17:
+ 1929              		.cfi_def_cfa_offset 24
+ 1930              		.cfi_offset 4, -24
+ 1931              		.cfi_offset 5, -20
+ 1932              		.cfi_offset 6, -16
+ 1933              		.cfi_offset 7, -12
+ 1934              		.cfi_offset 8, -8
+ 1935              		.cfi_offset 14, -4
+ 1936 0004 86B0     		sub	sp, sp, #24
+ 1937              	.LCFI18:
+ 1938              		.cfi_def_cfa_offset 48
+ 1939 0006 0646     		mov	r6, r0
+ 320:Drivers/Imu/mpu6050.c **** 	uint8_t tmp;
+ 1940              		.loc 1 320 2 is_stmt 1 view .LVU560
+ 321:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Read(i2c, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &tmp, 1, I2C_TIMEOUT);
+ 1941              		.loc 1 321 2 view .LVU561
+ 1942 0008 134F     		ldr	r7, .L59
+ 1943 000a 4FF47A78 		mov	r8, #1000
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 47
+
+
+ 1944 000e CDF80880 		str	r8, [sp, #8]
+ 1945 0012 0125     		movs	r5, #1
+ 1946 0014 0195     		str	r5, [sp, #4]
+ 1947 0016 0DF11704 		add	r4, sp, #23
+ 1948 001a 0094     		str	r4, [sp]
+ 1949 001c 2B46     		mov	r3, r5
+ 1950 001e 6B22     		movs	r2, #107
+ 1951 0020 D021     		movs	r1, #208
+ 1952 0022 3868     		ldr	r0, [r7]
+ 1953              	.LVL187:
+ 1954              		.loc 1 321 2 is_stmt 0 view .LVU562
+ 1955 0024 FFF7FEFF 		bl	HAL_I2C_Mem_Read
+ 1956              	.LVL188:
+ 322:Drivers/Imu/mpu6050.c **** 	tmp &= ~(1<<MPU6050_PWR1_DEVICE_RESET_BIT);
+ 1957              		.loc 1 322 2 is_stmt 1 view .LVU563
+ 1958              		.loc 1 322 6 is_stmt 0 view .LVU564
+ 1959 0028 9DF81730 		ldrb	r3, [sp, #23]	@ zero_extendqisi2
+ 1960 002c 03F07F03 		and	r3, r3, #127
+ 1961 0030 8DF81730 		strb	r3, [sp, #23]
+ 323:Drivers/Imu/mpu6050.c **** 	tmp |= ((Reset & 0x1) << MPU6050_PWR1_DEVICE_RESET_BIT);
+ 1962              		.loc 1 323 2 is_stmt 1 view .LVU565
+ 1963              		.loc 1 323 6 is_stmt 0 view .LVU566
+ 1964 0034 43EAC613 		orr	r3, r3, r6, lsl #7
+ 1965 0038 8DF81730 		strb	r3, [sp, #23]
+ 324:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &tmp, 1, I2C_TIMEOUT);
+ 1966              		.loc 1 324 2 is_stmt 1 view .LVU567
+ 1967 003c CDF80880 		str	r8, [sp, #8]
+ 1968 0040 0195     		str	r5, [sp, #4]
+ 1969 0042 0094     		str	r4, [sp]
+ 1970 0044 2B46     		mov	r3, r5
+ 1971 0046 6B22     		movs	r2, #107
+ 1972 0048 D021     		movs	r1, #208
+ 1973 004a 3868     		ldr	r0, [r7]
+ 1974 004c FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 1975              	.LVL189:
+ 325:Drivers/Imu/mpu6050.c **** }
+ 1976              		.loc 1 325 1 is_stmt 0 view .LVU568
+ 1977 0050 06B0     		add	sp, sp, #24
+ 1978              	.LCFI19:
+ 1979              		.cfi_def_cfa_offset 24
+ 1980              		@ sp needed
+ 1981 0052 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1982              	.L60:
+ 1983 0056 00BF     		.align	2
+ 1984              	.L59:
+ 1985 0058 00000000 		.word	.LANCHOR10
+ 1986              		.cfi_endproc
+ 1987              	.LFE138:
+ 1989              		.section	.text.MPU6050_Init,"ax",%progbits
+ 1990              		.align	1
+ 1991              		.global	MPU6050_Init
+ 1992              		.syntax unified
+ 1993              		.thumb
+ 1994              		.thumb_func
+ 1996              	MPU6050_Init:
+ 1997              	.LVL190:
+ 1998              	.LFB139:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 48
+
+
+ 326:Drivers/Imu/mpu6050.c **** 
+ 327:Drivers/Imu/mpu6050.c **** extern uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
+ 328:Drivers/Imu/mpu6050.c **** {
+ 1999              		.loc 1 328 1 is_stmt 1 view -0
+ 2000              		.cfi_startproc
+ 2001              		@ args = 0, pretend = 0, frame = 8
+ 2002              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2003              		.loc 1 328 1 is_stmt 0 view .LVU570
+ 2004 0000 2DE9F043 		push	{r4, r5, r6, r7, r8, r9, lr}
+ 2005              	.LCFI20:
+ 2006              		.cfi_def_cfa_offset 28
+ 2007              		.cfi_offset 4, -28
+ 2008              		.cfi_offset 5, -24
+ 2009              		.cfi_offset 6, -20
+ 2010              		.cfi_offset 7, -16
+ 2011              		.cfi_offset 8, -12
+ 2012              		.cfi_offset 9, -8
+ 2013              		.cfi_offset 14, -4
+ 2014 0004 87B0     		sub	sp, sp, #28
+ 2015              	.LCFI21:
+ 2016              		.cfi_def_cfa_offset 56
+ 2017 0006 0446     		mov	r4, r0
+ 329:Drivers/Imu/mpu6050.c ****     uint8_t check = 0;
+ 2018              		.loc 1 329 5 is_stmt 1 view .LVU571
+ 2019              		.loc 1 329 13 is_stmt 0 view .LVU572
+ 2020 0008 0023     		movs	r3, #0
+ 2021 000a 8DF81730 		strb	r3, [sp, #23]
+ 330:Drivers/Imu/mpu6050.c ****     uint8_t Data;
+ 2022              		.loc 1 330 5 is_stmt 1 view .LVU573
+ 331:Drivers/Imu/mpu6050.c **** 
+ 332:Drivers/Imu/mpu6050.c **** 	i2c = I2Cx;
+ 2023              		.loc 1 332 2 view .LVU574
+ 2024              		.loc 1 332 6 is_stmt 0 view .LVU575
+ 2025 000e 364B     		ldr	r3, .L66
+ 2026 0010 1860     		str	r0, [r3]
+ 333:Drivers/Imu/mpu6050.c ****     // check device ID WHO_AM_I
+ 334:Drivers/Imu/mpu6050.c **** 
+ 335:Drivers/Imu/mpu6050.c ****     HAL_I2C_Mem_Read(I2Cx, MPU6050_ADDR, MPU6050_RA_WHO_AM_I, 1, &check, 1, I2C_TIMEOUT);
+ 2027              		.loc 1 335 5 is_stmt 1 view .LVU576
+ 2028 0012 4FF47A73 		mov	r3, #1000
+ 2029 0016 0293     		str	r3, [sp, #8]
+ 2030 0018 0123     		movs	r3, #1
+ 2031 001a 0193     		str	r3, [sp, #4]
+ 2032 001c 0DF11702 		add	r2, sp, #23
+ 2033 0020 0092     		str	r2, [sp]
+ 2034 0022 7522     		movs	r2, #117
+ 2035 0024 D021     		movs	r1, #208
+ 2036 0026 FFF7FEFF 		bl	HAL_I2C_Mem_Read
+ 2037              	.LVL191:
+ 336:Drivers/Imu/mpu6050.c **** 
+ 337:Drivers/Imu/mpu6050.c ****     if (check == 104) // 0x68 will be returned by the sensor if everything goes well
+ 2038              		.loc 1 337 5 view .LVU577
+ 2039              		.loc 1 337 15 is_stmt 0 view .LVU578
+ 2040 002a 9DF81730 		ldrb	r3, [sp, #23]	@ zero_extendqisi2
+ 2041              		.loc 1 337 8 view .LVU579
+ 2042 002e 682B     		cmp	r3, #104
+ 2043 0030 03D0     		beq	.L65
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 49
+
+
+ 338:Drivers/Imu/mpu6050.c ****     {
+ 339:Drivers/Imu/mpu6050.c ****         // power management register 0X6B we should write all 0's to wake the sensor up
+ 340:Drivers/Imu/mpu6050.c ****         Data = 0;
+ 341:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &Data, 1, I2C_TIMEOUT);
+ 342:Drivers/Imu/mpu6050.c **** 
+ 343:Drivers/Imu/mpu6050.c ****         // Set DATA RATE of 0x07 - 1KH  || 0x04 - 200 z by writing SMPLRT_DIV register
+ 344:Drivers/Imu/mpu6050.c ****         Data = 0x07;
+ 345:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_SMPLRT_DIV, 1, &Data, 1, I2C_TIMEOUT);
+ 346:Drivers/Imu/mpu6050.c **** 
+ 347:Drivers/Imu/mpu6050.c ****         // Set accelerometer configuration in ACCEL_CONFIG Register
+ 348:Drivers/Imu/mpu6050.c ****         // XA_ST=0,YA_ST=0,ZA_ST=0, FS_SEL=0 -> � 2g
+ 349:Drivers/Imu/mpu6050.c ****         uint8_t tmp;
+ 350:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Read(I2Cx, MPU6050_ADDR, MPU6050_RA_ACCEL_CONFIG, 1, &tmp, 1, I2C_TIMEOUT);
+ 351:Drivers/Imu/mpu6050.c ****         tmp &= 0xE7;
+ 352:Drivers/Imu/mpu6050.c ****         tmp |= ((0x0 & 0x7) << 3);
+ 353:Drivers/Imu/mpu6050.c ****         //Data = 0x00;
+ 354:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_ACCEL_CONFIG, 1, &tmp, 1, I2C_TIMEOUT);
+ 355:Drivers/Imu/mpu6050.c **** 
+ 356:Drivers/Imu/mpu6050.c ****         // Set Gyroscopic configuration in GYRO_CONFIG Register
+ 357:Drivers/Imu/mpu6050.c ****         // XG_ST=0,YG_ST=0,ZG_ST=0, FS_SEL=0 -> � 250 �/s
+ 358:Drivers/Imu/mpu6050.c ****         Data = 0x00;
+ 359:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_GYRO_CONFIG, 1, &Data, 1, I2C_TIMEOUT);
+ 360:Drivers/Imu/mpu6050.c **** 
+ 361:Drivers/Imu/mpu6050.c **** 
+ 362:Drivers/Imu/mpu6050.c ****         tmp = 0x30;
+ 363:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_PIN_CFG, 1, &tmp, 1, I2C_TIMEOUT);
+ 364:Drivers/Imu/mpu6050.c **** 
+ 365:Drivers/Imu/mpu6050.c ****         return 0;
+ 366:Drivers/Imu/mpu6050.c ****     }
+ 367:Drivers/Imu/mpu6050.c ****     return 1;
+ 2044              		.loc 1 367 12 view .LVU580
+ 2045 0032 0120     		movs	r0, #1
+ 2046              	.L62:
+ 368:Drivers/Imu/mpu6050.c **** }
+ 2047              		.loc 1 368 1 discriminator 1 view .LVU581
+ 2048 0034 07B0     		add	sp, sp, #28
+ 2049              	.LCFI22:
+ 2050              		.cfi_remember_state
+ 2051              		.cfi_def_cfa_offset 28
+ 2052              		@ sp needed
+ 2053 0036 BDE8F083 		pop	{r4, r5, r6, r7, r8, r9, pc}
+ 2054              	.LVL192:
+ 2055              	.L65:
+ 2056              	.LCFI23:
+ 2057              		.cfi_restore_state
+ 2058              	.LBB5:
+ 340:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &Data, 1, I2C_TIMEOUT);
+ 2059              		.loc 1 340 9 is_stmt 1 view .LVU582
+ 340:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &Data, 1, I2C_TIMEOUT);
+ 2060              		.loc 1 340 14 is_stmt 0 view .LVU583
+ 2061 003a 0025     		movs	r5, #0
+ 2062 003c 8DF81650 		strb	r5, [sp, #22]
+ 341:Drivers/Imu/mpu6050.c **** 
+ 2063              		.loc 1 341 9 is_stmt 1 view .LVU584
+ 2064 0040 4FF47A77 		mov	r7, #1000
+ 2065 0044 0297     		str	r7, [sp, #8]
+ 2066 0046 0126     		movs	r6, #1
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 50
+
+
+ 2067 0048 0196     		str	r6, [sp, #4]
+ 2068 004a 0DF11609 		add	r9, sp, #22
+ 2069 004e CDF80090 		str	r9, [sp]
+ 2070 0052 3346     		mov	r3, r6
+ 2071 0054 6B22     		movs	r2, #107
+ 2072 0056 D021     		movs	r1, #208
+ 2073 0058 2046     		mov	r0, r4
+ 2074 005a FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2075              	.LVL193:
+ 344:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_SMPLRT_DIV, 1, &Data, 1, I2C_TIMEOUT);
+ 2076              		.loc 1 344 9 view .LVU585
+ 344:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_SMPLRT_DIV, 1, &Data, 1, I2C_TIMEOUT);
+ 2077              		.loc 1 344 14 is_stmt 0 view .LVU586
+ 2078 005e 0723     		movs	r3, #7
+ 2079 0060 8DF81630 		strb	r3, [sp, #22]
+ 345:Drivers/Imu/mpu6050.c **** 
+ 2080              		.loc 1 345 9 is_stmt 1 view .LVU587
+ 2081 0064 0297     		str	r7, [sp, #8]
+ 2082 0066 0196     		str	r6, [sp, #4]
+ 2083 0068 CDF80090 		str	r9, [sp]
+ 2084 006c 3346     		mov	r3, r6
+ 2085 006e 1922     		movs	r2, #25
+ 2086 0070 D021     		movs	r1, #208
+ 2087 0072 2046     		mov	r0, r4
+ 2088 0074 FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2089              	.LVL194:
+ 349:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Read(I2Cx, MPU6050_ADDR, MPU6050_RA_ACCEL_CONFIG, 1, &tmp, 1, I2C_TIMEOUT);
+ 2090              		.loc 1 349 9 view .LVU588
+ 350:Drivers/Imu/mpu6050.c ****         tmp &= 0xE7;
+ 2091              		.loc 1 350 9 view .LVU589
+ 2092 0078 0297     		str	r7, [sp, #8]
+ 2093 007a 0196     		str	r6, [sp, #4]
+ 2094 007c 0DF11508 		add	r8, sp, #21
+ 2095 0080 CDF80080 		str	r8, [sp]
+ 2096 0084 3346     		mov	r3, r6
+ 2097 0086 1C22     		movs	r2, #28
+ 2098 0088 D021     		movs	r1, #208
+ 2099 008a 2046     		mov	r0, r4
+ 2100 008c FFF7FEFF 		bl	HAL_I2C_Mem_Read
+ 2101              	.LVL195:
+ 351:Drivers/Imu/mpu6050.c ****         tmp |= ((0x0 & 0x7) << 3);
+ 2102              		.loc 1 351 9 view .LVU590
+ 351:Drivers/Imu/mpu6050.c ****         tmp |= ((0x0 & 0x7) << 3);
+ 2103              		.loc 1 351 13 is_stmt 0 view .LVU591
+ 2104 0090 9DF81530 		ldrb	r3, [sp, #21]	@ zero_extendqisi2
+ 2105 0094 23F01803 		bic	r3, r3, #24
+ 2106 0098 8DF81530 		strb	r3, [sp, #21]
+ 352:Drivers/Imu/mpu6050.c ****         //Data = 0x00;
+ 2107              		.loc 1 352 9 is_stmt 1 view .LVU592
+ 354:Drivers/Imu/mpu6050.c **** 
+ 2108              		.loc 1 354 9 view .LVU593
+ 2109 009c 0297     		str	r7, [sp, #8]
+ 2110 009e 0196     		str	r6, [sp, #4]
+ 2111 00a0 CDF80080 		str	r8, [sp]
+ 2112 00a4 3346     		mov	r3, r6
+ 2113 00a6 1C22     		movs	r2, #28
+ 2114 00a8 D021     		movs	r1, #208
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 51
+
+
+ 2115 00aa 2046     		mov	r0, r4
+ 2116 00ac FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2117              	.LVL196:
+ 358:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_GYRO_CONFIG, 1, &Data, 1, I2C_TIMEOUT);
+ 2118              		.loc 1 358 9 view .LVU594
+ 358:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_GYRO_CONFIG, 1, &Data, 1, I2C_TIMEOUT);
+ 2119              		.loc 1 358 14 is_stmt 0 view .LVU595
+ 2120 00b0 8DF81650 		strb	r5, [sp, #22]
+ 359:Drivers/Imu/mpu6050.c **** 
+ 2121              		.loc 1 359 9 is_stmt 1 view .LVU596
+ 2122 00b4 0297     		str	r7, [sp, #8]
+ 2123 00b6 0196     		str	r6, [sp, #4]
+ 2124 00b8 CDF80090 		str	r9, [sp]
+ 2125 00bc 3346     		mov	r3, r6
+ 2126 00be 1B22     		movs	r2, #27
+ 2127 00c0 D021     		movs	r1, #208
+ 2128 00c2 2046     		mov	r0, r4
+ 2129 00c4 FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2130              	.LVL197:
+ 362:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_PIN_CFG, 1, &tmp, 1, I2C_TIMEOUT);
+ 2131              		.loc 1 362 9 view .LVU597
+ 362:Drivers/Imu/mpu6050.c ****         HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_PIN_CFG, 1, &tmp, 1, I2C_TIMEOUT);
+ 2132              		.loc 1 362 13 is_stmt 0 view .LVU598
+ 2133 00c8 3023     		movs	r3, #48
+ 2134 00ca 8DF81530 		strb	r3, [sp, #21]
+ 363:Drivers/Imu/mpu6050.c **** 
+ 2135              		.loc 1 363 9 is_stmt 1 view .LVU599
+ 2136 00ce 0297     		str	r7, [sp, #8]
+ 2137 00d0 0196     		str	r6, [sp, #4]
+ 2138 00d2 CDF80080 		str	r8, [sp]
+ 2139 00d6 3346     		mov	r3, r6
+ 2140 00d8 3722     		movs	r2, #55
+ 2141 00da D021     		movs	r1, #208
+ 2142 00dc 0248     		ldr	r0, .L66
+ 2143 00de 0068     		ldr	r0, [r0]
+ 2144 00e0 FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2145              	.LVL198:
+ 365:Drivers/Imu/mpu6050.c ****     }
+ 2146              		.loc 1 365 9 view .LVU600
+ 365:Drivers/Imu/mpu6050.c ****     }
+ 2147              		.loc 1 365 16 is_stmt 0 view .LVU601
+ 2148 00e4 2846     		mov	r0, r5
+ 2149 00e6 A5E7     		b	.L62
+ 2150              	.L67:
+ 2151              		.align	2
+ 2152              	.L66:
+ 2153 00e8 00000000 		.word	.LANCHOR10
+ 2154              	.LBE5:
+ 2155              		.cfi_endproc
+ 2156              	.LFE139:
+ 2158              		.section	.text.MPU6050Set_Calibrate_Gyro,"ax",%progbits
+ 2159              		.align	1
+ 2160              		.global	MPU6050Set_Calibrate_Gyro
+ 2161              		.syntax unified
+ 2162              		.thumb
+ 2163              		.thumb_func
+ 2165              	MPU6050Set_Calibrate_Gyro:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 52
+
+
+ 2166              	.LVL199:
+ 2167              	.LFB140:
+ 369:Drivers/Imu/mpu6050.c **** 
+ 370:Drivers/Imu/mpu6050.c **** extern void MPU6050Set_Calibrate_Gyro(uint8_t *data)
+ 371:Drivers/Imu/mpu6050.c **** {
+ 2168              		.loc 1 371 1 is_stmt 1 view -0
+ 2169              		.cfi_startproc
+ 2170              		@ args = 0, pretend = 0, frame = 0
+ 2171              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2172              		.loc 1 371 1 is_stmt 0 view .LVU603
+ 2173 0000 00B5     		push	{lr}
+ 2174              	.LCFI24:
+ 2175              		.cfi_def_cfa_offset 4
+ 2176              		.cfi_offset 14, -4
+ 2177 0002 85B0     		sub	sp, sp, #20
+ 2178              	.LCFI25:
+ 2179              		.cfi_def_cfa_offset 24
+ 372:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_XG_OFFS_USRH , 1, data, 6, I2C_TIMEOUT);
+ 2180              		.loc 1 372 2 is_stmt 1 view .LVU604
+ 2181 0004 4FF47A73 		mov	r3, #1000
+ 2182 0008 0293     		str	r3, [sp, #8]
+ 2183 000a 0623     		movs	r3, #6
+ 2184 000c 0193     		str	r3, [sp, #4]
+ 2185 000e 0090     		str	r0, [sp]
+ 2186 0010 0123     		movs	r3, #1
+ 2187 0012 1322     		movs	r2, #19
+ 2188 0014 D021     		movs	r1, #208
+ 2189 0016 0348     		ldr	r0, .L70
+ 2190              	.LVL200:
+ 2191              		.loc 1 372 2 is_stmt 0 view .LVU605
+ 2192 0018 0068     		ldr	r0, [r0]
+ 2193 001a FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2194              	.LVL201:
+ 373:Drivers/Imu/mpu6050.c **** }
+ 2195              		.loc 1 373 1 view .LVU606
+ 2196 001e 05B0     		add	sp, sp, #20
+ 2197              	.LCFI26:
+ 2198              		.cfi_def_cfa_offset 4
+ 2199              		@ sp needed
+ 2200 0020 5DF804FB 		ldr	pc, [sp], #4
+ 2201              	.L71:
+ 2202              		.align	2
+ 2203              	.L70:
+ 2204 0024 00000000 		.word	.LANCHOR10
+ 2205              		.cfi_endproc
+ 2206              	.LFE140:
+ 2208              		.section	.text.MPU6050_Calibrate_Gyro,"ax",%progbits
+ 2209              		.align	1
+ 2210              		.global	MPU6050_Calibrate_Gyro
+ 2211              		.syntax unified
+ 2212              		.thumb
+ 2213              		.thumb_func
+ 2215              	MPU6050_Calibrate_Gyro:
+ 2216              	.LFB141:
+ 374:Drivers/Imu/mpu6050.c **** 
+ 375:Drivers/Imu/mpu6050.c **** extern uint8_t* MPU6050_Calibrate_Gyro(void)
+ 376:Drivers/Imu/mpu6050.c **** {
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 53
+
+
+ 2217              		.loc 1 376 1 is_stmt 1 view -0
+ 2218              		.cfi_startproc
+ 2219              		@ args = 0, pretend = 0, frame = 24
+ 2220              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2221 0000 10B5     		push	{r4, lr}
+ 2222              	.LCFI27:
+ 2223              		.cfi_def_cfa_offset 8
+ 2224              		.cfi_offset 4, -8
+ 2225              		.cfi_offset 14, -4
+ 2226 0002 86B0     		sub	sp, sp, #24
+ 2227              	.LCFI28:
+ 2228              		.cfi_def_cfa_offset 32
+ 377:Drivers/Imu/mpu6050.c **** 	static uint8_t data[6] = {0, 0, 0, 0, 0, 0};
+ 2229              		.loc 1 377 2 view .LVU608
+ 378:Drivers/Imu/mpu6050.c **** 	int32_t gyroBias[3] = {0, 0, 0};
+ 2230              		.loc 1 378 2 view .LVU609
+ 2231              		.loc 1 378 10 is_stmt 0 view .LVU610
+ 2232 0004 0024     		movs	r4, #0
+ 2233 0006 0394     		str	r4, [sp, #12]
+ 2234 0008 0494     		str	r4, [sp, #16]
+ 2235 000a 0594     		str	r4, [sp, #20]
+ 379:Drivers/Imu/mpu6050.c **** 	int16_t gyroRaw[3];
+ 2236              		.loc 1 379 2 is_stmt 1 view .LVU611
+ 380:Drivers/Imu/mpu6050.c **** 
+ 381:Drivers/Imu/mpu6050.c **** 	for(uint16_t c = 0; c < MPU_ERR_SAMPLING_COUNTER; c++)
+ 2237              		.loc 1 381 2 view .LVU612
+ 2238              	.LBB6:
+ 2239              		.loc 1 381 6 view .LVU613
+ 2240              	.LVL202:
+ 2241              		.loc 1 381 2 is_stmt 0 view .LVU614
+ 2242 000c 16E0     		b	.L73
+ 2243              	.LVL203:
+ 2244              	.L74:
+ 382:Drivers/Imu/mpu6050.c **** 	{
+ 383:Drivers/Imu/mpu6050.c **** 		getGyroscopeRAW(gyroRaw);
+ 2245              		.loc 1 383 3 is_stmt 1 discriminator 3 view .LVU615
+ 2246 000e 01A8     		add	r0, sp, #4
+ 2247 0010 FFF7FEFF 		bl	getGyroscopeRAW
+ 2248              	.LVL204:
+ 384:Drivers/Imu/mpu6050.c **** 		gyroBias[X] += gyroRaw[X];
+ 2249              		.loc 1 384 3 discriminator 3 view .LVU616
+ 2250              		.loc 1 384 25 is_stmt 0 discriminator 3 view .LVU617
+ 2251 0014 BDF90420 		ldrsh	r2, [sp, #4]
+ 2252              		.loc 1 384 15 discriminator 3 view .LVU618
+ 2253 0018 039B     		ldr	r3, [sp, #12]
+ 2254 001a 1344     		add	r3, r3, r2
+ 2255 001c 0393     		str	r3, [sp, #12]
+ 385:Drivers/Imu/mpu6050.c **** 		gyroBias[Y] += gyroRaw[Y];
+ 2256              		.loc 1 385 3 is_stmt 1 discriminator 3 view .LVU619
+ 2257              		.loc 1 385 25 is_stmt 0 discriminator 3 view .LVU620
+ 2258 001e BDF90620 		ldrsh	r2, [sp, #6]
+ 2259              		.loc 1 385 15 discriminator 3 view .LVU621
+ 2260 0022 049B     		ldr	r3, [sp, #16]
+ 2261 0024 1344     		add	r3, r3, r2
+ 2262 0026 0493     		str	r3, [sp, #16]
+ 386:Drivers/Imu/mpu6050.c **** 		gyroBias[Z] += gyroRaw[Z];
+ 2263              		.loc 1 386 3 is_stmt 1 discriminator 3 view .LVU622
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 54
+
+
+ 2264              		.loc 1 386 25 is_stmt 0 discriminator 3 view .LVU623
+ 2265 0028 BDF90820 		ldrsh	r2, [sp, #8]
+ 2266              		.loc 1 386 15 discriminator 3 view .LVU624
+ 2267 002c 059B     		ldr	r3, [sp, #20]
+ 2268 002e 1344     		add	r3, r3, r2
+ 2269 0030 0593     		str	r3, [sp, #20]
+ 387:Drivers/Imu/mpu6050.c **** 		HAL_Delay(5);
+ 2270              		.loc 1 387 3 is_stmt 1 discriminator 3 view .LVU625
+ 2271 0032 0520     		movs	r0, #5
+ 2272 0034 FFF7FEFF 		bl	HAL_Delay
+ 2273              	.LVL205:
+ 381:Drivers/Imu/mpu6050.c **** 	{
+ 2274              		.loc 1 381 52 discriminator 3 view .LVU626
+ 381:Drivers/Imu/mpu6050.c **** 	{
+ 2275              		.loc 1 381 53 is_stmt 0 discriminator 3 view .LVU627
+ 2276 0038 0134     		adds	r4, r4, #1
+ 2277              	.LVL206:
+ 381:Drivers/Imu/mpu6050.c **** 	{
+ 2278              		.loc 1 381 53 discriminator 3 view .LVU628
+ 2279 003a A4B2     		uxth	r4, r4
+ 2280              	.LVL207:
+ 2281              	.L73:
+ 381:Drivers/Imu/mpu6050.c **** 	{
+ 2282              		.loc 1 381 22 is_stmt 1 discriminator 1 view .LVU629
+ 381:Drivers/Imu/mpu6050.c **** 	{
+ 2283              		.loc 1 381 2 is_stmt 0 discriminator 1 view .LVU630
+ 2284 003c B4F57A7F 		cmp	r4, #1000
+ 2285 0040 E5D3     		bcc	.L74
+ 2286              	.LBE6:
+ 388:Drivers/Imu/mpu6050.c **** 	}
+ 389:Drivers/Imu/mpu6050.c **** 	
+ 390:Drivers/Imu/mpu6050.c **** 	gyroBias[X] /= MPU_ERR_SAMPLING_COUNTER;
+ 2287              		.loc 1 390 2 is_stmt 1 view .LVU631
+ 2288              		.loc 1 390 14 is_stmt 0 view .LVU632
+ 2289 0042 0399     		ldr	r1, [sp, #12]
+ 2290 0044 1C48     		ldr	r0, .L82
+ 2291 0046 80FB0132 		smull	r3, r2, r0, r1
+ 2292 004a C917     		asrs	r1, r1, #31
+ 2293 004c C1EBA211 		rsb	r1, r1, r2, asr #6
+ 2294 0050 0391     		str	r1, [sp, #12]
+ 391:Drivers/Imu/mpu6050.c **** 	gyroBias[Y] /= MPU_ERR_SAMPLING_COUNTER;
+ 2295              		.loc 1 391 2 is_stmt 1 view .LVU633
+ 2296              		.loc 1 391 14 is_stmt 0 view .LVU634
+ 2297 0052 049A     		ldr	r2, [sp, #16]
+ 2298 0054 80FB0234 		smull	r3, r4, r0, r2
+ 2299              	.LVL208:
+ 2300              		.loc 1 391 14 view .LVU635
+ 2301 0058 D217     		asrs	r2, r2, #31
+ 2302 005a C2EBA412 		rsb	r2, r2, r4, asr #6
+ 2303 005e 0492     		str	r2, [sp, #16]
+ 392:Drivers/Imu/mpu6050.c **** 	gyroBias[Z] /= MPU_ERR_SAMPLING_COUNTER;
+ 2304              		.loc 1 392 2 is_stmt 1 view .LVU636
+ 2305              		.loc 1 392 14 is_stmt 0 view .LVU637
+ 2306 0060 059B     		ldr	r3, [sp, #20]
+ 2307 0062 80FB0340 		smull	r4, r0, r0, r3
+ 2308 0066 DB17     		asrs	r3, r3, #31
+ 2309 0068 C3EBA013 		rsb	r3, r3, r0, asr #6
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 55
+
+
+ 2310 006c 0593     		str	r3, [sp, #20]
+ 393:Drivers/Imu/mpu6050.c **** 
+ 394:Drivers/Imu/mpu6050.c **** 	data[0] = (-gyroBias[X]/4  >> 8) & 0xFF;
+ 2311              		.loc 1 394 2 is_stmt 1 view .LVU638
+ 2312              		.loc 1 394 13 is_stmt 0 view .LVU639
+ 2313 006e 4942     		rsbs	r1, r1, #0
+ 2314              		.loc 1 394 25 view .LVU640
+ 2315 0070 0029     		cmp	r1, #0
+ 2316 0072 1ADB     		blt	.L79
+ 2317              	.L75:
+ 2318 0074 8C10     		asrs	r4, r1, #2
+ 2319              		.loc 1 394 29 view .LVU641
+ 2320 0076 8912     		asrs	r1, r1, #10
+ 2321              		.loc 1 394 10 view .LVU642
+ 2322 0078 1048     		ldr	r0, .L82+4
+ 2323 007a 0170     		strb	r1, [r0]
+ 395:Drivers/Imu/mpu6050.c **** 	data[1] = (-gyroBias[X]/4)       & 0xFF;
+ 2324              		.loc 1 395 2 is_stmt 1 view .LVU643
+ 2325              		.loc 1 395 10 is_stmt 0 view .LVU644
+ 2326 007c 4470     		strb	r4, [r0, #1]
+ 396:Drivers/Imu/mpu6050.c **** 	data[2] = (-gyroBias[Y]/4  >> 8) & 0xFF;
+ 2327              		.loc 1 396 2 is_stmt 1 view .LVU645
+ 2328              		.loc 1 396 13 is_stmt 0 view .LVU646
+ 2329 007e 5242     		rsbs	r2, r2, #0
+ 2330              		.loc 1 396 25 view .LVU647
+ 2331 0080 002A     		cmp	r2, #0
+ 2332 0082 14DB     		blt	.L80
+ 2333              	.L76:
+ 2334 0084 9010     		asrs	r0, r2, #2
+ 2335              		.loc 1 396 29 view .LVU648
+ 2336 0086 9212     		asrs	r2, r2, #10
+ 2337              		.loc 1 396 10 view .LVU649
+ 2338 0088 0C49     		ldr	r1, .L82+4
+ 2339 008a 8A70     		strb	r2, [r1, #2]
+ 397:Drivers/Imu/mpu6050.c **** 	data[3] = (-gyroBias[Y]/4)       & 0xFF;
+ 2340              		.loc 1 397 2 is_stmt 1 view .LVU650
+ 2341              		.loc 1 397 10 is_stmt 0 view .LVU651
+ 2342 008c C870     		strb	r0, [r1, #3]
+ 398:Drivers/Imu/mpu6050.c **** 	data[4] = (-gyroBias[Z]/4  >> 8) & 0xFF;
+ 2343              		.loc 1 398 2 is_stmt 1 view .LVU652
+ 2344              		.loc 1 398 13 is_stmt 0 view .LVU653
+ 2345 008e 5B42     		rsbs	r3, r3, #0
+ 2346              		.loc 1 398 25 view .LVU654
+ 2347 0090 002B     		cmp	r3, #0
+ 2348 0092 0EDB     		blt	.L81
+ 2349              	.L77:
+ 2350 0094 9A10     		asrs	r2, r3, #2
+ 2351              		.loc 1 398 29 view .LVU655
+ 2352 0096 9B12     		asrs	r3, r3, #10
+ 2353              		.loc 1 398 10 view .LVU656
+ 2354 0098 084C     		ldr	r4, .L82+4
+ 2355 009a 2371     		strb	r3, [r4, #4]
+ 399:Drivers/Imu/mpu6050.c **** 	data[5] = (-gyroBias[Z]/4)       & 0xFF;
+ 2356              		.loc 1 399 2 is_stmt 1 view .LVU657
+ 2357              		.loc 1 399 10 is_stmt 0 view .LVU658
+ 2358 009c 6271     		strb	r2, [r4, #5]
+ 400:Drivers/Imu/mpu6050.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 56
+
+
+ 401:Drivers/Imu/mpu6050.c **** 	MPU6050Set_Calibrate_Gyro(data);
+ 2359              		.loc 1 401 2 is_stmt 1 view .LVU659
+ 2360 009e 2046     		mov	r0, r4
+ 2361 00a0 FFF7FEFF 		bl	MPU6050Set_Calibrate_Gyro
+ 2362              	.LVL209:
+ 402:Drivers/Imu/mpu6050.c **** 
+ 403:Drivers/Imu/mpu6050.c **** 	return data;
+ 2363              		.loc 1 403 2 view .LVU660
+ 404:Drivers/Imu/mpu6050.c **** }
+ 2364              		.loc 1 404 1 is_stmt 0 view .LVU661
+ 2365 00a4 2046     		mov	r0, r4
+ 2366 00a6 06B0     		add	sp, sp, #24
+ 2367              	.LCFI29:
+ 2368              		.cfi_remember_state
+ 2369              		.cfi_def_cfa_offset 8
+ 2370              		@ sp needed
+ 2371 00a8 10BD     		pop	{r4, pc}
+ 2372              	.L79:
+ 2373              	.LCFI30:
+ 2374              		.cfi_restore_state
+ 394:Drivers/Imu/mpu6050.c **** 	data[1] = (-gyroBias[X]/4)       & 0xFF;
+ 2375              		.loc 1 394 25 view .LVU662
+ 2376 00aa 0331     		adds	r1, r1, #3
+ 2377 00ac E2E7     		b	.L75
+ 2378              	.L80:
+ 396:Drivers/Imu/mpu6050.c **** 	data[3] = (-gyroBias[Y]/4)       & 0xFF;
+ 2379              		.loc 1 396 25 view .LVU663
+ 2380 00ae 0332     		adds	r2, r2, #3
+ 2381 00b0 E8E7     		b	.L76
+ 2382              	.L81:
+ 398:Drivers/Imu/mpu6050.c **** 	data[5] = (-gyroBias[Z]/4)       & 0xFF;
+ 2383              		.loc 1 398 25 view .LVU664
+ 2384 00b2 0333     		adds	r3, r3, #3
+ 2385 00b4 EEE7     		b	.L77
+ 2386              	.L83:
+ 2387 00b6 00BF     		.align	2
+ 2388              	.L82:
+ 2389 00b8 D34D6210 		.word	274877907
+ 2390 00bc 00000000 		.word	.LANCHOR14
+ 2391              		.cfi_endproc
+ 2392              	.LFE141:
+ 2394              		.section	.text.MPU6050_Start_IRQ,"ax",%progbits
+ 2395              		.align	1
+ 2396              		.global	MPU6050_Start_IRQ
+ 2397              		.syntax unified
+ 2398              		.thumb
+ 2399              		.thumb_func
+ 2401              	MPU6050_Start_IRQ:
+ 2402              	.LFB142:
+ 405:Drivers/Imu/mpu6050.c **** 
+ 406:Drivers/Imu/mpu6050.c **** extern void MPU6050_Start_IRQ(void) //Enable Int
+ 407:Drivers/Imu/mpu6050.c **** {
+ 2403              		.loc 1 407 1 is_stmt 1 view -0
+ 2404              		.cfi_startproc
+ 2405              		@ args = 0, pretend = 0, frame = 8
+ 2406              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2407 0000 00B5     		push	{lr}
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 57
+
+
+ 2408              	.LCFI31:
+ 2409              		.cfi_def_cfa_offset 4
+ 2410              		.cfi_offset 14, -4
+ 2411 0002 87B0     		sub	sp, sp, #28
+ 2412              	.LCFI32:
+ 2413              		.cfi_def_cfa_offset 32
+ 408:Drivers/Imu/mpu6050.c **** 	uint8_t tmp = 0x01;
+ 2414              		.loc 1 408 2 view .LVU666
+ 2415              		.loc 1 408 10 is_stmt 0 view .LVU667
+ 2416 0004 0123     		movs	r3, #1
+ 2417 0006 8DF81730 		strb	r3, [sp, #23]
+ 409:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_ENABLE, 1, &tmp, 1, I2C_TIMEOUT);
+ 2418              		.loc 1 409 2 is_stmt 1 view .LVU668
+ 2419 000a 4FF47A72 		mov	r2, #1000
+ 2420 000e 0292     		str	r2, [sp, #8]
+ 2421 0010 0193     		str	r3, [sp, #4]
+ 2422 0012 0DF11702 		add	r2, sp, #23
+ 2423 0016 0092     		str	r2, [sp]
+ 2424 0018 3822     		movs	r2, #56
+ 2425 001a D021     		movs	r1, #208
+ 2426 001c 0748     		ldr	r0, .L86
+ 2427 001e 0068     		ldr	r0, [r0]
+ 2428 0020 FFF7FEFF 		bl	HAL_I2C_Mem_Write
+ 2429              	.LVL210:
+ 410:Drivers/Imu/mpu6050.c **** 
+ 411:Drivers/Imu/mpu6050.c **** 	HAL_NVIC_SetPriority(IRQ_GPIO_LINE, 0, 0);
+ 2430              		.loc 1 411 2 view .LVU669
+ 2431 0024 0022     		movs	r2, #0
+ 2432 0026 1146     		mov	r1, r2
+ 2433 0028 1720     		movs	r0, #23
+ 2434 002a FFF7FEFF 		bl	HAL_NVIC_SetPriority
+ 2435              	.LVL211:
+ 412:Drivers/Imu/mpu6050.c ****   	HAL_NVIC_EnableIRQ(IRQ_GPIO_LINE);
+ 2436              		.loc 1 412 4 view .LVU670
+ 2437 002e 1720     		movs	r0, #23
+ 2438 0030 FFF7FEFF 		bl	HAL_NVIC_EnableIRQ
+ 2439              	.LVL212:
+ 413:Drivers/Imu/mpu6050.c **** }
+ 2440              		.loc 1 413 1 is_stmt 0 view .LVU671
+ 2441 0034 07B0     		add	sp, sp, #28
+ 2442              	.LCFI33:
+ 2443              		.cfi_def_cfa_offset 4
+ 2444              		@ sp needed
+ 2445 0036 5DF804FB 		ldr	pc, [sp], #4
+ 2446              	.L87:
+ 2447 003a 00BF     		.align	2
+ 2448              	.L86:
+ 2449 003c 00000000 		.word	.LANCHOR10
+ 2450              		.cfi_endproc
+ 2451              	.LFE142:
+ 2453              		.section	.text.MPU6050_Read_DMA,"ax",%progbits
+ 2454              		.align	1
+ 2455              		.global	MPU6050_Read_DMA
+ 2456              		.syntax unified
+ 2457              		.thumb
+ 2458              		.thumb_func
+ 2460              	MPU6050_Read_DMA:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 58
+
+
+ 2461              	.LFB143:
+ 414:Drivers/Imu/mpu6050.c **** 
+ 415:Drivers/Imu/mpu6050.c **** extern void MPU6050_Read_DMA(void)
+ 416:Drivers/Imu/mpu6050.c **** {
+ 2462              		.loc 1 416 1 is_stmt 1 view -0
+ 2463              		.cfi_startproc
+ 2464              		@ args = 0, pretend = 0, frame = 0
+ 2465              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2466 0000 00B5     		push	{lr}
+ 2467              	.LCFI34:
+ 2468              		.cfi_def_cfa_offset 4
+ 2469              		.cfi_offset 14, -4
+ 2470 0002 83B0     		sub	sp, sp, #12
+ 2471              	.LCFI35:
+ 2472              		.cfi_def_cfa_offset 16
+ 417:Drivers/Imu/mpu6050.c **** 	HAL_I2C_Mem_Read_DMA(i2c, MPU6050_ADDR, MPU6050_RA_ACCEL_XOUT_H, 1, mpuRawDataBuffer, 14);
+ 2473              		.loc 1 417 2 view .LVU673
+ 2474 0004 0E23     		movs	r3, #14
+ 2475 0006 0193     		str	r3, [sp, #4]
+ 2476 0008 054B     		ldr	r3, .L90
+ 2477 000a 0093     		str	r3, [sp]
+ 2478 000c 0123     		movs	r3, #1
+ 2479 000e 3B22     		movs	r2, #59
+ 2480 0010 D021     		movs	r1, #208
+ 2481 0012 0448     		ldr	r0, .L90+4
+ 2482 0014 0068     		ldr	r0, [r0]
+ 2483 0016 FFF7FEFF 		bl	HAL_I2C_Mem_Read_DMA
+ 2484              	.LVL213:
+ 418:Drivers/Imu/mpu6050.c **** }
+ 2485              		.loc 1 418 1 is_stmt 0 view .LVU674
+ 2486 001a 03B0     		add	sp, sp, #12
+ 2487              	.LCFI36:
+ 2488              		.cfi_def_cfa_offset 4
+ 2489              		@ sp needed
+ 2490 001c 5DF804FB 		ldr	pc, [sp], #4
+ 2491              	.L91:
+ 2492              		.align	2
+ 2493              	.L90:
+ 2494 0020 00000000 		.word	.LANCHOR0
+ 2495 0024 00000000 		.word	.LANCHOR10
+ 2496              		.cfi_endproc
+ 2497              	.LFE143:
+ 2499              		.global	i2c
+ 2500              		.global	mpuDataScaled
+ 2501              		.global	mpuRawDataBuffer
+ 2502              		.global	mpuScale
+ 2503              		.section	.bss.data.0,"aw",%nobits
+ 2504              		.align	2
+ 2505              		.set	.LANCHOR14,. + 0
+ 2508              	data.0:
+ 2509 0000 00000000 		.space	6
+ 2509      0000
+ 2510              		.section	.bss.i2c,"aw",%nobits
+ 2511              		.align	2
+ 2512              		.set	.LANCHOR10,. + 0
+ 2515              	i2c:
+ 2516 0000 00000000 		.space	4
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 59
+
+
+ 2517              		.section	.bss.mpuDataScaled,"aw",%nobits
+ 2518              		.align	2
+ 2519              		.set	.LANCHOR2,. + 0
+ 2522              	mpuDataScaled:
+ 2523 0000 00000000 		.space	24
+ 2523      00000000 
+ 2523      00000000 
+ 2523      00000000 
+ 2523      00000000 
+ 2524              		.section	.bss.mpuRawDataBuffer,"aw",%nobits
+ 2525              		.align	2
+ 2526              		.set	.LANCHOR0,. + 0
+ 2529              	mpuRawDataBuffer:
+ 2530 0000 00000000 		.space	14
+ 2530      00000000 
+ 2530      00000000 
+ 2530      0000
+ 2531              		.section	.bss.pAccX.3,"aw",%nobits
+ 2532              		.align	2
+ 2533              		.set	.LANCHOR3,. + 0
+ 2536              	pAccX.3:
+ 2537 0000 00000000 		.space	4
+ 2538              		.section	.bss.pAccY.2,"aw",%nobits
+ 2539              		.align	2
+ 2540              		.set	.LANCHOR4,. + 0
+ 2543              	pAccY.2:
+ 2544 0000 00000000 		.space	4
+ 2545              		.section	.bss.pAccZ.1,"aw",%nobits
+ 2546              		.align	2
+ 2547              		.set	.LANCHOR5,. + 0
+ 2550              	pAccZ.1:
+ 2551 0000 00000000 		.space	4
+ 2552              		.section	.bss.prvPitch.10,"aw",%nobits
+ 2553              		.align	2
+ 2554              		.set	.LANCHOR12,. + 0
+ 2557              	prvPitch.10:
+ 2558 0000 00000000 		.space	4
+ 2559              		.section	.bss.prvRoll.9,"aw",%nobits
+ 2560              		.align	2
+ 2561              		.set	.LANCHOR13,. + 0
+ 2564              	prvRoll.9:
+ 2565 0000 00000000 		.space	4
+ 2566              		.section	.bss.prvYaw.11,"aw",%nobits
+ 2567              		.align	2
+ 2568              		.set	.LANCHOR11,. + 0
+ 2571              	prvYaw.11:
+ 2572 0000 00000000 		.space	4
+ 2573              		.section	.bss.q1.8,"aw",%nobits
+ 2574              		.align	2
+ 2575              		.set	.LANCHOR6,. + 0
+ 2578              	q1.8:
+ 2579 0000 00000000 		.space	4
+ 2580              		.section	.bss.q2.7,"aw",%nobits
+ 2581              		.align	2
+ 2582              		.set	.LANCHOR7,. + 0
+ 2585              	q2.7:
+ 2586 0000 00000000 		.space	4
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 60
+
+
+ 2587              		.section	.bss.q3.6,"aw",%nobits
+ 2588              		.align	2
+ 2589              		.set	.LANCHOR8,. + 0
+ 2592              	q3.6:
+ 2593 0000 00000000 		.space	4
+ 2594              		.section	.data.q0.5,"aw"
+ 2595              		.align	2
+ 2596              		.set	.LANCHOR9,. + 0
+ 2599              	q0.5:
+ 2600 0000 0000803F 		.word	1065353216
+ 2601              		.section	.rodata.mpuScale,"a"
+ 2602              		.align	2
+ 2603              		.set	.LANCHOR1,. + 0
+ 2606              	mpuScale:
+ 2607 0000 AE008046 		.word	1182793902
+ 2608 0004 6F120343 		.word	1124274799
+ 2609              		.text
+ 2610              	.Letext0:
+ 2611              		.file 2 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\machine\\_
+ 2612              		.file 3 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\sys\\_stdi
+ 2613              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xc.h"
+ 2614              		.file 5 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h"
+ 2615              		.file 6 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h"
+ 2616              		.file 7 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h"
+ 2617              		.file 8 "Drivers/Imu/mpu6050.h"
+ 2618              		.file 9 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h"
+ 2619              		.file 10 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h"
+ 2620              		.file 11 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\math.h"
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 61
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 mpu6050.c
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:23     .text.scaleReceivedDataByDMA:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:28     .text.scaleReceivedDataByDMA:00000000 scaleReceivedDataByDMA
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:148    .text.scaleReceivedDataByDMA:000000a0 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:158    .text.invSqrt:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:163    .text.invSqrt:00000000 invSqrt
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:206    .text.invSqrt:0000002c $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:213    .text.lowPassAlfaFiltering:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:218    .text.lowPassAlfaFiltering:00000000 lowPassAlfaFiltering
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:246    .text.TryComputeObjectPosition:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:251    .text.TryComputeObjectPosition:00000000 TryComputeObjectPosition
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:619    .text.TryComputeObjectPosition:00000260 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:635    .text.computeEulerAnglesMadgwickFilter:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:640    .text.computeEulerAnglesMadgwickFilter:00000000 computeEulerAnglesMadgwickFilter
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1221   .text.computeEulerAnglesMadgwickFilter:000003b8 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1231   .text.minus3dGravityVector:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1236   .text.minus3dGravityVector:00000000 minus3dGravityVector
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1717   .text.minus3dGravityVector:0000034c $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1722   .text.getGyroscopeRAW:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1727   .text.getGyroscopeRAW:00000000 getGyroscopeRAW
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1799   .text.getGyroscopeRAW:00000050 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1804   .text.MPU6050_ReadDmaDataEndCallBack:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1810   .text.MPU6050_ReadDmaDataEndCallBack:00000000 MPU6050_ReadDmaDataEndCallBack
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1904   .text.MPU6050_ReadDmaDataEndCallBack:0000005c $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1913   .text.MPU6050_DeviceReset:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1919   .text.MPU6050_DeviceReset:00000000 MPU6050_DeviceReset
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1985   .text.MPU6050_DeviceReset:00000058 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1990   .text.MPU6050_Init:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:1996   .text.MPU6050_Init:00000000 MPU6050_Init
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2153   .text.MPU6050_Init:000000e8 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2159   .text.MPU6050Set_Calibrate_Gyro:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2165   .text.MPU6050Set_Calibrate_Gyro:00000000 MPU6050Set_Calibrate_Gyro
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2204   .text.MPU6050Set_Calibrate_Gyro:00000024 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2209   .text.MPU6050_Calibrate_Gyro:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2215   .text.MPU6050_Calibrate_Gyro:00000000 MPU6050_Calibrate_Gyro
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2389   .text.MPU6050_Calibrate_Gyro:000000b8 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2395   .text.MPU6050_Start_IRQ:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2401   .text.MPU6050_Start_IRQ:00000000 MPU6050_Start_IRQ
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2449   .text.MPU6050_Start_IRQ:0000003c $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2454   .text.MPU6050_Read_DMA:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2460   .text.MPU6050_Read_DMA:00000000 MPU6050_Read_DMA
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2494   .text.MPU6050_Read_DMA:00000020 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2515   .bss.i2c:00000000 i2c
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2522   .bss.mpuDataScaled:00000000 mpuDataScaled
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2529   .bss.mpuRawDataBuffer:00000000 mpuRawDataBuffer
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2606   .rodata.mpuScale:00000000 mpuScale
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2504   .bss.data.0:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2508   .bss.data.0:00000000 data.0
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2511   .bss.i2c:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2518   .bss.mpuDataScaled:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2525   .bss.mpuRawDataBuffer:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2532   .bss.pAccX.3:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2536   .bss.pAccX.3:00000000 pAccX.3
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2539   .bss.pAccY.2:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2543   .bss.pAccY.2:00000000 pAccY.2
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2546   .bss.pAccZ.1:00000000 $d
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s 			page 62
+
+
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2550   .bss.pAccZ.1:00000000 pAccZ.1
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2553   .bss.prvPitch.10:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2557   .bss.prvPitch.10:00000000 prvPitch.10
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2560   .bss.prvRoll.9:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2564   .bss.prvRoll.9:00000000 prvRoll.9
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2567   .bss.prvYaw.11:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2571   .bss.prvYaw.11:00000000 prvYaw.11
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2574   .bss.q1.8:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2578   .bss.q1.8:00000000 q1.8
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2581   .bss.q2.7:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2585   .bss.q2.7:00000000 q2.7
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2588   .bss.q3.6:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2592   .bss.q3.6:00000000 q3.6
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2595   .data.q0.5:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2599   .data.q0.5:00000000 q0.5
+C:\Users\Teodor\AppData\Local\Temp\ccnvGHvb.s:2602   .rodata.mpuScale:00000000 $d
+
+UNDEFINED SYMBOLS
+__aeabi_f2d
+__aeabi_dadd
+__aeabi_d2f
+__aeabi_dsub
+__aeabi_dmul
+atan2
+asin
+cos
+sin
+HAL_I2C_Mem_Read
+HAL_I2C_Mem_Write
+HAL_Delay
+HAL_NVIC_SetPriority
+HAL_NVIC_EnableIRQ
+HAL_I2C_Mem_Read_DMA

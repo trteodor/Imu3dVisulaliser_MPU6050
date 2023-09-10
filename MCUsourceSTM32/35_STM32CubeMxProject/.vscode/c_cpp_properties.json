@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "STM32H7",
+            "includePath": [
+                "${workspaceFolder}/Application/**",
+                "${workspaceFolder}/Drivers/**",
+                "${workspaceFolder}/Config/**",
+                "${workspaceFolder}/Core/**",
+                "${workspaceFolder}/Middlewares/**",
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "STM32H743xx",
+                "USE_HAL_DRIVER",
+                "USE_FULL_LL_DRIVER"
+            ],
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "E:/GNU_Tools/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gcc.exe", //dk why we have pass full path
+            "compilerArgs": [
+                "-mcpu=cortex-m7",
+                "-mthumb"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

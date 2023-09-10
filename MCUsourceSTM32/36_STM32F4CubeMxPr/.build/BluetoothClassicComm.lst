@@ -1,0 +1,2521 @@
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"BluetoothClassicComm.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.RB_Transmit_Read,"ax",%progbits
+  20              		.align	1
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	RB_Transmit_Read:
+  26              	.LVL0:
+  27              	.LFB134:
+  28              		.file 1 "Drivers/BluetoothComm/BluetoothClassicComm.c"
+   1:Drivers/BluetoothComm/BluetoothClassicComm.c **** /**
+   2:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * @file BluetoothClassicComm.c
+   3:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * @author teodor
+   4:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+   5:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * @brief This file is a part of Line follower application
+   6:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * This is Bluetooth module to communicate wireless with Line Follower
+   7:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * I used module HC-06 - if you are interested about information of the modules please find data sh
+   8:Drivers/BluetoothComm/BluetoothClassicComm.c ****  */
+   9:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  10:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  11:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "BluetoothClassicComm.h"
+  12:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  13:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "main.h"
+  14:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  15:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "stdbool.h"
+  16:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "string.h"
+  17:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include <stdio.h>
+  18:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include <stdlib.h>
+  19:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "dma.h" /*DMA driver part of STM32 HAL Library*/
+  20:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "usart.h"  /*usart driver part of STM32 HAL Library*/
+  21:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "stddef.h"
+  22:Drivers/BluetoothComm/BluetoothClassicComm.c **** #include "math.h"
+  23:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  24:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define SIMULATOR_PROBES_COUNT             300
+  25:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_SINGLE_MESSAGE_SIZE            120
+  26:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_SINGLE_REC_MESSAGE_SIZE        120
+  27:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_STATISTICS_PERIOD              5000
+  28:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_DATA_REPORTING_TIME            50
+  29:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_MINIMUM_MESS_BREAK_TIM         35
+  30:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 2
+
+
+  31:Drivers/BluetoothComm/BluetoothClassicComm.c **** /**!
+  32:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief BluRingBufferStatus_t
+  33:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details ---
+  34:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+  35:Drivers/BluetoothComm/BluetoothClassicComm.c **** typedef enum BluRingBufferStatus_t
+  36:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  37:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RB_OK       = 0,
+  38:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RB_ERROR	= 1
+  39:Drivers/BluetoothComm/BluetoothClassicComm.c **** } BluRingBufferStatus_t;
+  40:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  41:Drivers/BluetoothComm/BluetoothClassicComm.c **** /**!
+  42:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief BluRingBufferTransmit_t
+  43:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details ---
+  44:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+  45:Drivers/BluetoothComm/BluetoothClassicComm.c **** typedef struct
+  46:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  47:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t Head; // Pointer to write
+  48:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t Tail; // Pointer to read
+  49:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t  MessageSize[BLU_TRANSMIT_RING_BUFFER_SIZE]; // Array to store messages size
+  50:Drivers/BluetoothComm/BluetoothClassicComm.c **** } BluRingBufferTransmit_t;
+  51:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  52:Drivers/BluetoothComm/BluetoothClassicComm.c **** /**!
+  53:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief BluRingBufferReceive_t
+  54:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details ---
+  55:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+  56:Drivers/BluetoothComm/BluetoothClassicComm.c **** typedef struct
+  57:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  58:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  59:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t Head; // Pointer to write
+  60:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t Tail; // Pointer to read
+  61:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t  MessageSize[BLU_RECEIVE_RING_BUFFER_SIZE]; // Array to store messages size
+  62:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	bool ReadyToRead[BLU_RECEIVE_RING_BUFFER_SIZE];
+  63:Drivers/BluetoothComm/BluetoothClassicComm.c **** } BluRingBufferReceive_t;
+  64:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  65:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  66:Drivers/BluetoothComm/BluetoothClassicComm.c **** typedef enum InternalRobotState_t
+  67:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  68:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Standstill,
+  69:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Driving,
+  70:Drivers/BluetoothComm/BluetoothClassicComm.c **** }InternalRobotState_t;
+  71:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  72:Drivers/BluetoothComm/BluetoothClassicComm.c **** typedef enum LoggingState_t
+  73:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  74:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Suspended,
+  75:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	TrueDataLogging,
+  76:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	SimulatorDataLogging,
+  77:Drivers/BluetoothComm/BluetoothClassicComm.c **** }LoggingState_t;
+  78:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  79:Drivers/BluetoothComm/BluetoothClassicComm.c **** /**
+  80:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * *******************************************************************************************
+  81:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * Static variables
+  82:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * *******************************************************************************************
+  83:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+  84:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  85:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT 15
+  86:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  87:Drivers/BluetoothComm/BluetoothClassicComm.c **** static void (*NvmUpdateCallBacks[BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT])(void) = {0};
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 3
+
+
+  88:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  89:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  90:Drivers/BluetoothComm/BluetoothClassicComm.c **** static LoggingState_t LoggingState = TrueDataLogging;
+  91:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  92:Drivers/BluetoothComm/BluetoothClassicComm.c **** static bool LogDroppedFlag =false;
+  93:Drivers/BluetoothComm/BluetoothClassicComm.c **** static uint16_t RetransmissionCounter = 0U;
+  94:Drivers/BluetoothComm/BluetoothClassicComm.c **** static uint16_t TransmisstedMessagesCounter = 0;
+  95:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  96:Drivers/BluetoothComm/BluetoothClassicComm.c **** static uint16_t volatile UartBusyCounter =0u;
+  97:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+  98:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferTransmit_t BluMainTransmitRingBuffer;
+  99:Drivers/BluetoothComm/BluetoothClassicComm.c **** static uint8_t BluMainTransmitMessagesTab[BLU_TRANSMIT_RING_BUFFER_SIZE][BLU_SINGLE_MESSAGE_SIZE];
+ 100:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 101:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferReceive_t BleMainReceiveRingBuffer;
+ 102:Drivers/BluetoothComm/BluetoothClassicComm.c **** static uint8_t BluMainReceiveMessagesTab[BLU_RECEIVE_RING_BUFFER_SIZE][BLU_SINGLE_REC_MESSAGE_SIZE]
+ 103:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 104:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 105:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BLU_ImuBaseDataReport_t NewestImuDataReport = {0};
+ 106:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 107:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 108:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*
+ 109:Drivers/BluetoothComm/BluetoothClassicComm.c ****  *********************************************************************************************
+ 110:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * Static function prototypes section
+ 111:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ********************************************************************************************
+ 112:Drivers/BluetoothComm/BluetoothClassicComm.c ****  */
+ 113:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 114:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Transmit_Read(BluRingBufferTransmit_t *Buf, uint8_t *MessageSize, u
+ 115:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Transmit_Write(BluRingBufferTransmit_t *Buf,uint8_t *DataToWrite, u
+ 116:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Receive_GetNextMessageAddress(BluRingBufferReceive_t *Buf, uint8_t 
+ 117:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Receive_Read(BluRingBufferReceive_t *Buf, uint8_t *MessageSize, uin
+ 118:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 119:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 120:Drivers/BluetoothComm/BluetoothClassicComm.c **** /************************************************************************************************/
+ 121:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+ 122:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  	if(huart->Instance == USART2)
+ 123:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  	{
+ 124:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		uint8_t *MessageReceiveBufferAddress;
+ 125:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 126:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		/*Start listen again as fast as possible*/
+ 127:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		RB_Receive_GetNextMessageAddress(&BleMainReceiveRingBuffer,&MessageReceiveBufferAddress);
+ 128:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		// Start listening again
+ 129:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		// HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_
+ 130:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		HAL_UART_Receive_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 131:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  		// HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+ 132:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  	}
+ 133:Drivers/BluetoothComm/BluetoothClassicComm.c **** //  }
+ 134:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 135:Drivers/BluetoothComm/BluetoothClassicComm.c **** static bool Received50BytesAndHitIdleFlag;
+ 136:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 137:Drivers/BluetoothComm/BluetoothClassicComm.c **** void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+ 138:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 139:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t *MessageReceiveBufferAddress;
+ 140:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 141:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	if(huart->Instance == USART1)
+ 142:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	{
+ 143:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		if( (Size == BLU_SINGLE_REC_MESSAGE_SIZE) || (true == Received50BytesAndHitIdleFlag) )
+ 144:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 4
+
+
+ 145:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			Received50BytesAndHitIdleFlag = false; /*Clear the flag..*/
+ 146:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			RB_Receive_GetNextMessageAddress(&BleMainReceiveRingBuffer,&MessageReceiveBufferAddress);
+ 147:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 148:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 149:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		else if(Size == (BLU_SINGLE_REC_MESSAGE_SIZE/2))
+ 150:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 151:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			Received50BytesAndHitIdleFlag=true;
+ 152:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &MessageReceiveBufferAddress[BLU_SINGLE_REC_MESSAGE_SIZE/2
+ 153:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}else{
+ 154:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			RB_Receive_GetNextMessageAddress(&BleMainReceiveRingBuffer,&MessageReceiveBufferAddress);
+ 155:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 156:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 157:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 158:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 159:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 160:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	}
+ 161:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 162:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 163:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 164:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*!
+ 165:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************
+ 166:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief RB_Transmit_Read Function to read data from ring buffer
+ 167:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details --
+ 168:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param RingBuffer_t *Buf - pointer to Ring Buffer structure
+ 169:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param out MessageSize - size of the "BleLogData" (return value)
+ 170:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param out MessagePointer - pointer to the message stored in RingBuffer (return value)
+ 171:Drivers/BluetoothComm/BluetoothClassicComm.c ****  *
+ 172:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+ 173:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Transmit_Read(BluRingBufferTransmit_t *Buf, uint8_t *MessageSize, u
+ 174:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+  29              		.loc 1 174 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+ 175:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Check if Tail hit Head
+ 176:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(Buf->Head == Buf->Tail)
+  34              		.loc 1 176 2 view .LVU1
+  35              		.loc 1 176 8 is_stmt 0 view .LVU2
+  36 0000 B0F800C0 		ldrh	ip, [r0]
+  37              		.loc 1 176 21 view .LVU3
+  38 0004 4388     		ldrh	r3, [r0, #2]
+  39              		.loc 1 176 4 view .LVU4
+  40 0006 9C45     		cmp	ip, r3
+  41 0008 15D0     		beq	.L3
+ 177:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 178:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// If yes - there is nothing to read
+ 179:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		return RB_ERROR;
+ 180:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 181:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 182:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Write current value from buffer to pointer from argument
+ 183:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	*MessageSize = Buf->MessageSize[Buf->Tail];
+  42              		.loc 1 183 2 is_stmt 1 view .LVU5
+  43              		.loc 1 183 33 is_stmt 0 view .LVU6
+  44 000a 0344     		add	r3, r3, r0
+  45 000c 1B79     		ldrb	r3, [r3, #4]	@ zero_extendqisi2
+  46              		.loc 1 183 15 view .LVU7
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 5
+
+
+  47 000e 0B70     		strb	r3, [r1]
+ 184:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	*MessagePointer = &BluMainTransmitMessagesTab[Buf->Tail][0];
+  48              		.loc 1 184 2 is_stmt 1 view .LVU8
+  49              		.loc 1 184 51 is_stmt 0 view .LVU9
+  50 0010 4388     		ldrh	r3, [r0, #2]
+  51              		.loc 1 184 20 view .LVU10
+  52 0012 C3EB0313 		rsb	r3, r3, r3, lsl #4
+  53 0016 0949     		ldr	r1, .L4
+  54              	.LVL1:
+  55              		.loc 1 184 20 view .LVU11
+  56 0018 01EBC303 		add	r3, r1, r3, lsl #3
+  57              		.loc 1 184 18 view .LVU12
+  58 001c 1360     		str	r3, [r2]
+ 185:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 186:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Calculate new Tail pointer
+ 187:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->Tail = (Buf->Tail + 1) % BLU_TRANSMIT_RING_BUFFER_SIZE;
+  59              		.loc 1 187 2 is_stmt 1 view .LVU13
+  60              		.loc 1 187 18 is_stmt 0 view .LVU14
+  61 001e 4288     		ldrh	r2, [r0, #2]
+  62              	.LVL2:
+  63              		.loc 1 187 25 view .LVU15
+  64 0020 0132     		adds	r2, r2, #1
+  65              		.loc 1 187 30 view .LVU16
+  66 0022 074B     		ldr	r3, .L4+4
+  67 0024 83FB0213 		smull	r1, r3, r3, r2
+  68 0028 5B11     		asrs	r3, r3, #5
+  69 002a 6421     		movs	r1, #100
+  70 002c 01FB1323 		mls	r3, r1, r3, r2
+  71              		.loc 1 187 12 view .LVU17
+  72 0030 4380     		strh	r3, [r0, #2]	@ movhi
+ 188:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 189:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Everything is ok - return OK status
+ 190:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	return RB_OK;
+  73              		.loc 1 190 2 is_stmt 1 view .LVU18
+  74              		.loc 1 190 9 is_stmt 0 view .LVU19
+  75 0032 0020     		movs	r0, #0
+  76              	.LVL3:
+  77              		.loc 1 190 9 view .LVU20
+  78 0034 7047     		bx	lr
+  79              	.LVL4:
+  80              	.L3:
+ 179:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+  81              		.loc 1 179 10 view .LVU21
+  82 0036 0120     		movs	r0, #1
+  83              	.LVL5:
+ 191:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+  84              		.loc 1 191 1 view .LVU22
+  85 0038 7047     		bx	lr
+  86              	.L5:
+  87 003a 00BF     		.align	2
+  88              	.L4:
+  89 003c 00000000 		.word	BluMainTransmitMessagesTab
+  90 0040 1F85EB51 		.word	1374389535
+  91              		.cfi_endproc
+  92              	.LFE134:
+  94              		.section	.text.RB_Transmit_Write,"ax",%progbits
+  95              		.align	1
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 6
+
+
+  96              		.syntax unified
+  97              		.thumb
+  98              		.thumb_func
+ 100              	RB_Transmit_Write:
+ 101              	.LVL6:
+ 102              	.LFB135:
+ 192:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 193:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 194:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*!
+ 195:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************
+ 196:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief RB_Transmit_Write
+ 197:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details --
+ 198:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param in RingBuffer_t *Buf - pointer to Ring Buffer structure
+ 199:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param in BleLogData - pointer to the data stored in RingBuffer
+ 200:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param in MessageSize - size of the "BleLogData"
+ 201:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************/
+ 202:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Transmit_Write(BluRingBufferTransmit_t *Buf,uint8_t *DataToWrite, u
+ 203:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 103              		.loc 1 203 1 is_stmt 1 view -0
+ 104              		.cfi_startproc
+ 105              		@ args = 0, pretend = 0, frame = 0
+ 106              		@ frame_needed = 0, uses_anonymous_args = 0
+ 107              		.loc 1 203 1 is_stmt 0 view .LVU24
+ 108 0000 10B5     		push	{r4, lr}
+ 109              	.LCFI0:
+ 110              		.cfi_def_cfa_offset 8
+ 111              		.cfi_offset 4, -8
+ 112              		.cfi_offset 14, -4
+ 204:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t ActualWriteIndex;
+ 113              		.loc 1 204 2 is_stmt 1 view .LVU25
+ 205:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 206:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Calculate new Head pointer value
+ 207:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t HeadTmp = (Buf->Head + 1) % BLU_TRANSMIT_RING_BUFFER_SIZE;
+ 114              		.loc 1 207 2 view .LVU26
+ 115              		.loc 1 207 25 is_stmt 0 view .LVU27
+ 116 0002 B0F800C0 		ldrh	ip, [r0]
+ 117              		.loc 1 207 32 view .LVU28
+ 118 0006 0CF10104 		add	r4, ip, #1
+ 119              		.loc 1 207 37 view .LVU29
+ 120 000a 104B     		ldr	r3, .L12
+ 121 000c 83FB04E3 		smull	lr, r3, r3, r4
+ 122 0010 5B11     		asrs	r3, r3, #5
+ 123 0012 4FF0640E 		mov	lr, #100
+ 124 0016 0EFB1343 		mls	r3, lr, r3, r4
+ 125              		.loc 1 207 11 view .LVU30
+ 126 001a 9BB2     		uxth	r3, r3
+ 127              	.LVL7:
+ 208:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 209:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Check if there is one free space ahead the Head buffer
+ 210:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(HeadTmp == Buf->Tail)
+ 128              		.loc 1 210 2 is_stmt 1 view .LVU31
+ 129              		.loc 1 210 19 is_stmt 0 view .LVU32
+ 130 001c 4488     		ldrh	r4, [r0, #2]
+ 131              		.loc 1 210 4 view .LVU33
+ 132 001e 9C42     		cmp	r4, r3
+ 133 0020 12D0     		beq	.L10
+ 211:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 7
+
+
+ 212:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// There is no space in the buffer - return an error
+ 213:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		return RB_ERROR;
+ 214:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 215:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 216:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	ActualWriteIndex = Buf->Head;
+ 134              		.loc 1 216 2 is_stmt 1 view .LVU34
+ 135              	.LVL8:
+ 217:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->Head = HeadTmp;
+ 136              		.loc 1 217 2 view .LVU35
+ 137              		.loc 1 217 12 is_stmt 0 view .LVU36
+ 138 0022 0380     		strh	r3, [r0]	@ movhi
+ 139              	.LVL9:
+ 218:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Store a value into the buffer
+ 219:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->MessageSize[ActualWriteIndex] = MessageSize;
+ 140              		.loc 1 219 2 is_stmt 1 view .LVU37
+ 141              		.loc 1 219 37 is_stmt 0 view .LVU38
+ 142 0024 6044     		add	r0, r0, ip
+ 143              	.LVL10:
+ 144              		.loc 1 219 37 view .LVU39
+ 145 0026 0271     		strb	r2, [r0, #4]
+ 220:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 221:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	/*Copy the values to new buffer*/
+ 222:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	for(int i=0; i<MessageSize; i++)
+ 146              		.loc 1 222 2 is_stmt 1 view .LVU40
+ 147              	.LBB2:
+ 148              		.loc 1 222 6 view .LVU41
+ 149              	.LVL11:
+ 150              		.loc 1 222 10 is_stmt 0 view .LVU42
+ 151 0028 0023     		movs	r3, #0
+ 152              	.LVL12:
+ 153              		.loc 1 222 2 view .LVU43
+ 154 002a 09E0     		b	.L8
+ 155              	.LVL13:
+ 156              	.L9:
+ 223:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 224:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		BluMainTransmitMessagesTab[ActualWriteIndex][i] = DataToWrite[i];
+ 157              		.loc 1 224 3 is_stmt 1 discriminator 3 view .LVU44
+ 158              		.loc 1 224 64 is_stmt 0 discriminator 3 view .LVU45
+ 159 002c 11F803E0 		ldrb	lr, [r1, r3]	@ zero_extendqisi2
+ 160              		.loc 1 224 51 discriminator 3 view .LVU46
+ 161 0030 CCEB0C10 		rsb	r0, ip, ip, lsl #4
+ 162 0034 064C     		ldr	r4, .L12+4
+ 163 0036 04EBC000 		add	r0, r4, r0, lsl #3
+ 164 003a 00F803E0 		strb	lr, [r0, r3]
+ 222:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 165              		.loc 1 222 30 is_stmt 1 discriminator 3 view .LVU47
+ 222:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 166              		.loc 1 222 31 is_stmt 0 discriminator 3 view .LVU48
+ 167 003e 0133     		adds	r3, r3, #1
+ 168              	.LVL14:
+ 169              	.L8:
+ 222:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 170              		.loc 1 222 15 is_stmt 1 discriminator 1 view .LVU49
+ 222:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 171              		.loc 1 222 2 is_stmt 0 discriminator 1 view .LVU50
+ 172 0040 9A42     		cmp	r2, r3
+ 173 0042 F3DC     		bgt	.L9
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 8
+
+
+ 174              	.LBE2:
+ 225:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 226:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Everything is ok - return OK status
+ 227:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	return RB_OK;
+ 175              		.loc 1 227 9 view .LVU51
+ 176 0044 0020     		movs	r0, #0
+ 177              	.LVL15:
+ 178              	.L7:
+ 228:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 179              		.loc 1 228 1 view .LVU52
+ 180 0046 10BD     		pop	{r4, pc}
+ 181              	.LVL16:
+ 182              	.L10:
+ 213:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 183              		.loc 1 213 10 view .LVU53
+ 184 0048 0120     		movs	r0, #1
+ 185              	.LVL17:
+ 213:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 186              		.loc 1 213 10 view .LVU54
+ 187 004a FCE7     		b	.L7
+ 188              	.L13:
+ 189              		.align	2
+ 190              	.L12:
+ 191 004c 1F85EB51 		.word	1374389535
+ 192 0050 00000000 		.word	BluMainTransmitMessagesTab
+ 193              		.cfi_endproc
+ 194              	.LFE135:
+ 196              		.section	.text.RB_Receive_GetNextMessageAddress,"ax",%progbits
+ 197              		.align	1
+ 198              		.syntax unified
+ 199              		.thumb
+ 200              		.thumb_func
+ 202              	RB_Receive_GetNextMessageAddress:
+ 203              	.LVL18:
+ 204              	.LFB136:
+ 229:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 230:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*!
+ 231:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************
+ 232:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief RB_Receive_GetNextMessageAddress
+ 233:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details Function used to work with DMA - direct write to ring buffer by DMA
+ 234:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param in WriteIndex - Current Write index in Ring Buffer where the 
+ 235:Drivers/BluetoothComm/BluetoothClassicComm.c ****  *                          value should be transmitted for example by DMA
+ 236:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************/
+ 237:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Receive_GetNextMessageAddress(BluRingBufferReceive_t *Buf, uint8_t 
+ 238:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 205              		.loc 1 238 1 is_stmt 1 view -0
+ 206              		.cfi_startproc
+ 207              		@ args = 0, pretend = 0, frame = 0
+ 208              		@ frame_needed = 0, uses_anonymous_args = 0
+ 209              		.loc 1 238 1 is_stmt 0 view .LVU56
+ 210 0000 10B5     		push	{r4, lr}
+ 211              	.LCFI1:
+ 212              		.cfi_def_cfa_offset 8
+ 213              		.cfi_offset 4, -8
+ 214              		.cfi_offset 14, -4
+ 239:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t DefaultBlindBuffer[20];
+ 215              		.loc 1 239 2 is_stmt 1 view .LVU57
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 9
+
+
+ 240:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 241:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 242:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 243:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	/*Mark previous message as ready to read*/
+ 244:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->ReadyToRead[Buf->Head] = true;
+ 216              		.loc 1 244 2 view .LVU58
+ 217              		.loc 1 244 22 is_stmt 0 view .LVU59
+ 218 0002 0288     		ldrh	r2, [r0]
+ 219              		.loc 1 244 30 view .LVU60
+ 220 0004 8318     		adds	r3, r0, r2
+ 221 0006 4FF0010C 		mov	ip, #1
+ 222 000a 83F868C0 		strb	ip, [r3, #104]
+ 245:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 246:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Calculate new Head pointer value
+ 247:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t HeadTmp = (Buf->Head + 1) % BLU_RECEIVE_RING_BUFFER_SIZE;
+ 223              		.loc 1 247 2 is_stmt 1 view .LVU61
+ 224              		.loc 1 247 32 is_stmt 0 view .LVU62
+ 225 000e 6244     		add	r2, r2, ip
+ 226              		.loc 1 247 37 view .LVU63
+ 227 0010 114B     		ldr	r3, .L19
+ 228 0012 83FB0243 		smull	r4, r3, r3, r2
+ 229 0016 5B11     		asrs	r3, r3, #5
+ 230 0018 4FF0640C 		mov	ip, #100
+ 231 001c 0CFB1323 		mls	r3, ip, r3, r2
+ 232              		.loc 1 247 11 view .LVU64
+ 233 0020 1FFA83FC 		uxth	ip, r3
+ 234              	.LVL19:
+ 248:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 249:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Check if there is one free space ahead the Head buffer
+ 250:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(HeadTmp == Buf->Tail)
+ 235              		.loc 1 250 2 is_stmt 1 view .LVU65
+ 236              		.loc 1 250 19 is_stmt 0 view .LVU66
+ 237 0024 4288     		ldrh	r2, [r0, #2]
+ 238              		.loc 1 250 4 view .LVU67
+ 239 0026 6245     		cmp	r2, ip
+ 240 0028 12D0     		beq	.L18
+ 251:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 252:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		/*Even if buffer is full data must be received somewhere to don't crush application/ dma*/
+ 253:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		*WriteAddress = DefaultBlindBuffer;
+ 254:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// There is no space in the buffer - return an error
+ 255:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		return RB_ERROR;
+ 256:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 257:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 258:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->ReadyToRead[HeadTmp] = false;
+ 241              		.loc 1 258 2 is_stmt 1 view .LVU68
+ 242 002a 9BB2     		uxth	r3, r3
+ 243              		.loc 1 258 28 is_stmt 0 view .LVU69
+ 244 002c 00EB030E 		add	lr, r0, r3
+ 245 0030 0022     		movs	r2, #0
+ 246 0032 8EF86820 		strb	r2, [lr, #104]
+ 259:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->MessageSize[HeadTmp] = BLU_SINGLE_REC_MESSAGE_SIZE;
+ 247              		.loc 1 259 2 is_stmt 1 view .LVU70
+ 248              		.loc 1 259 28 is_stmt 0 view .LVU71
+ 249 0036 7824     		movs	r4, #120
+ 250 0038 8EF80440 		strb	r4, [lr, #4]
+ 260:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->Head = HeadTmp;
+ 251              		.loc 1 260 2 is_stmt 1 view .LVU72
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 10
+
+
+ 252              		.loc 1 260 12 is_stmt 0 view .LVU73
+ 253 003c A0F800C0 		strh	ip, [r0]	@ movhi
+ 261:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 262:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	*WriteAddress = &BluMainReceiveMessagesTab[HeadTmp][0];
+ 254              		.loc 1 262 2 is_stmt 1 view .LVU74
+ 255              		.loc 1 262 18 is_stmt 0 view .LVU75
+ 256 0040 C3EB0313 		rsb	r3, r3, r3, lsl #4
+ 257 0044 0548     		ldr	r0, .L19+4
+ 258              	.LVL20:
+ 259              		.loc 1 262 18 view .LVU76
+ 260 0046 00EBC303 		add	r3, r0, r3, lsl #3
+ 261              		.loc 1 262 16 view .LVU77
+ 262 004a 0B60     		str	r3, [r1]
+ 263:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 264:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Everything is ok - return OK status
+ 265:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	return RB_OK;
+ 263              		.loc 1 265 2 is_stmt 1 view .LVU78
+ 264              		.loc 1 265 9 is_stmt 0 view .LVU79
+ 265 004c 1046     		mov	r0, r2
+ 266              	.L16:
+ 266:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 267              		.loc 1 266 1 view .LVU80
+ 268 004e 10BD     		pop	{r4, pc}
+ 269              	.LVL21:
+ 270              	.L18:
+ 253:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// There is no space in the buffer - return an error
+ 271              		.loc 1 253 3 is_stmt 1 view .LVU81
+ 253:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// There is no space in the buffer - return an error
+ 272              		.loc 1 253 17 is_stmt 0 view .LVU82
+ 273 0050 034B     		ldr	r3, .L19+8
+ 274 0052 0B60     		str	r3, [r1]
+ 255:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 275              		.loc 1 255 3 is_stmt 1 view .LVU83
+ 255:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 276              		.loc 1 255 10 is_stmt 0 view .LVU84
+ 277 0054 0120     		movs	r0, #1
+ 278              	.LVL22:
+ 255:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 279              		.loc 1 255 10 view .LVU85
+ 280 0056 FAE7     		b	.L16
+ 281              	.L20:
+ 282              		.align	2
+ 283              	.L19:
+ 284 0058 1F85EB51 		.word	1374389535
+ 285 005c 00000000 		.word	BluMainReceiveMessagesTab
+ 286 0060 00000000 		.word	.LANCHOR0
+ 287              		.cfi_endproc
+ 288              	.LFE136:
+ 290              		.section	.text.RB_Receive_Read,"ax",%progbits
+ 291              		.align	1
+ 292              		.syntax unified
+ 293              		.thumb
+ 294              		.thumb_func
+ 296              	RB_Receive_Read:
+ 297              	.LVL23:
+ 298              	.LFB137:
+ 267:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 11
+
+
+ 268:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 269:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*!
+ 270:Drivers/BluetoothComm/BluetoothClassicComm.c ****  ************************************************************************************************
+ 271:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \brief RB_Transmit_Read Function to read data from ring buffer
+ 272:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \details --
+ 273:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param RingBuffer_t *Buf - pointer to Ring Buffer structure
+ 274:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param out MessageSize - size of the "BleLogData" (return value)
+ 275:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * \param out MessagePointer - pointer to the message stored in RingBuffer (return value)
+ 276:Drivers/BluetoothComm/BluetoothClassicComm.c ****  *
+ 277:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * */
+ 278:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BluRingBufferStatus_t RB_Receive_Read(BluRingBufferReceive_t *Buf, uint8_t *MessageSize, uin
+ 279:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 299              		.loc 1 279 1 is_stmt 1 view -0
+ 300              		.cfi_startproc
+ 301              		@ args = 0, pretend = 0, frame = 0
+ 302              		@ frame_needed = 0, uses_anonymous_args = 0
+ 303              		@ link register save eliminated.
+ 304              		.loc 1 279 1 is_stmt 0 view .LVU87
+ 305 0000 10B4     		push	{r4}
+ 306              	.LCFI2:
+ 307              		.cfi_def_cfa_offset 4
+ 308              		.cfi_offset 4, -4
+ 280:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 281:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(Buf->ReadyToRead[Buf->Tail] == false)
+ 309              		.loc 1 281 2 is_stmt 1 view .LVU88
+ 310              		.loc 1 281 25 is_stmt 0 view .LVU89
+ 311 0002 4388     		ldrh	r3, [r0, #2]
+ 312              		.loc 1 281 21 view .LVU90
+ 313 0004 C418     		adds	r4, r0, r3
+ 314 0006 94F86840 		ldrb	r4, [r4, #104]	@ zero_extendqisi2
+ 315              		.loc 1 281 4 view .LVU91
+ 316 000a FCB1     		cbz	r4, .L23
+ 282:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 283:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		/*Any message in ring buffer isn't ready to read*/
+ 284:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		return RB_ERROR;
+ 285:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 286:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	/*Mark again as not ready to read*/
+ 287:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->ReadyToRead[Buf->Tail] = false;
+ 317              		.loc 1 287 2 is_stmt 1 view .LVU92
+ 318              		.loc 1 287 30 is_stmt 0 view .LVU93
+ 319 000c 00EB030C 		add	ip, r0, r3
+ 320 0010 0024     		movs	r4, #0
+ 321 0012 8CF86840 		strb	r4, [ip, #104]
+ 288:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 289:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Check if Tail hit Head
+ 290:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(Buf->Head == Buf->Tail)
+ 322              		.loc 1 290 2 is_stmt 1 view .LVU94
+ 323              		.loc 1 290 8 is_stmt 0 view .LVU95
+ 324 0016 0488     		ldrh	r4, [r0]
+ 325              		.loc 1 290 4 view .LVU96
+ 326 0018 A342     		cmp	r3, r4
+ 327 001a 19D0     		beq	.L24
+ 291:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 292:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		// If yes - there is nothing to read
+ 293:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		return RB_ERROR;
+ 294:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 295:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 12
+
+
+ 296:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 297:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 298:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Write current value from buffer to pointer from argument
+ 299:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	*MessageSize = Buf->MessageSize[Buf->Tail];
+ 328              		.loc 1 299 2 is_stmt 1 view .LVU97
+ 329              		.loc 1 299 33 is_stmt 0 view .LVU98
+ 330 001c 9CF80430 		ldrb	r3, [ip, #4]	@ zero_extendqisi2
+ 331              		.loc 1 299 15 view .LVU99
+ 332 0020 0B70     		strb	r3, [r1]
+ 300:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	*MessagePointer = &BluMainReceiveMessagesTab[Buf->Tail][0];
+ 333              		.loc 1 300 2 is_stmt 1 view .LVU100
+ 334              		.loc 1 300 50 is_stmt 0 view .LVU101
+ 335 0022 4388     		ldrh	r3, [r0, #2]
+ 336              		.loc 1 300 20 view .LVU102
+ 337 0024 C3EB0313 		rsb	r3, r3, r3, lsl #4
+ 338 0028 0A49     		ldr	r1, .L26
+ 339              	.LVL24:
+ 340              		.loc 1 300 20 view .LVU103
+ 341 002a 01EBC303 		add	r3, r1, r3, lsl #3
+ 342              		.loc 1 300 18 view .LVU104
+ 343 002e 1360     		str	r3, [r2]
+ 301:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 302:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Calculate new Tail pointer
+ 303:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Buf->Tail = (Buf->Tail + 1) % BLU_RECEIVE_RING_BUFFER_SIZE;
+ 344              		.loc 1 303 2 is_stmt 1 view .LVU105
+ 345              		.loc 1 303 18 is_stmt 0 view .LVU106
+ 346 0030 4288     		ldrh	r2, [r0, #2]
+ 347              	.LVL25:
+ 348              		.loc 1 303 25 view .LVU107
+ 349 0032 0132     		adds	r2, r2, #1
+ 350              		.loc 1 303 30 view .LVU108
+ 351 0034 084B     		ldr	r3, .L26+4
+ 352 0036 83FB0213 		smull	r1, r3, r3, r2
+ 353 003a 5B11     		asrs	r3, r3, #5
+ 354 003c 6421     		movs	r1, #100
+ 355 003e 01FB1323 		mls	r3, r1, r3, r2
+ 356              		.loc 1 303 12 view .LVU109
+ 357 0042 4380     		strh	r3, [r0, #2]	@ movhi
+ 304:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 305:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// Everything is ok - return OK status
+ 306:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	return RB_OK;
+ 358              		.loc 1 306 2 is_stmt 1 view .LVU110
+ 359              		.loc 1 306 9 is_stmt 0 view .LVU111
+ 360 0044 0020     		movs	r0, #0
+ 361              	.LVL26:
+ 362              	.L22:
+ 307:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 363              		.loc 1 307 1 view .LVU112
+ 364 0046 5DF8044B 		ldr	r4, [sp], #4
+ 365              	.LCFI3:
+ 366              		.cfi_remember_state
+ 367              		.cfi_restore 4
+ 368              		.cfi_def_cfa_offset 0
+ 369 004a 7047     		bx	lr
+ 370              	.LVL27:
+ 371              	.L23:
+ 372              	.LCFI4:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 13
+
+
+ 373              		.cfi_restore_state
+ 284:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 374              		.loc 1 284 10 view .LVU113
+ 375 004c 0120     		movs	r0, #1
+ 376              	.LVL28:
+ 284:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 377              		.loc 1 284 10 view .LVU114
+ 378 004e FAE7     		b	.L22
+ 379              	.LVL29:
+ 380              	.L24:
+ 293:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 381              		.loc 1 293 10 view .LVU115
+ 382 0050 0120     		movs	r0, #1
+ 383              	.LVL30:
+ 293:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 384              		.loc 1 293 10 view .LVU116
+ 385 0052 F8E7     		b	.L22
+ 386              	.L27:
+ 387              		.align	2
+ 388              	.L26:
+ 389 0054 00000000 		.word	BluMainReceiveMessagesTab
+ 390 0058 1F85EB51 		.word	1374389535
+ 391              		.cfi_endproc
+ 392              	.LFE137:
+ 394              		.section	.text.TransmitImuBaseDataReport,"ax",%progbits
+ 395              		.align	1
+ 396              		.syntax unified
+ 397              		.thumb
+ 398              		.thumb_func
+ 400              	TransmitImuBaseDataReport:
+ 401              	.LFB138:
+ 308:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 309:Drivers/BluetoothComm/BluetoothClassicComm.c **** static BLU_CallStatus_t TransmitImuBaseDataReport(void)
+ 310:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 402              		.loc 1 310 1 is_stmt 1 view -0
+ 403              		.cfi_startproc
+ 404              		@ args = 0, pretend = 0, frame = 120
+ 405              		@ frame_needed = 0, uses_anonymous_args = 0
+ 406 0000 10B5     		push	{r4, lr}
+ 407              	.LCFI5:
+ 408              		.cfi_def_cfa_offset 8
+ 409              		.cfi_offset 4, -8
+ 410              		.cfi_offset 14, -4
+ 411 0002 9EB0     		sub	sp, sp, #120
+ 412              	.LCFI6:
+ 413              		.cfi_def_cfa_offset 128
+ 311:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t DataBuffer[BLU_SINGLE_MESSAGE_SIZE] = {'B'};
+ 414              		.loc 1 311 2 view .LVU118
+ 415              		.loc 1 311 10 is_stmt 0 view .LVU119
+ 416 0004 4223     		movs	r3, #66
+ 417 0006 0093     		str	r3, [sp]
+ 418 0008 7422     		movs	r2, #116
+ 419 000a 0021     		movs	r1, #0
+ 420 000c 01A8     		add	r0, sp, #4
+ 421 000e FFF7FEFF 		bl	memset
+ 422              	.LVL31:
+ 312:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t _SyncID = 0;
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 14
+
+
+ 423              		.loc 1 312 2 is_stmt 1 view .LVU120
+ 313:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 314:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	BLU_CallStatus_t retval = BLU_Ok;
+ 424              		.loc 1 314 2 view .LVU121
+ 315:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 316:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	NewestImuDataReport.SyncId = _SyncID;
+ 425              		.loc 1 316 2 view .LVU122
+ 426              		.loc 1 316 29 is_stmt 0 view .LVU123
+ 427 0012 134C     		ldr	r4, .L31
+ 428 0014 134B     		ldr	r3, .L31+4
+ 429 0016 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 430 0018 2370     		strb	r3, [r4]
+ 317:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	NewestImuDataReport.ucTimeStamp = HAL_GetTick();
+ 431              		.loc 1 317 2 is_stmt 1 view .LVU124
+ 432              		.loc 1 317 36 is_stmt 0 view .LVU125
+ 433 001a FFF7FEFF 		bl	HAL_GetTick
+ 434              	.LVL32:
+ 435              		.loc 1 317 34 view .LVU126
+ 436 001e C4F80100 		str	r0, [r4, #1]	@ unaligned
+ 318:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 319:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	DataBuffer[0] = BLU_ImuData;
+ 437              		.loc 1 319 2 is_stmt 1 view .LVU127
+ 438              		.loc 1 319 16 is_stmt 0 view .LVU128
+ 439 0022 0623     		movs	r3, #6
+ 440 0024 8DF80030 		strb	r3, [sp]
+ 320:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	DataBuffer[1] = NewestImuDataReport.SyncId;
+ 441              		.loc 1 320 2 is_stmt 1 view .LVU129
+ 442              		.loc 1 320 37 is_stmt 0 view .LVU130
+ 443 0028 2146     		mov	r1, r4
+ 444 002a 11F8013B 		ldrb	r3, [r1], #1	@ zero_extendqisi2
+ 445              		.loc 1 320 16 view .LVU131
+ 446 002e 8DF80130 		strb	r3, [sp, #1]
+ 321:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 322:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	memcpy(&DataBuffer[2], &NewestImuDataReport.ucTimeStamp,sizeof(BLU_ImuBaseDataReport_t)-1);
+ 447              		.loc 1 322 2 is_stmt 1 view .LVU132
+ 448 0032 6422     		movs	r2, #100
+ 449 0034 0DF10200 		add	r0, sp, #2
+ 450 0038 FFF7FEFF 		bl	memcpy
+ 451              	.LVL33:
+ 323:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 324:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(RB_Transmit_Write(&BluMainTransmitRingBuffer, (uint8_t *)DataBuffer, BLU_SINGLE_MESSAGE_SIZE) !
+ 452              		.loc 1 324 2 view .LVU133
+ 453              		.loc 1 324 5 is_stmt 0 view .LVU134
+ 454 003c 7822     		movs	r2, #120
+ 455 003e 6946     		mov	r1, sp
+ 456 0040 0948     		ldr	r0, .L31+8
+ 457 0042 FFF7FEFF 		bl	RB_Transmit_Write
+ 458              	.LVL34:
+ 459              		.loc 1 324 4 view .LVU135
+ 460 0046 0346     		mov	r3, r0
+ 461 0048 10B1     		cbz	r0, .L29
+ 325:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 326:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		LogDroppedFlag = true;
+ 462              		.loc 1 326 3 is_stmt 1 view .LVU136
+ 463              		.loc 1 326 18 is_stmt 0 view .LVU137
+ 464 004a 0123     		movs	r3, #1
+ 465 004c 074A     		ldr	r2, .L31+12
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 15
+
+
+ 466 004e 1370     		strb	r3, [r2]
+ 327:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		retval = BLU_Error;
+ 467              		.loc 1 327 3 is_stmt 1 view .LVU138
+ 468              	.LVL35:
+ 469              	.L29:
+ 328:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 329:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 330:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	_SyncID++;
+ 470              		.loc 1 330 2 view .LVU139
+ 471              		.loc 1 330 9 is_stmt 0 view .LVU140
+ 472 0050 0449     		ldr	r1, .L31+4
+ 473 0052 0A78     		ldrb	r2, [r1]	@ zero_extendqisi2
+ 474 0054 0132     		adds	r2, r2, #1
+ 475 0056 0A70     		strb	r2, [r1]
+ 331:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	return retval;
+ 476              		.loc 1 331 2 is_stmt 1 view .LVU141
+ 332:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 477              		.loc 1 332 1 is_stmt 0 view .LVU142
+ 478 0058 1846     		mov	r0, r3
+ 479 005a 1EB0     		add	sp, sp, #120
+ 480              	.LCFI7:
+ 481              		.cfi_def_cfa_offset 8
+ 482              		@ sp needed
+ 483 005c 10BD     		pop	{r4, pc}
+ 484              	.L32:
+ 485 005e 00BF     		.align	2
+ 486              	.L31:
+ 487 0060 00000000 		.word	.LANCHOR1
+ 488 0064 00000000 		.word	.LANCHOR2
+ 489 0068 00000000 		.word	.LANCHOR3
+ 490 006c 00000000 		.word	.LANCHOR4
+ 491              		.cfi_endproc
+ 492              	.LFE138:
+ 494              		.section	.text.Statistics_CreateAndTransmitCommunicationStatistics,"ax",%progbits
+ 495              		.align	1
+ 496              		.syntax unified
+ 497              		.thumb
+ 498              		.thumb_func
+ 500              	Statistics_CreateAndTransmitCommunicationStatistics:
+ 501              	.LFB139:
+ 333:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 334:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 335:Drivers/BluetoothComm/BluetoothClassicComm.c **** static void Statistics_CreateAndTransmitCommunicationStatistics(void)
+ 336:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 502              		.loc 1 336 1 is_stmt 1 view -0
+ 503              		.cfi_startproc
+ 504              		@ args = 0, pretend = 0, frame = 0
+ 505              		@ frame_needed = 0, uses_anonymous_args = 0
+ 506 0000 38B5     		push	{r3, r4, r5, lr}
+ 507              	.LCFI8:
+ 508              		.cfi_def_cfa_offset 16
+ 509              		.cfi_offset 3, -16
+ 510              		.cfi_offset 4, -12
+ 511              		.cfi_offset 5, -8
+ 512              		.cfi_offset 14, -4
+ 337:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t SyncIdStat = 0U;
+ 513              		.loc 1 337 2 view .LVU144
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 16
+
+
+ 338:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 339:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t RingBufferStatisticsHolder[BLU_SINGLE_MESSAGE_SIZE] = {0};
+ 514              		.loc 1 339 2 view .LVU145
+ 340:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 341:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint16_t MainRingBufferOverFlowCounter = 0U;
+ 515              		.loc 1 341 2 view .LVU146
+ 342:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t RingBufferRemaninzingSpace = 0U;
+ 516              		.loc 1 342 2 view .LVU147
+ 517              	.LVL36:
+ 343:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 344:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	for(int i =0; i<BLU_SINGLE_MESSAGE_SIZE; i++)
+ 518              		.loc 1 344 2 view .LVU148
+ 519              	.LBB3:
+ 520              		.loc 1 344 6 view .LVU149
+ 521              		.loc 1 344 10 is_stmt 0 view .LVU150
+ 522 0002 0023     		movs	r3, #0
+ 523              		.loc 1 344 2 view .LVU151
+ 524 0004 03E0     		b	.L34
+ 525              	.LVL37:
+ 526              	.L35:
+ 345:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 346:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		RingBufferStatisticsHolder[i] = 0U; /*Sanitize the buffer*/
+ 527              		.loc 1 346 3 is_stmt 1 discriminator 3 view .LVU152
+ 528              		.loc 1 346 33 is_stmt 0 discriminator 3 view .LVU153
+ 529 0006 204A     		ldr	r2, .L38
+ 530 0008 0021     		movs	r1, #0
+ 531 000a D154     		strb	r1, [r2, r3]
+ 344:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 532              		.loc 1 344 43 is_stmt 1 discriminator 3 view .LVU154
+ 344:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 533              		.loc 1 344 44 is_stmt 0 discriminator 3 view .LVU155
+ 534 000c 0133     		adds	r3, r3, #1
+ 535              	.LVL38:
+ 536              	.L34:
+ 344:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 537              		.loc 1 344 16 is_stmt 1 discriminator 1 view .LVU156
+ 344:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 538              		.loc 1 344 2 is_stmt 0 discriminator 1 view .LVU157
+ 539 000e 772B     		cmp	r3, #119
+ 540 0010 F9DD     		ble	.L35
+ 541              	.LBE3:
+ 347:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 348:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 349:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(true == LogDroppedFlag)
+ 542              		.loc 1 349 2 is_stmt 1 view .LVU158
+ 543              		.loc 1 349 10 is_stmt 0 view .LVU159
+ 544 0012 1E4B     		ldr	r3, .L38+4
+ 545              	.LVL39:
+ 546              		.loc 1 349 10 view .LVU160
+ 547 0014 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 548              		.loc 1 349 4 view .LVU161
+ 549 0016 33B1     		cbz	r3, .L36
+ 350:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 351:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		LogDroppedFlag = false;
+ 550              		.loc 1 351 3 is_stmt 1 view .LVU162
+ 551              		.loc 1 351 18 is_stmt 0 view .LVU163
+ 552 0018 1C4B     		ldr	r3, .L38+4
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 17
+
+
+ 553 001a 0022     		movs	r2, #0
+ 554 001c 1A70     		strb	r2, [r3]
+ 352:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		MainRingBufferOverFlowCounter++;
+ 555              		.loc 1 352 3 is_stmt 1 view .LVU164
+ 556              		.loc 1 352 32 is_stmt 0 view .LVU165
+ 557 001e 1C4A     		ldr	r2, .L38+8
+ 558 0020 1388     		ldrh	r3, [r2]
+ 559 0022 0133     		adds	r3, r3, #1
+ 560 0024 1380     		strh	r3, [r2]	@ movhi
+ 561              	.L36:
+ 353:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 354:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 355:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[0] = BLU_CommunicationStats;
+ 562              		.loc 1 355 2 is_stmt 1 view .LVU166
+ 563              		.loc 1 355 32 is_stmt 0 view .LVU167
+ 564 0026 184C     		ldr	r4, .L38
+ 565 0028 0223     		movs	r3, #2
+ 566 002a 2370     		strb	r3, [r4]
+ 356:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[1] = SyncIdStat; /*SyncId*/
+ 567              		.loc 1 356 2 is_stmt 1 view .LVU168
+ 568              		.loc 1 356 32 is_stmt 0 view .LVU169
+ 569 002c 194D     		ldr	r5, .L38+12
+ 570 002e 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 571 0030 6370     		strb	r3, [r4, #1]
+ 357:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 358:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint32_t ucHelperTime = HAL_GetTick();
+ 572              		.loc 1 358 2 is_stmt 1 view .LVU170
+ 573              		.loc 1 358 26 is_stmt 0 view .LVU171
+ 574 0032 FFF7FEFF 		bl	HAL_GetTick
+ 575              	.LVL40:
+ 359:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[2] = ((uint8_t *)&ucHelperTime)[0];
+ 576              		.loc 1 359 2 is_stmt 1 view .LVU172
+ 577              		.loc 1 359 32 is_stmt 0 view .LVU173
+ 578 0036 A070     		strb	r0, [r4, #2]
+ 360:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[3] = ((uint8_t *)&ucHelperTime)[1];
+ 579              		.loc 1 360 2 is_stmt 1 view .LVU174
+ 580              		.loc 1 360 32 is_stmt 0 view .LVU175
+ 581 0038 C0F30723 		ubfx	r3, r0, #8, #8
+ 582 003c E370     		strb	r3, [r4, #3]
+ 361:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[4] = ((uint8_t *)&ucHelperTime)[2];
+ 583              		.loc 1 361 2 is_stmt 1 view .LVU176
+ 584              		.loc 1 361 32 is_stmt 0 view .LVU177
+ 585 003e C0F30743 		ubfx	r3, r0, #16, #8
+ 586 0042 2371     		strb	r3, [r4, #4]
+ 362:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[5] = ((uint8_t *)&ucHelperTime)[3];
+ 587              		.loc 1 362 2 is_stmt 1 view .LVU178
+ 588              		.loc 1 362 32 is_stmt 0 view .LVU179
+ 589 0044 C0F30760 		ubfx	r0, r0, #24, #8
+ 590              	.LVL41:
+ 591              		.loc 1 362 32 view .LVU180
+ 592 0048 6071     		strb	r0, [r4, #5]
+ 363:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 364:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferRemaninzingSpace = BLU_TRANSMIT_RING_BUFFER_SIZE - (BluMainTransmitRingBuffer.Head - Blu
+ 593              		.loc 1 364 2 is_stmt 1 view .LVU181
+ 594              		.loc 1 364 122 is_stmt 0 view .LVU182
+ 595 004a 134A     		ldr	r2, .L38+16
+ 596 004c 5388     		ldrh	r3, [r2, #2]
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 18
+
+
+ 597              		.loc 1 364 89 view .LVU183
+ 598 004e 1288     		ldrh	r2, [r2]
+ 599              		.loc 1 364 61 view .LVU184
+ 600 0050 9B1A     		subs	r3, r3, r2
+ 601 0052 6433     		adds	r3, r3, #100
+ 602              	.LVL42:
+ 365:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 366:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[6] = ((uint8_t *)&RingBufferRemaninzingSpace)[0];
+ 603              		.loc 1 366 2 is_stmt 1 view .LVU185
+ 604              		.loc 1 366 32 is_stmt 0 view .LVU186
+ 605 0054 A371     		strb	r3, [r4, #6]
+ 367:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[7] = ((uint8_t *)&RingBufferRemaninzingSpace)[1];
+ 606              		.loc 1 367 2 is_stmt 1 view .LVU187
+ 607              		.loc 1 367 32 is_stmt 0 view .LVU188
+ 608 0056 C3F30723 		ubfx	r3, r3, #8, #8
+ 609              	.LVL43:
+ 610              		.loc 1 367 32 view .LVU189
+ 611 005a E371     		strb	r3, [r4, #7]
+ 368:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 369:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[8] = ((uint8_t *)&MainRingBufferOverFlowCounter)[0];
+ 612              		.loc 1 369 2 is_stmt 1 view .LVU190
+ 613              		.loc 1 369 77 is_stmt 0 view .LVU191
+ 614 005c 0C4B     		ldr	r3, .L38+8
+ 615 005e 1A78     		ldrb	r2, [r3]	@ zero_extendqisi2
+ 616              	.LVL44:
+ 617              		.loc 1 369 32 view .LVU192
+ 618 0060 2272     		strb	r2, [r4, #8]
+ 370:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[9] = ((uint8_t *)&MainRingBufferOverFlowCounter)[1];
+ 619              		.loc 1 370 2 is_stmt 1 view .LVU193
+ 620              		.loc 1 370 32 is_stmt 0 view .LVU194
+ 621 0062 5B78     		ldrb	r3, [r3, #1]	@ zero_extendqisi2
+ 622 0064 6372     		strb	r3, [r4, #9]
+ 371:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 372:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[10] =  ((uint8_t *)&TransmisstedMessagesCounter)[0];
+ 623              		.loc 1 372 2 is_stmt 1 view .LVU195
+ 624              		.loc 1 372 77 is_stmt 0 view .LVU196
+ 625 0066 0D4B     		ldr	r3, .L38+20
+ 626 0068 1A78     		ldrb	r2, [r3]	@ zero_extendqisi2
+ 627              		.loc 1 372 33 view .LVU197
+ 628 006a A272     		strb	r2, [r4, #10]
+ 373:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[11] =  ((uint8_t *)&TransmisstedMessagesCounter)[1];
+ 629              		.loc 1 373 2 is_stmt 1 view .LVU198
+ 630              		.loc 1 373 33 is_stmt 0 view .LVU199
+ 631 006c 5B78     		ldrb	r3, [r3, #1]	@ zero_extendqisi2
+ 632 006e E372     		strb	r3, [r4, #11]
+ 374:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 375:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[12]  =  ((uint8_t *)&RetransmissionCounter)[0];
+ 633              		.loc 1 375 2 is_stmt 1 view .LVU200
+ 634              		.loc 1 375 34 is_stmt 0 view .LVU201
+ 635 0070 0023     		movs	r3, #0
+ 636 0072 2373     		strb	r3, [r4, #12]
+ 376:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	RingBufferStatisticsHolder[13] =  ((uint8_t *)&RetransmissionCounter)[1];
+ 637              		.loc 1 376 2 is_stmt 1 view .LVU202
+ 638              		.loc 1 376 33 is_stmt 0 view .LVU203
+ 639 0074 6373     		strb	r3, [r4, #13]
+ 377:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 378:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	HAL_UART_Transmit_DMA(&huart1, RingBufferStatisticsHolder, BLU_SINGLE_MESSAGE_SIZE);
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 19
+
+
+ 640              		.loc 1 378 2 is_stmt 1 view .LVU204
+ 641 0076 7822     		movs	r2, #120
+ 642 0078 2146     		mov	r1, r4
+ 643 007a 0948     		ldr	r0, .L38+24
+ 644 007c FFF7FEFF 		bl	HAL_UART_Transmit_DMA
+ 645              	.LVL45:
+ 379:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 380:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	SyncIdStat++;
+ 646              		.loc 1 380 2 view .LVU205
+ 647              		.loc 1 380 12 is_stmt 0 view .LVU206
+ 648 0080 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+ 649 0082 0133     		adds	r3, r3, #1
+ 650 0084 2B70     		strb	r3, [r5]
+ 381:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 651              		.loc 1 381 1 view .LVU207
+ 652 0086 38BD     		pop	{r3, r4, r5, pc}
+ 653              	.L39:
+ 654              		.align	2
+ 655              	.L38:
+ 656 0088 00000000 		.word	.LANCHOR5
+ 657 008c 00000000 		.word	.LANCHOR4
+ 658 0090 00000000 		.word	.LANCHOR6
+ 659 0094 00000000 		.word	.LANCHOR7
+ 660 0098 00000000 		.word	.LANCHOR3
+ 661 009c 00000000 		.word	.LANCHOR8
+ 662 00a0 00000000 		.word	huart1
+ 663              		.cfi_endproc
+ 664              	.LFE139:
+ 666              		.section	.text.TransmitDataHandler,"ax",%progbits
+ 667              		.align	1
+ 668              		.syntax unified
+ 669              		.thumb
+ 670              		.thumb_func
+ 672              	TransmitDataHandler:
+ 673              	.LFB142:
+ 382:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 383:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 384:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*
+ 385:Drivers/BluetoothComm/BluetoothClassicComm.c ****  **************************************************************************************************
+ 386:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * exported functions declarations section START
+ 387:Drivers/BluetoothComm/BluetoothClassicComm.c ****  * exported functions description is added in header file
+ 388:Drivers/BluetoothComm/BluetoothClassicComm.c ****  **************************************************************************************************
+ 389:Drivers/BluetoothComm/BluetoothClassicComm.c ****  */
+ 390:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 391:Drivers/BluetoothComm/BluetoothClassicComm.c **** void BaseDataReporterTask(void)
+ 392:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 393:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t PreviousReportTransmitTime = 0;
+ 394:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 395:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if( (HAL_GetTick() - PreviousReportTransmitTime >= BLU_DATA_REPORTING_TIME)
+ 396:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			&& (TrueDataLogging == LoggingState))
+ 397:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 398:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		PreviousReportTransmitTime = HAL_GetTick();
+ 399:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		TransmitImuBaseDataReport(); 
+ 400:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 401:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	else if(  (HAL_GetTick() - PreviousReportTransmitTime >= BLU_DATA_REPORTING_TIME )
+ 402:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						&& (SimulatorDataLogging == LoggingState) )
+ 403:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 20
+
+
+ 404:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		PreviousReportTransmitTime = HAL_GetTick();
+ 405:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		//Sim_FakeBaseDataReportTask();
+ 406:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		TransmitImuBaseDataReport();
+ 407:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 408:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	else//Suspended == LoggingState
+ 409:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 410:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		/*Nothing to do*/
+ 411:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 412:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 413:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 414:Drivers/BluetoothComm/BluetoothClassicComm.c **** static void ReceiveDataHandler(void)
+ 415:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 416:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t LastReadRingBufferTime = 0U;
+ 417:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static bool NvmDataUpdatedFlag = false;
+ 418:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 419:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t *MessageToRead_p = NULL;
+ 420:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t MessageToReadSize= 0U;
+ 421:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 422:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 423:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 424:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		if(RB_Receive_Read(&BleMainReceiveRingBuffer, &MessageToReadSize,&MessageToRead_p) == RB_OK)
+ 425:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 426:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 427:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			uint8_t *ReceivedMessageBuff = MessageToRead_p;
+ 428:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			BLU_MessageID_t ReceivedMessageId = ReceivedMessageBuff[0];
+ 429:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 430:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			LastReadRingBufferTime = HAL_GetTick();
+ 431:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 432:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			switch(ReceivedMessageId)
+ 433:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 434:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				case BLU_LoggingStart:
+ 435:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 436:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					LoggingState = TrueDataLogging;
+ 437:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 438:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 439:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				case BLU_LoggingStop:
+ 440:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 441:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					LoggingState = Suspended;
+ 442:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 443:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 444:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 445:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				default:
+ 446:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 447:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					if(ReceivedMessageId != 0)
+ 448:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					{
+ 449:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						BLU_DbgMsgTransmit("BLU RecHandlrErr-why defult?? |FrId:%d",ReceivedMessageId);
+ 450:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					}
+ 451:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 452:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 453:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 454:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			}
+ 455:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 456:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			ReceivedMessageId = BLU_None;
+ 457:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 458:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		if( (NvmDataUpdatedFlag == true) && (HAL_GetTick() - LastReadRingBufferTime > 50) )
+ 460:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 21
+
+
+ 461:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			NvmDataUpdatedFlag = false;
+ 462:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			for(int i=0; i<BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT; i++)
+ 464:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 465:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				if(NvmUpdateCallBacks[i] != 0)
+ 466:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 467:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					NvmUpdateCallBacks[i]();
+ 468:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 469:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			}
+ 470:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 471:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			BLU_DbgMsgTransmit("Nvm Data updated and commited");
+ 472:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 473:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 474:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 475:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 476:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 477:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 478:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 479:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 480:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 481:Drivers/BluetoothComm/BluetoothClassicComm.c **** static void TransmitDataHandler(void)
+ 482:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 674              		.loc 1 482 1 is_stmt 1 view -0
+ 675              		.cfi_startproc
+ 676              		@ args = 0, pretend = 0, frame = 8
+ 677              		@ frame_needed = 0, uses_anonymous_args = 0
+ 483:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t BLU_StatisticTimer = 0;
+ 678              		.loc 1 483 2 view .LVU209
+ 484:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t PreviousDataTransmitTime = 0;
+ 679              		.loc 1 484 2 view .LVU210
+ 485:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 486:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if( HAL_UART_STATE_READY == huart1.gState)
+ 680              		.loc 1 486 2 view .LVU211
+ 681              		.loc 1 486 36 is_stmt 0 view .LVU212
+ 682 0000 224B     		ldr	r3, .L50
+ 683 0002 93F83D30 		ldrb	r3, [r3, #61]	@ zero_extendqisi2
+ 684 0006 DBB2     		uxtb	r3, r3
+ 685              		.loc 1 486 4 view .LVU213
+ 686 0008 202B     		cmp	r3, #32
+ 687 000a 06D0     		beq	.L49
+ 487:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 488:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		if(HAL_GetTick() - BLU_StatisticTimer >= BLU_STATISTICS_PERIOD)
+ 489:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 490:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				BLU_StatisticTimer = HAL_GetTick();
+ 491:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				// /*Transmit the statistics with higher prio than normal messages*/
+ 492:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				TransmisstedMessagesCounter++;
+ 493:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				Statistics_CreateAndTransmitCommunicationStatistics();
+ 494:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 495:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		else
+ 496:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 497:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			if( (HAL_GetTick() - PreviousDataTransmitTime) > BLU_MINIMUM_MESS_BREAK_TIM)
+ 498:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 499:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				PreviousDataTransmitTime = HAL_GetTick();
+ 500:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 501:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				uint8_t *MessageToTransmit_p = NULL;
+ 502:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				uint8_t MessageToSize_p = 0U;
+ 503:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				if(RB_Transmit_Read(&BluMainTransmitRingBuffer, &MessageToSize_p, &MessageToTransmit_p) == RB_O
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 22
+
+
+ 504:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 505:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					TransmisstedMessagesCounter++;
+ 506:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					HAL_UART_Transmit_DMA(&huart1, MessageToTransmit_p, BLU_SINGLE_MESSAGE_SIZE);
+ 507:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 508:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			}
+ 509:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 510:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 511:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	else
+ 512:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 513:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		UartBusyCounter++;
+ 688              		.loc 1 513 3 is_stmt 1 view .LVU214
+ 689              		.loc 1 513 18 is_stmt 0 view .LVU215
+ 690 000c 204A     		ldr	r2, .L50+4
+ 691 000e 1388     		ldrh	r3, [r2]
+ 692 0010 9BB2     		uxth	r3, r3
+ 693 0012 0133     		adds	r3, r3, #1
+ 694 0014 9BB2     		uxth	r3, r3
+ 695 0016 1380     		strh	r3, [r2]	@ movhi
+ 696 0018 7047     		bx	lr
+ 697              	.L49:
+ 482:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t BLU_StatisticTimer = 0;
+ 698              		.loc 1 482 1 view .LVU216
+ 699 001a 00B5     		push	{lr}
+ 700              	.LCFI9:
+ 701              		.cfi_def_cfa_offset 4
+ 702              		.cfi_offset 14, -4
+ 703 001c 83B0     		sub	sp, sp, #12
+ 704              	.LCFI10:
+ 705              		.cfi_def_cfa_offset 16
+ 488:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 706              		.loc 1 488 3 is_stmt 1 view .LVU217
+ 488:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 707              		.loc 1 488 6 is_stmt 0 view .LVU218
+ 708 001e FFF7FEFF 		bl	HAL_GetTick
+ 709              	.LVL46:
+ 488:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 710              		.loc 1 488 20 view .LVU219
+ 711 0022 1C4B     		ldr	r3, .L50+8
+ 712 0024 1B68     		ldr	r3, [r3]
+ 713 0026 C01A     		subs	r0, r0, r3
+ 488:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 714              		.loc 1 488 5 view .LVU220
+ 715 0028 41F28733 		movw	r3, #4999
+ 716 002c 9842     		cmp	r0, r3
+ 717 002e 0CD9     		bls	.L42
+ 490:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				// /*Transmit the statistics with higher prio than normal messages*/
+ 718              		.loc 1 490 5 is_stmt 1 view .LVU221
+ 490:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				// /*Transmit the statistics with higher prio than normal messages*/
+ 719              		.loc 1 490 26 is_stmt 0 view .LVU222
+ 720 0030 FFF7FEFF 		bl	HAL_GetTick
+ 721              	.LVL47:
+ 490:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				// /*Transmit the statistics with higher prio than normal messages*/
+ 722              		.loc 1 490 24 view .LVU223
+ 723 0034 174B     		ldr	r3, .L50+8
+ 724 0036 1860     		str	r0, [r3]
+ 492:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				Statistics_CreateAndTransmitCommunicationStatistics();
+ 725              		.loc 1 492 5 is_stmt 1 view .LVU224
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 23
+
+
+ 492:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				Statistics_CreateAndTransmitCommunicationStatistics();
+ 726              		.loc 1 492 32 is_stmt 0 view .LVU225
+ 727 0038 174A     		ldr	r2, .L50+12
+ 728 003a 1388     		ldrh	r3, [r2]
+ 729 003c 0133     		adds	r3, r3, #1
+ 730 003e 1380     		strh	r3, [r2]	@ movhi
+ 493:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 731              		.loc 1 493 5 is_stmt 1 view .LVU226
+ 732 0040 FFF7FEFF 		bl	Statistics_CreateAndTransmitCommunicationStatistics
+ 733              	.LVL48:
+ 734              	.L40:
+ 514:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 515:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 735              		.loc 1 515 1 is_stmt 0 view .LVU227
+ 736 0044 03B0     		add	sp, sp, #12
+ 737              	.LCFI11:
+ 738              		.cfi_remember_state
+ 739              		.cfi_def_cfa_offset 4
+ 740              		@ sp needed
+ 741 0046 5DF804FB 		ldr	pc, [sp], #4
+ 742              	.L42:
+ 743              	.LCFI12:
+ 744              		.cfi_restore_state
+ 497:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 745              		.loc 1 497 4 is_stmt 1 view .LVU228
+ 497:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 746              		.loc 1 497 9 is_stmt 0 view .LVU229
+ 747 004a FFF7FEFF 		bl	HAL_GetTick
+ 748              	.LVL49:
+ 497:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 749              		.loc 1 497 23 view .LVU230
+ 750 004e 134B     		ldr	r3, .L50+16
+ 751 0050 1B68     		ldr	r3, [r3]
+ 752 0052 C01A     		subs	r0, r0, r3
+ 497:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 753              		.loc 1 497 6 view .LVU231
+ 754 0054 2328     		cmp	r0, #35
+ 755 0056 F5D9     		bls	.L40
+ 756              	.LBB4:
+ 499:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 757              		.loc 1 499 5 is_stmt 1 view .LVU232
+ 499:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 758              		.loc 1 499 32 is_stmt 0 view .LVU233
+ 759 0058 FFF7FEFF 		bl	HAL_GetTick
+ 760              	.LVL50:
+ 499:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 761              		.loc 1 499 30 view .LVU234
+ 762 005c 0F4B     		ldr	r3, .L50+16
+ 763 005e 1860     		str	r0, [r3]
+ 501:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				uint8_t MessageToSize_p = 0U;
+ 764              		.loc 1 501 5 is_stmt 1 view .LVU235
+ 501:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				uint8_t MessageToSize_p = 0U;
+ 765              		.loc 1 501 14 is_stmt 0 view .LVU236
+ 766 0060 0023     		movs	r3, #0
+ 767 0062 0193     		str	r3, [sp, #4]
+ 502:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				if(RB_Transmit_Read(&BluMainTransmitRingBuffer, &MessageToSize_p, &MessageToTransmit_p) == RB_O
+ 768              		.loc 1 502 5 is_stmt 1 view .LVU237
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 24
+
+
+ 502:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				if(RB_Transmit_Read(&BluMainTransmitRingBuffer, &MessageToSize_p, &MessageToTransmit_p) == RB_O
+ 769              		.loc 1 502 13 is_stmt 0 view .LVU238
+ 770 0064 8DF80330 		strb	r3, [sp, #3]
+ 503:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 771              		.loc 1 503 5 is_stmt 1 view .LVU239
+ 503:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 772              		.loc 1 503 8 is_stmt 0 view .LVU240
+ 773 0068 01AA     		add	r2, sp, #4
+ 774 006a 0DF10301 		add	r1, sp, #3
+ 775 006e 0C48     		ldr	r0, .L50+20
+ 776 0070 FFF7FEFF 		bl	RB_Transmit_Read
+ 777              	.LVL51:
+ 503:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 778              		.loc 1 503 7 view .LVU241
+ 779 0074 0028     		cmp	r0, #0
+ 780 0076 E5D1     		bne	.L40
+ 505:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					HAL_UART_Transmit_DMA(&huart1, MessageToTransmit_p, BLU_SINGLE_MESSAGE_SIZE);
+ 781              		.loc 1 505 6 is_stmt 1 view .LVU242
+ 505:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					HAL_UART_Transmit_DMA(&huart1, MessageToTransmit_p, BLU_SINGLE_MESSAGE_SIZE);
+ 782              		.loc 1 505 33 is_stmt 0 view .LVU243
+ 783 0078 074A     		ldr	r2, .L50+12
+ 784 007a 1388     		ldrh	r3, [r2]
+ 785 007c 0133     		adds	r3, r3, #1
+ 786 007e 1380     		strh	r3, [r2]	@ movhi
+ 506:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 787              		.loc 1 506 6 is_stmt 1 view .LVU244
+ 788 0080 7822     		movs	r2, #120
+ 789 0082 0199     		ldr	r1, [sp, #4]
+ 790 0084 0148     		ldr	r0, .L50
+ 791 0086 FFF7FEFF 		bl	HAL_UART_Transmit_DMA
+ 792              	.LVL52:
+ 793 008a DBE7     		b	.L40
+ 794              	.L51:
+ 795              		.align	2
+ 796              	.L50:
+ 797 008c 00000000 		.word	huart1
+ 798 0090 00000000 		.word	.LANCHOR11
+ 799 0094 00000000 		.word	.LANCHOR9
+ 800 0098 00000000 		.word	.LANCHOR8
+ 801 009c 00000000 		.word	.LANCHOR10
+ 802 00a0 00000000 		.word	.LANCHOR3
+ 803              	.LBE4:
+ 804              		.cfi_endproc
+ 805              	.LFE142:
+ 807              		.section	.text.HAL_UARTEx_RxEventCallback,"ax",%progbits
+ 808              		.align	1
+ 809              		.global	HAL_UARTEx_RxEventCallback
+ 810              		.syntax unified
+ 811              		.thumb
+ 812              		.thumb_func
+ 814              	HAL_UARTEx_RxEventCallback:
+ 815              	.LVL53:
+ 816              	.LFB133:
+ 138:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t *MessageReceiveBufferAddress;
+ 817              		.loc 1 138 1 view -0
+ 818              		.cfi_startproc
+ 819              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 25
+
+
+ 820              		@ frame_needed = 0, uses_anonymous_args = 0
+ 139:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 821              		.loc 1 139 2 view .LVU246
+ 141:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	{
+ 822              		.loc 1 141 3 view .LVU247
+ 141:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	{
+ 823              		.loc 1 141 11 is_stmt 0 view .LVU248
+ 824 0000 0268     		ldr	r2, [r0]
+ 141:Drivers/BluetoothComm/BluetoothClassicComm.c ****  	{
+ 825              		.loc 1 141 5 view .LVU249
+ 826 0002 184B     		ldr	r3, .L63
+ 827 0004 9A42     		cmp	r2, r3
+ 828 0006 00D0     		beq	.L61
+ 829 0008 7047     		bx	lr
+ 830              	.L61:
+ 138:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t *MessageReceiveBufferAddress;
+ 831              		.loc 1 138 1 view .LVU250
+ 832 000a 10B5     		push	{r4, lr}
+ 833              	.LCFI13:
+ 834              		.cfi_def_cfa_offset 8
+ 835              		.cfi_offset 4, -8
+ 836              		.cfi_offset 14, -4
+ 143:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 837              		.loc 1 143 3 is_stmt 1 view .LVU251
+ 143:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 838              		.loc 1 143 5 is_stmt 0 view .LVU252
+ 839 000c 7829     		cmp	r1, #120
+ 840 000e 02D0     		beq	.L54
+ 143:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 841              		.loc 1 143 54 discriminator 1 view .LVU253
+ 842 0010 154B     		ldr	r3, .L63+4
+ 843 0012 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 143:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 844              		.loc 1 143 45 discriminator 1 view .LVU254
+ 845 0014 6BB1     		cbz	r3, .L55
+ 846              	.L54:
+ 145:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			RB_Receive_GetNextMessageAddress(&BleMainReceiveRingBuffer,&MessageReceiveBufferAddress);
+ 847              		.loc 1 145 4 is_stmt 1 view .LVU255
+ 145:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			RB_Receive_GetNextMessageAddress(&BleMainReceiveRingBuffer,&MessageReceiveBufferAddress);
+ 848              		.loc 1 145 34 is_stmt 0 view .LVU256
+ 849 0016 144B     		ldr	r3, .L63+4
+ 850 0018 0022     		movs	r2, #0
+ 851 001a 1A70     		strb	r2, [r3]
+ 146:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 852              		.loc 1 146 4 is_stmt 1 view .LVU257
+ 853 001c 134C     		ldr	r4, .L63+8
+ 854 001e 2146     		mov	r1, r4
+ 855              	.LVL54:
+ 146:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 856              		.loc 1 146 4 is_stmt 0 view .LVU258
+ 857 0020 1348     		ldr	r0, .L63+12
+ 858              	.LVL55:
+ 146:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 859              		.loc 1 146 4 view .LVU259
+ 860 0022 FFF7FEFF 		bl	RB_Receive_GetNextMessageAddress
+ 861              	.LVL56:
+ 147:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 26
+
+
+ 862              		.loc 1 147 4 is_stmt 1 view .LVU260
+ 863 0026 7822     		movs	r2, #120
+ 864 0028 2168     		ldr	r1, [r4]
+ 865 002a 1248     		ldr	r0, .L63+16
+ 866 002c FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 867              	.LVL57:
+ 868              	.L52:
+ 161:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 869              		.loc 1 161 1 is_stmt 0 view .LVU261
+ 870 0030 10BD     		pop	{r4, pc}
+ 871              	.LVL58:
+ 872              	.L55:
+ 149:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 873              		.loc 1 149 8 is_stmt 1 view .LVU262
+ 149:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 874              		.loc 1 149 10 is_stmt 0 view .LVU263
+ 875 0032 3C29     		cmp	r1, #60
+ 876 0034 0AD0     		beq	.L62
+ 154:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 877              		.loc 1 154 4 is_stmt 1 view .LVU264
+ 878 0036 0D4C     		ldr	r4, .L63+8
+ 879 0038 2146     		mov	r1, r4
+ 880              	.LVL59:
+ 154:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 881              		.loc 1 154 4 is_stmt 0 view .LVU265
+ 882 003a 0D48     		ldr	r0, .L63+12
+ 883              	.LVL60:
+ 154:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, MessageReceiveBufferAddress, BLU_SINGLE_REC_MESSAGE_SIZE);
+ 884              		.loc 1 154 4 view .LVU266
+ 885 003c FFF7FEFF 		bl	RB_Receive_GetNextMessageAddress
+ 886              	.LVL61:
+ 155:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 887              		.loc 1 155 4 is_stmt 1 view .LVU267
+ 888 0040 7822     		movs	r2, #120
+ 889 0042 2168     		ldr	r1, [r4]
+ 890 0044 0B48     		ldr	r0, .L63+16
+ 891 0046 FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 892              	.LVL62:
+ 161:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 893              		.loc 1 161 1 is_stmt 0 view .LVU268
+ 894 004a F1E7     		b	.L52
+ 895              	.LVL63:
+ 896              	.L62:
+ 151:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &MessageReceiveBufferAddress[BLU_SINGLE_REC_MESSAGE_SIZE/2
+ 897              		.loc 1 151 4 is_stmt 1 view .LVU269
+ 151:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &MessageReceiveBufferAddress[BLU_SINGLE_REC_MESSAGE_SIZE/2
+ 898              		.loc 1 151 33 is_stmt 0 view .LVU270
+ 899 004c 064B     		ldr	r3, .L63+4
+ 900 004e 0122     		movs	r2, #1
+ 901 0050 1A70     		strb	r2, [r3]
+ 152:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}else{
+ 902              		.loc 1 152 4 is_stmt 1 view .LVU271
+ 903 0052 064B     		ldr	r3, .L63+8
+ 904 0054 1968     		ldr	r1, [r3]
+ 905              	.LVL64:
+ 152:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}else{
+ 906              		.loc 1 152 4 is_stmt 0 view .LVU272
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 27
+
+
+ 907 0056 3C22     		movs	r2, #60
+ 908 0058 1144     		add	r1, r1, r2
+ 909 005a 0648     		ldr	r0, .L63+16
+ 910              	.LVL65:
+ 152:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}else{
+ 911              		.loc 1 152 4 view .LVU273
+ 912 005c FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 913              	.LVL66:
+ 914 0060 E6E7     		b	.L52
+ 915              	.L64:
+ 916 0062 00BF     		.align	2
+ 917              	.L63:
+ 918 0064 00100140 		.word	1073811456
+ 919 0068 00000000 		.word	.LANCHOR12
+ 920 006c 00000000 		.word	.LANCHOR13
+ 921 0070 00000000 		.word	.LANCHOR14
+ 922 0074 00000000 		.word	huart1
+ 923              		.cfi_endproc
+ 924              	.LFE133:
+ 926              		.section	.text.BaseDataReporterTask,"ax",%progbits
+ 927              		.align	1
+ 928              		.global	BaseDataReporterTask
+ 929              		.syntax unified
+ 930              		.thumb
+ 931              		.thumb_func
+ 933              	BaseDataReporterTask:
+ 934              	.LFB140:
+ 392:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t PreviousReportTransmitTime = 0;
+ 935              		.loc 1 392 1 is_stmt 1 view -0
+ 936              		.cfi_startproc
+ 937              		@ args = 0, pretend = 0, frame = 0
+ 938              		@ frame_needed = 0, uses_anonymous_args = 0
+ 939 0000 08B5     		push	{r3, lr}
+ 940              	.LCFI14:
+ 941              		.cfi_def_cfa_offset 8
+ 942              		.cfi_offset 3, -8
+ 943              		.cfi_offset 14, -4
+ 393:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 944              		.loc 1 393 2 view .LVU275
+ 395:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			&& (TrueDataLogging == LoggingState))
+ 945              		.loc 1 395 2 view .LVU276
+ 395:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			&& (TrueDataLogging == LoggingState))
+ 946              		.loc 1 395 7 is_stmt 0 view .LVU277
+ 947 0002 FFF7FEFF 		bl	HAL_GetTick
+ 948              	.LVL67:
+ 395:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			&& (TrueDataLogging == LoggingState))
+ 949              		.loc 1 395 21 view .LVU278
+ 950 0006 114B     		ldr	r3, .L71
+ 951 0008 1B68     		ldr	r3, [r3]
+ 952 000a C01A     		subs	r0, r0, r3
+ 395:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			&& (TrueDataLogging == LoggingState))
+ 953              		.loc 1 395 4 view .LVU279
+ 954 000c 3128     		cmp	r0, #49
+ 955 000e 03D9     		bls	.L66
+ 396:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 956              		.loc 1 396 24 view .LVU280
+ 957 0010 0F4B     		ldr	r3, .L71+4
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 28
+
+
+ 958 0012 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 396:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 959              		.loc 1 396 4 view .LVU281
+ 960 0014 012B     		cmp	r3, #1
+ 961 0016 0BD0     		beq	.L69
+ 962              	.L66:
+ 401:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						&& (SimulatorDataLogging == LoggingState) )
+ 963              		.loc 1 401 7 is_stmt 1 view .LVU282
+ 401:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						&& (SimulatorDataLogging == LoggingState) )
+ 964              		.loc 1 401 13 is_stmt 0 view .LVU283
+ 965 0018 FFF7FEFF 		bl	HAL_GetTick
+ 966              	.LVL68:
+ 401:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						&& (SimulatorDataLogging == LoggingState) )
+ 967              		.loc 1 401 27 view .LVU284
+ 968 001c 0B4B     		ldr	r3, .L71
+ 969 001e 1B68     		ldr	r3, [r3]
+ 970 0020 C01A     		subs	r0, r0, r3
+ 401:Drivers/BluetoothComm/BluetoothClassicComm.c **** 						&& (SimulatorDataLogging == LoggingState) )
+ 971              		.loc 1 401 9 view .LVU285
+ 972 0022 3128     		cmp	r0, #49
+ 973 0024 03D9     		bls	.L65
+ 402:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 974              		.loc 1 402 32 view .LVU286
+ 975 0026 0A4B     		ldr	r3, .L71+4
+ 976 0028 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 402:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 977              		.loc 1 402 7 view .LVU287
+ 978 002a 022B     		cmp	r3, #2
+ 979 002c 07D0     		beq	.L70
+ 980              	.L65:
+ 412:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 981              		.loc 1 412 1 view .LVU288
+ 982 002e 08BD     		pop	{r3, pc}
+ 983              	.L69:
+ 398:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		TransmitImuBaseDataReport(); 
+ 984              		.loc 1 398 3 is_stmt 1 view .LVU289
+ 398:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		TransmitImuBaseDataReport(); 
+ 985              		.loc 1 398 32 is_stmt 0 view .LVU290
+ 986 0030 FFF7FEFF 		bl	HAL_GetTick
+ 987              	.LVL69:
+ 398:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		TransmitImuBaseDataReport(); 
+ 988              		.loc 1 398 30 view .LVU291
+ 989 0034 054B     		ldr	r3, .L71
+ 990 0036 1860     		str	r0, [r3]
+ 399:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 991              		.loc 1 399 3 is_stmt 1 view .LVU292
+ 992 0038 FFF7FEFF 		bl	TransmitImuBaseDataReport
+ 993              	.LVL70:
+ 994 003c F7E7     		b	.L65
+ 995              	.L70:
+ 404:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		//Sim_FakeBaseDataReportTask();
+ 996              		.loc 1 404 3 view .LVU293
+ 404:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		//Sim_FakeBaseDataReportTask();
+ 997              		.loc 1 404 32 is_stmt 0 view .LVU294
+ 998 003e FFF7FEFF 		bl	HAL_GetTick
+ 999              	.LVL71:
+ 404:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		//Sim_FakeBaseDataReportTask();
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 29
+
+
+ 1000              		.loc 1 404 30 view .LVU295
+ 1001 0042 024B     		ldr	r3, .L71
+ 1002 0044 1860     		str	r0, [r3]
+ 406:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 1003              		.loc 1 406 3 is_stmt 1 view .LVU296
+ 1004 0046 FFF7FEFF 		bl	TransmitImuBaseDataReport
+ 1005              	.LVL72:
+ 411:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 1006              		.loc 1 411 2 view .LVU297
+ 412:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1007              		.loc 1 412 1 is_stmt 0 view .LVU298
+ 1008 004a F0E7     		b	.L65
+ 1009              	.L72:
+ 1010              		.align	2
+ 1011              	.L71:
+ 1012 004c 00000000 		.word	.LANCHOR15
+ 1013 0050 00000000 		.word	.LANCHOR16
+ 1014              		.cfi_endproc
+ 1015              	.LFE140:
+ 1017              		.section	.text.BLU_Init,"ax",%progbits
+ 1018              		.align	1
+ 1019              		.global	BLU_Init
+ 1020              		.syntax unified
+ 1021              		.thumb
+ 1022              		.thumb_func
+ 1024              	BLU_Init:
+ 1025              	.LFB143:
+ 516:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 517:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 518:Drivers/BluetoothComm/BluetoothClassicComm.c **** /*
+ 519:Drivers/BluetoothComm/BluetoothClassicComm.c **** *********************************************************************************************
+ 520:Drivers/BluetoothComm/BluetoothClassicComm.c **** *Interface functions implementation
+ 521:Drivers/BluetoothComm/BluetoothClassicComm.c **** *********************************************************************************************
+ 522:Drivers/BluetoothComm/BluetoothClassicComm.c **** */
+ 523:Drivers/BluetoothComm/BluetoothClassicComm.c **** #define API_FUNCTIONS_BluetoothClassicComm
+ 524:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 525:Drivers/BluetoothComm/BluetoothClassicComm.c **** void BLU_Init(void)
+ 526:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 1026              		.loc 1 526 1 is_stmt 1 view -0
+ 1027              		.cfi_startproc
+ 1028              		@ args = 0, pretend = 0, frame = 0
+ 1029              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1030 0000 08B5     		push	{r3, lr}
+ 1031              	.LCFI15:
+ 1032              		.cfi_def_cfa_offset 8
+ 1033              		.cfi_offset 3, -8
+ 1034              		.cfi_offset 14, -4
+ 527:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_UART1_CostumUserInit(9600); /*Configure default HC-06 uart speed for few operations*/
+ 528:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_Delay(200); /* While startup after power on
+ 529:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// 	* and after experimental test it was observed that short delay is required to stabilize blueto
+ 530:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// 	* It is required for AT Commands like AT+NAME...
+ 531:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// 	* */
+ 532:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 533:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_UART_Transmit(&huart1, (uint8_t *)"AT+BAUDA",8,1000);
+ 534:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_Delay(500);
+ 535:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	//HAL_UART1_CostumUserInit(460800); /*We are almost sure that bluetooth
+ 536:Drivers/BluetoothComm/BluetoothClassicComm.c **** 										//* BaudRate is now configured as expected*/
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 30
+
+
+ 537:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_Delay(500);
+ 538:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 539:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	// HAL_UART_Receive_DMA(&huart1, &BluMainReceiveMessagesTab[0][0], BLU_SINGLE_REC_MESSAGE_SIZE);
+ 540:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &BluMainReceiveMessagesTab[0][0], BLU_SINGLE_REC_MESSAGE_SIZ
+ 1035              		.loc 1 540 2 view .LVU300
+ 1036 0002 7822     		movs	r2, #120
+ 1037 0004 0249     		ldr	r1, .L75
+ 1038 0006 0348     		ldr	r0, .L75+4
+ 1039 0008 FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 1040              	.LVL73:
+ 541:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 1041              		.loc 1 541 1 is_stmt 0 view .LVU301
+ 1042 000c 08BD     		pop	{r3, pc}
+ 1043              	.L76:
+ 1044 000e 00BF     		.align	2
+ 1045              	.L75:
+ 1046 0010 00000000 		.word	BluMainReceiveMessagesTab
+ 1047 0014 00000000 		.word	huart1
+ 1048              		.cfi_endproc
+ 1049              	.LFE143:
+ 1051              		.section	.text.BLU_ReportImuData,"ax",%progbits
+ 1052              		.align	1
+ 1053              		.global	BLU_ReportImuData
+ 1054              		.syntax unified
+ 1055              		.thumb
+ 1056              		.thumb_func
+ 1058              	BLU_ReportImuData:
+ 1059              	.LVL74:
+ 1060              	.LFB145:
+ 542:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 543:Drivers/BluetoothComm/BluetoothClassicComm.c **** void BLU_Task(void)
+ 544:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 545:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	BaseDataReporterTask();
+ 546:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	ReceiveDataHandler();
+ 547:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	TransmitDataHandler();
+ 548:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 549:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 550:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 551:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 552:Drivers/BluetoothComm/BluetoothClassicComm.c **** void BLU_ReportImuData(BLU_ImuBaseDataReport_t *ImuData)
+ 553:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 1061              		.loc 1 553 1 is_stmt 1 view -0
+ 1062              		.cfi_startproc
+ 1063              		@ args = 0, pretend = 0, frame = 0
+ 1064              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1065              		.loc 1 553 1 is_stmt 0 view .LVU303
+ 1066 0000 08B5     		push	{r3, lr}
+ 1067              	.LCFI16:
+ 1068              		.cfi_def_cfa_offset 8
+ 1069              		.cfi_offset 3, -8
+ 1070              		.cfi_offset 14, -4
+ 1071 0002 0146     		mov	r1, r0
+ 554:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	NewestImuDataReport = *ImuData;
+ 1072              		.loc 1 554 2 is_stmt 1 view .LVU304
+ 1073              		.loc 1 554 22 is_stmt 0 view .LVU305
+ 1074 0004 6522     		movs	r2, #101
+ 1075 0006 0248     		ldr	r0, .L79
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 31
+
+
+ 1076              	.LVL75:
+ 1077              		.loc 1 554 22 view .LVU306
+ 1078 0008 FFF7FEFF 		bl	memcpy
+ 1079              	.LVL76:
+ 555:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 1080              		.loc 1 555 1 view .LVU307
+ 1081 000c 08BD     		pop	{r3, pc}
+ 1082              	.L80:
+ 1083 000e 00BF     		.align	2
+ 1084              	.L79:
+ 1085 0010 00000000 		.word	.LANCHOR1
+ 1086              		.cfi_endproc
+ 1087              	.LFE145:
+ 1089              		.section	.text.BLU_DbgMsgTransmit,"ax",%progbits
+ 1090              		.align	1
+ 1091              		.global	BLU_DbgMsgTransmit
+ 1092              		.syntax unified
+ 1093              		.thumb
+ 1094              		.thumb_func
+ 1096              	BLU_DbgMsgTransmit:
+ 1097              	.LVL77:
+ 1098              	.LFB146:
+ 556:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 557:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 558:Drivers/BluetoothComm/BluetoothClassicComm.c **** void BLU_DbgMsgTransmit(char *DbgString, ...)
+ 559:Drivers/BluetoothComm/BluetoothClassicComm.c **** {
+ 1099              		.loc 1 559 1 is_stmt 1 view -0
+ 1100              		.cfi_startproc
+ 1101              		@ args = 4, pretend = 16, frame = 264
+ 1102              		@ frame_needed = 0, uses_anonymous_args = 1
+ 1103              		.loc 1 559 1 is_stmt 0 view .LVU309
+ 1104 0000 0FB4     		push	{r0, r1, r2, r3}
+ 1105              	.LCFI17:
+ 1106              		.cfi_def_cfa_offset 16
+ 1107              		.cfi_offset 0, -16
+ 1108              		.cfi_offset 1, -12
+ 1109              		.cfi_offset 2, -8
+ 1110              		.cfi_offset 3, -4
+ 1111 0002 70B5     		push	{r4, r5, r6, lr}
+ 1112              	.LCFI18:
+ 1113              		.cfi_def_cfa_offset 32
+ 1114              		.cfi_offset 4, -32
+ 1115              		.cfi_offset 5, -28
+ 1116              		.cfi_offset 6, -24
+ 1117              		.cfi_offset 14, -20
+ 1118 0004 C2B0     		sub	sp, sp, #264
+ 1119              	.LCFI19:
+ 1120              		.cfi_def_cfa_offset 296
+ 1121 0006 46AC     		add	r4, sp, #280
+ 1122 0008 54F8046B 		ldr	r6, [r4], #4
+ 560:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint8_t SyncId = 0;
+ 1123              		.loc 1 560 2 is_stmt 1 view .LVU310
+ 561:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint32_t ucTimeStamp = HAL_GetTick();
+ 1124              		.loc 1 561 2 view .LVU311
+ 1125              		.loc 1 561 25 is_stmt 0 view .LVU312
+ 1126 000c FFF7FEFF 		bl	HAL_GetTick
+ 1127              	.LVL78:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 32
+
+
+ 1128 0010 0546     		mov	r5, r0
+ 1129              	.LVL79:
+ 562:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	char DebugMessageBufferHelper[255] = {'B'};
+ 1130              		.loc 1 562 2 is_stmt 1 view .LVU313
+ 1131              		.loc 1 562 7 is_stmt 0 view .LVU314
+ 1132 0012 4223     		movs	r3, #66
+ 1133 0014 0293     		str	r3, [sp, #8]
+ 1134 0016 FB22     		movs	r2, #251
+ 1135 0018 0021     		movs	r1, #0
+ 1136 001a 03A8     		add	r0, sp, #12
+ 1137 001c FFF7FEFF 		bl	memset
+ 1138              	.LVL80:
+ 563:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 564:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	va_list ap;
+ 1139              		.loc 1 564 2 is_stmt 1 view .LVU315
+ 565:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	va_start(ap, DbgString);
+ 1140              		.loc 1 565 2 view .LVU316
+ 1141 0020 0194     		str	r4, [sp, #4]
+ 566:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint16_t Size = vsprintf(&DebugMessageBufferHelper[6],DbgString,ap);
+ 1142              		.loc 1 566 2 view .LVU317
+ 1143              		.loc 1 566 18 is_stmt 0 view .LVU318
+ 1144 0022 2246     		mov	r2, r4
+ 1145 0024 3146     		mov	r1, r6
+ 1146 0026 0DF10E00 		add	r0, sp, #14
+ 1147 002a FFF7FEFF 		bl	vsprintf
+ 1148              	.LVL81:
+ 567:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	va_end(ap);
+ 1149              		.loc 1 567 2 is_stmt 1 view .LVU319
+ 568:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 569:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	Size = Size + 6;
+ 1150              		.loc 1 569 2 view .LVU320
+ 570:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	DebugMessageBufferHelper[0] = BLU_DebugMessage;
+ 1151              		.loc 1 570 2 view .LVU321
+ 1152              		.loc 1 570 30 is_stmt 0 view .LVU322
+ 1153 002e 0323     		movs	r3, #3
+ 1154 0030 8DF80830 		strb	r3, [sp, #8]
+ 571:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	DebugMessageBufferHelper[1] = SyncId;
+ 1155              		.loc 1 571 2 is_stmt 1 view .LVU323
+ 1156              		.loc 1 571 30 is_stmt 0 view .LVU324
+ 1157 0034 0B4B     		ldr	r3, .L84
+ 1158 0036 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 1159 0038 8DF80930 		strb	r3, [sp, #9]
+ 572:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	memcpy(&DebugMessageBufferHelper[2],(uint8_t *)&ucTimeStamp,4);
+ 1160              		.loc 1 572 2 is_stmt 1 view .LVU325
+ 1161 003c CDF80A50 		str	r5, [sp, #10]	@ unaligned
+ 573:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	
+ 574:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 575:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	if(RB_Transmit_Write(&BluMainTransmitRingBuffer, (uint8_t *)DebugMessageBufferHelper, BLU_SINGLE_M
+ 1162              		.loc 1 575 2 view .LVU326
+ 1163              		.loc 1 575 5 is_stmt 0 view .LVU327
+ 1164 0040 7822     		movs	r2, #120
+ 1165 0042 02A9     		add	r1, sp, #8
+ 1166 0044 0848     		ldr	r0, .L84+4
+ 1167 0046 FFF7FEFF 		bl	RB_Transmit_Write
+ 1168              	.LVL82:
+ 1169              		.loc 1 575 4 view .LVU328
+ 1170 004a 10B1     		cbz	r0, .L82
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 33
+
+
+ 576:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	{
+ 577:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		LogDroppedFlag = true;
+ 1171              		.loc 1 577 3 is_stmt 1 view .LVU329
+ 1172              		.loc 1 577 18 is_stmt 0 view .LVU330
+ 1173 004c 074B     		ldr	r3, .L84+8
+ 1174 004e 0122     		movs	r2, #1
+ 1175 0050 1A70     		strb	r2, [r3]
+ 1176              	.L82:
+ 578:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	}
+ 579:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 580:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	SyncId++;;
+ 1177              		.loc 1 580 2 is_stmt 1 view .LVU331
+ 1178              		.loc 1 580 8 is_stmt 0 view .LVU332
+ 1179 0052 044A     		ldr	r2, .L84
+ 1180 0054 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1181 0056 0133     		adds	r3, r3, #1
+ 1182 0058 1370     		strb	r3, [r2]
+ 1183              		.loc 1 580 11 is_stmt 1 view .LVU333
+ 581:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 1184              		.loc 1 581 1 is_stmt 0 view .LVU334
+ 1185 005a 42B0     		add	sp, sp, #264
+ 1186              	.LCFI20:
+ 1187              		.cfi_def_cfa_offset 32
+ 1188              		@ sp needed
+ 1189 005c BDE87040 		pop	{r4, r5, r6, lr}
+ 1190              	.LCFI21:
+ 1191              		.cfi_restore 14
+ 1192              		.cfi_restore 6
+ 1193              		.cfi_restore 5
+ 1194              		.cfi_restore 4
+ 1195              		.cfi_def_cfa_offset 16
+ 1196              	.LVL83:
+ 1197              		.loc 1 581 1 view .LVU335
+ 1198 0060 04B0     		add	sp, sp, #16
+ 1199              	.LCFI22:
+ 1200              		.cfi_restore 3
+ 1201              		.cfi_restore 2
+ 1202              		.cfi_restore 1
+ 1203              		.cfi_restore 0
+ 1204              		.cfi_def_cfa_offset 0
+ 1205 0062 7047     		bx	lr
+ 1206              	.L85:
+ 1207              		.align	2
+ 1208              	.L84:
+ 1209 0064 00000000 		.word	.LANCHOR17
+ 1210 0068 00000000 		.word	.LANCHOR3
+ 1211 006c 00000000 		.word	.LANCHOR4
+ 1212              		.cfi_endproc
+ 1213              	.LFE146:
+ 1215              		.section	.rodata.ReceiveDataHandler.str1.4,"aMS",%progbits,1
+ 1216              		.align	2
+ 1217              	.LC0:
+ 1218 0000 424C5520 		.ascii	"BLU RecHandlrErr-why defult?? |FrId:%d\000"
+ 1218      52656348 
+ 1218      616E646C 
+ 1218      72457272 
+ 1218      2D776879 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 34
+
+
+ 1219 0027 00       		.align	2
+ 1220              	.LC1:
+ 1221 0028 4E766D20 		.ascii	"Nvm Data updated and commited\000"
+ 1221      44617461 
+ 1221      20757064 
+ 1221      61746564 
+ 1221      20616E64 
+ 1222              		.section	.text.ReceiveDataHandler,"ax",%progbits
+ 1223              		.align	1
+ 1224              		.syntax unified
+ 1225              		.thumb
+ 1226              		.thumb_func
+ 1228              	ReceiveDataHandler:
+ 1229              	.LFB141:
+ 415:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static uint32_t LastReadRingBufferTime = 0U;
+ 1230              		.loc 1 415 1 is_stmt 1 view -0
+ 1231              		.cfi_startproc
+ 1232              		@ args = 0, pretend = 0, frame = 8
+ 1233              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1234 0000 10B5     		push	{r4, lr}
+ 1235              	.LCFI23:
+ 1236              		.cfi_def_cfa_offset 8
+ 1237              		.cfi_offset 4, -8
+ 1238              		.cfi_offset 14, -4
+ 1239 0002 82B0     		sub	sp, sp, #8
+ 1240              	.LCFI24:
+ 1241              		.cfi_def_cfa_offset 16
+ 416:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	static bool NvmDataUpdatedFlag = false;
+ 1242              		.loc 1 416 2 view .LVU337
+ 417:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1243              		.loc 1 417 2 view .LVU338
+ 419:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t MessageToReadSize= 0U;
+ 1244              		.loc 1 419 2 view .LVU339
+ 419:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	uint8_t MessageToReadSize= 0U;
+ 1245              		.loc 1 419 11 is_stmt 0 view .LVU340
+ 1246 0004 0023     		movs	r3, #0
+ 1247 0006 0193     		str	r3, [sp, #4]
+ 420:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1248              		.loc 1 420 2 is_stmt 1 view .LVU341
+ 420:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1249              		.loc 1 420 10 is_stmt 0 view .LVU342
+ 1250 0008 8DF80330 		strb	r3, [sp, #3]
+ 424:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1251              		.loc 1 424 3 is_stmt 1 view .LVU343
+ 424:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1252              		.loc 1 424 6 is_stmt 0 view .LVU344
+ 1253 000c 01AA     		add	r2, sp, #4
+ 1254 000e 0DF10301 		add	r1, sp, #3
+ 1255 0012 1D48     		ldr	r0, .L100
+ 1256 0014 FFF7FEFF 		bl	RB_Receive_Read
+ 1257              	.LVL84:
+ 424:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1258              		.loc 1 424 5 view .LVU345
+ 1259 0018 20B1     		cbz	r0, .L97
+ 1260              	.L87:
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1261              		.loc 1 459 3 is_stmt 1 view .LVU346
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 35
+
+
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1262              		.loc 1 459 27 is_stmt 0 view .LVU347
+ 1263 001a 1C4B     		ldr	r3, .L100+4
+ 1264 001c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1265              		.loc 1 459 5 view .LVU348
+ 1266 001e D3B9     		cbnz	r3, .L98
+ 1267              	.L86:
+ 477:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1268              		.loc 1 477 1 view .LVU349
+ 1269 0020 02B0     		add	sp, sp, #8
+ 1270              	.LCFI25:
+ 1271              		.cfi_remember_state
+ 1272              		.cfi_def_cfa_offset 8
+ 1273              		@ sp needed
+ 1274 0022 10BD     		pop	{r4, pc}
+ 1275              	.L97:
+ 1276              	.LCFI26:
+ 1277              		.cfi_restore_state
+ 1278              	.LBB5:
+ 427:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			BLU_MessageID_t ReceivedMessageId = ReceivedMessageBuff[0];
+ 1279              		.loc 1 427 4 is_stmt 1 view .LVU350
+ 427:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			BLU_MessageID_t ReceivedMessageId = ReceivedMessageBuff[0];
+ 1280              		.loc 1 427 13 is_stmt 0 view .LVU351
+ 1281 0024 019B     		ldr	r3, [sp, #4]
+ 1282              	.LVL85:
+ 428:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1283              		.loc 1 428 4 is_stmt 1 view .LVU352
+ 428:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1284              		.loc 1 428 20 is_stmt 0 view .LVU353
+ 1285 0026 1C78     		ldrb	r4, [r3]	@ zero_extendqisi2
+ 1286              	.LVL86:
+ 430:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1287              		.loc 1 430 4 is_stmt 1 view .LVU354
+ 430:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1288              		.loc 1 430 29 is_stmt 0 view .LVU355
+ 1289 0028 FFF7FEFF 		bl	HAL_GetTick
+ 1290              	.LVL87:
+ 430:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1291              		.loc 1 430 27 view .LVU356
+ 1292 002c 184B     		ldr	r3, .L100+8
+ 1293 002e 1860     		str	r0, [r3]
+ 432:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1294              		.loc 1 432 4 is_stmt 1 view .LVU357
+ 1295 0030 042C     		cmp	r4, #4
+ 1296 0032 08D0     		beq	.L88
+ 1297 0034 052C     		cmp	r4, #5
+ 1298 0036 0AD0     		beq	.L89
+ 447:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					{
+ 1299              		.loc 1 447 6 view .LVU358
+ 447:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					{
+ 1300              		.loc 1 447 8 is_stmt 0 view .LVU359
+ 1301 0038 002C     		cmp	r4, #0
+ 1302 003a EED0     		beq	.L87
+ 449:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					}
+ 1303              		.loc 1 449 7 is_stmt 1 view .LVU360
+ 1304 003c 2146     		mov	r1, r4
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 36
+
+
+ 1305 003e 1548     		ldr	r0, .L100+12
+ 1306 0040 FFF7FEFF 		bl	BLU_DbgMsgTransmit
+ 1307              	.LVL88:
+ 1308 0044 E9E7     		b	.L87
+ 1309              	.L88:
+ 436:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 1310              		.loc 1 436 6 view .LVU361
+ 436:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 1311              		.loc 1 436 19 is_stmt 0 view .LVU362
+ 1312 0046 144B     		ldr	r3, .L100+16
+ 1313 0048 0122     		movs	r2, #1
+ 1314 004a 1A70     		strb	r2, [r3]
+ 437:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 1315              		.loc 1 437 6 is_stmt 1 view .LVU363
+ 1316 004c E5E7     		b	.L87
+ 1317              	.L89:
+ 441:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 1318              		.loc 1 441 6 view .LVU364
+ 441:Drivers/BluetoothComm/BluetoothClassicComm.c **** 					break;
+ 1319              		.loc 1 441 19 is_stmt 0 view .LVU365
+ 1320 004e 124B     		ldr	r3, .L100+16
+ 1321 0050 0022     		movs	r2, #0
+ 1322 0052 1A70     		strb	r2, [r3]
+ 442:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 1323              		.loc 1 442 6 is_stmt 1 view .LVU366
+ 1324 0054 E1E7     		b	.L87
+ 1325              	.LVL89:
+ 1326              	.L98:
+ 442:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 1327              		.loc 1 442 6 is_stmt 0 view .LVU367
+ 1328              	.LBE5:
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1329              		.loc 1 459 40 discriminator 1 view .LVU368
+ 1330 0056 FFF7FEFF 		bl	HAL_GetTick
+ 1331              	.LVL90:
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1332              		.loc 1 459 54 discriminator 1 view .LVU369
+ 1333 005a 0D4B     		ldr	r3, .L100+8
+ 1334 005c 1B68     		ldr	r3, [r3]
+ 1335 005e C01A     		subs	r0, r0, r3
+ 459:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		{
+ 1336              		.loc 1 459 36 discriminator 1 view .LVU370
+ 1337 0060 3228     		cmp	r0, #50
+ 1338 0062 DDD9     		bls	.L86
+ 461:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1339              		.loc 1 461 4 is_stmt 1 view .LVU371
+ 461:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1340              		.loc 1 461 23 is_stmt 0 view .LVU372
+ 1341 0064 0024     		movs	r4, #0
+ 1342 0066 094B     		ldr	r3, .L100+4
+ 1343 0068 1C70     		strb	r4, [r3]
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1344              		.loc 1 463 4 is_stmt 1 view .LVU373
+ 1345              	.LBB6:
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1346              		.loc 1 463 8 view .LVU374
+ 1347              	.LVL91:
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 37
+
+
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1348              		.loc 1 463 4 is_stmt 0 view .LVU375
+ 1349 006a 00E0     		b	.L92
+ 1350              	.LVL92:
+ 1351              	.L93:
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1352              		.loc 1 463 56 is_stmt 1 discriminator 2 view .LVU376
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1353              		.loc 1 463 57 is_stmt 0 discriminator 2 view .LVU377
+ 1354 006c 0134     		adds	r4, r4, #1
+ 1355              	.LVL93:
+ 1356              	.L92:
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1357              		.loc 1 463 17 is_stmt 1 discriminator 1 view .LVU378
+ 463:Drivers/BluetoothComm/BluetoothClassicComm.c **** 			{
+ 1358              		.loc 1 463 4 is_stmt 0 discriminator 1 view .LVU379
+ 1359 006e 0E2C     		cmp	r4, #14
+ 1360 0070 06DC     		bgt	.L99
+ 465:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 1361              		.loc 1 465 5 is_stmt 1 view .LVU380
+ 465:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 1362              		.loc 1 465 26 is_stmt 0 view .LVU381
+ 1363 0072 0A4B     		ldr	r3, .L100+20
+ 1364 0074 53F82430 		ldr	r3, [r3, r4, lsl #2]
+ 465:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				{
+ 1365              		.loc 1 465 7 view .LVU382
+ 1366 0078 002B     		cmp	r3, #0
+ 1367 007a F7D0     		beq	.L93
+ 467:Drivers/BluetoothComm/BluetoothClassicComm.c **** 				}
+ 1368              		.loc 1 467 6 is_stmt 1 view .LVU383
+ 1369 007c 9847     		blx	r3
+ 1370              	.LVL94:
+ 1371 007e F5E7     		b	.L93
+ 1372              	.L99:
+ 1373              	.LBE6:
+ 471:Drivers/BluetoothComm/BluetoothClassicComm.c **** 		}
+ 1374              		.loc 1 471 4 view .LVU384
+ 1375 0080 0748     		ldr	r0, .L100+24
+ 1376 0082 FFF7FEFF 		bl	BLU_DbgMsgTransmit
+ 1377              	.LVL95:
+ 477:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1378              		.loc 1 477 1 is_stmt 0 view .LVU385
+ 1379 0086 CBE7     		b	.L86
+ 1380              	.L101:
+ 1381              		.align	2
+ 1382              	.L100:
+ 1383 0088 00000000 		.word	.LANCHOR14
+ 1384 008c 00000000 		.word	.LANCHOR19
+ 1385 0090 00000000 		.word	.LANCHOR18
+ 1386 0094 00000000 		.word	.LC0
+ 1387 0098 00000000 		.word	.LANCHOR16
+ 1388 009c 00000000 		.word	.LANCHOR20
+ 1389 00a0 28000000 		.word	.LC1
+ 1390              		.cfi_endproc
+ 1391              	.LFE141:
+ 1393              		.section	.text.BLU_Task,"ax",%progbits
+ 1394              		.align	1
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 38
+
+
+ 1395              		.global	BLU_Task
+ 1396              		.syntax unified
+ 1397              		.thumb
+ 1398              		.thumb_func
+ 1400              	BLU_Task:
+ 1401              	.LFB144:
+ 544:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	BaseDataReporterTask();
+ 1402              		.loc 1 544 1 is_stmt 1 view -0
+ 1403              		.cfi_startproc
+ 1404              		@ args = 0, pretend = 0, frame = 0
+ 1405              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1406 0000 08B5     		push	{r3, lr}
+ 1407              	.LCFI27:
+ 1408              		.cfi_def_cfa_offset 8
+ 1409              		.cfi_offset 3, -8
+ 1410              		.cfi_offset 14, -4
+ 545:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	ReceiveDataHandler();
+ 1411              		.loc 1 545 2 view .LVU387
+ 1412 0002 FFF7FEFF 		bl	BaseDataReporterTask
+ 1413              	.LVL96:
+ 546:Drivers/BluetoothComm/BluetoothClassicComm.c **** 	TransmitDataHandler();
+ 1414              		.loc 1 546 2 view .LVU388
+ 1415 0006 FFF7FEFF 		bl	ReceiveDataHandler
+ 1416              	.LVL97:
+ 547:Drivers/BluetoothComm/BluetoothClassicComm.c **** }
+ 1417              		.loc 1 547 2 view .LVU389
+ 1418 000a FFF7FEFF 		bl	TransmitDataHandler
+ 1419              	.LVL98:
+ 548:Drivers/BluetoothComm/BluetoothClassicComm.c **** 
+ 1420              		.loc 1 548 1 is_stmt 0 view .LVU390
+ 1421 000e 08BD     		pop	{r3, pc}
+ 1422              		.cfi_endproc
+ 1423              	.LFE144:
+ 1425              		.section	.bss.BLU_StatisticTimer.5,"aw",%nobits
+ 1426              		.align	2
+ 1427              		.set	.LANCHOR9,. + 0
+ 1430              	BLU_StatisticTimer.5:
+ 1431 0000 00000000 		.space	4
+ 1432              		.section	.bss.BleMainReceiveRingBuffer,"aw",%nobits
+ 1433              		.align	2
+ 1434              		.set	.LANCHOR14,. + 0
+ 1437              	BleMainReceiveRingBuffer:
+ 1438 0000 00000000 		.space	204
+ 1438      00000000 
+ 1438      00000000 
+ 1438      00000000 
+ 1438      00000000 
+ 1439              		.section	.bss.BluMainReceiveMessagesTab,"aw",%nobits
+ 1440              		.align	2
+ 1443              	BluMainReceiveMessagesTab:
+ 1444 0000 00000000 		.space	12000
+ 1444      00000000 
+ 1444      00000000 
+ 1444      00000000 
+ 1444      00000000 
+ 1445              		.section	.bss.BluMainTransmitMessagesTab,"aw",%nobits
+ 1446              		.align	2
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 39
+
+
+ 1449              	BluMainTransmitMessagesTab:
+ 1450 0000 00000000 		.space	12000
+ 1450      00000000 
+ 1450      00000000 
+ 1450      00000000 
+ 1450      00000000 
+ 1451              		.section	.bss.BluMainTransmitRingBuffer,"aw",%nobits
+ 1452              		.align	2
+ 1453              		.set	.LANCHOR3,. + 0
+ 1456              	BluMainTransmitRingBuffer:
+ 1457 0000 00000000 		.space	104
+ 1457      00000000 
+ 1457      00000000 
+ 1457      00000000 
+ 1457      00000000 
+ 1458              		.section	.bss.DefaultBlindBuffer.10,"aw",%nobits
+ 1459              		.align	2
+ 1460              		.set	.LANCHOR0,. + 0
+ 1463              	DefaultBlindBuffer.10:
+ 1464 0000 00000000 		.space	20
+ 1464      00000000 
+ 1464      00000000 
+ 1464      00000000 
+ 1464      00000000 
+ 1465              		.section	.bss.LastReadRingBufferTime.7,"aw",%nobits
+ 1466              		.align	2
+ 1467              		.set	.LANCHOR18,. + 0
+ 1470              	LastReadRingBufferTime.7:
+ 1471 0000 00000000 		.space	4
+ 1472              		.section	.bss.LogDroppedFlag,"aw",%nobits
+ 1473              		.set	.LANCHOR4,. + 0
+ 1476              	LogDroppedFlag:
+ 1477 0000 00       		.space	1
+ 1478              		.section	.bss.MainRingBufferOverFlowCounter.2,"aw",%nobits
+ 1479              		.align	1
+ 1480              		.set	.LANCHOR6,. + 0
+ 1483              	MainRingBufferOverFlowCounter.2:
+ 1484 0000 0000     		.space	2
+ 1485              		.section	.bss.MessageReceiveBufferAddress.11,"aw",%nobits
+ 1486              		.align	2
+ 1487              		.set	.LANCHOR13,. + 0
+ 1490              	MessageReceiveBufferAddress.11:
+ 1491 0000 00000000 		.space	4
+ 1492              		.section	.bss.NewestImuDataReport,"aw",%nobits
+ 1493              		.align	2
+ 1494              		.set	.LANCHOR1,. + 0
+ 1497              	NewestImuDataReport:
+ 1498 0000 00000000 		.space	101
+ 1498      00000000 
+ 1498      00000000 
+ 1498      00000000 
+ 1498      00000000 
+ 1499              		.section	.bss.NvmDataUpdatedFlag.6,"aw",%nobits
+ 1500              		.set	.LANCHOR19,. + 0
+ 1503              	NvmDataUpdatedFlag.6:
+ 1504 0000 00       		.space	1
+ 1505              		.section	.bss.PreviousDataTransmitTime.4,"aw",%nobits
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 40
+
+
+ 1506              		.align	2
+ 1507              		.set	.LANCHOR10,. + 0
+ 1510              	PreviousDataTransmitTime.4:
+ 1511 0000 00000000 		.space	4
+ 1512              		.section	.bss.PreviousReportTransmitTime.9,"aw",%nobits
+ 1513              		.align	2
+ 1514              		.set	.LANCHOR15,. + 0
+ 1517              	PreviousReportTransmitTime.9:
+ 1518 0000 00000000 		.space	4
+ 1519              		.section	.bss.Received50BytesAndHitIdleFlag,"aw",%nobits
+ 1520              		.set	.LANCHOR12,. + 0
+ 1523              	Received50BytesAndHitIdleFlag:
+ 1524 0000 00       		.space	1
+ 1525              		.section	.bss.RingBufferStatisticsHolder.3,"aw",%nobits
+ 1526              		.align	2
+ 1527              		.set	.LANCHOR5,. + 0
+ 1530              	RingBufferStatisticsHolder.3:
+ 1531 0000 00000000 		.space	120
+ 1531      00000000 
+ 1531      00000000 
+ 1531      00000000 
+ 1531      00000000 
+ 1532              		.section	.bss.SyncId.0,"aw",%nobits
+ 1533              		.set	.LANCHOR17,. + 0
+ 1536              	SyncId.0:
+ 1537 0000 00       		.space	1
+ 1538              		.section	.bss.SyncIdStat.1,"aw",%nobits
+ 1539              		.set	.LANCHOR7,. + 0
+ 1542              	SyncIdStat.1:
+ 1543 0000 00       		.space	1
+ 1544              		.section	.bss.TransmisstedMessagesCounter,"aw",%nobits
+ 1545              		.align	1
+ 1546              		.set	.LANCHOR8,. + 0
+ 1549              	TransmisstedMessagesCounter:
+ 1550 0000 0000     		.space	2
+ 1551              		.section	.bss.UartBusyCounter,"aw",%nobits
+ 1552              		.align	1
+ 1553              		.set	.LANCHOR11,. + 0
+ 1556              	UartBusyCounter:
+ 1557 0000 0000     		.space	2
+ 1558              		.section	.bss._SyncID.8,"aw",%nobits
+ 1559              		.set	.LANCHOR2,. + 0
+ 1562              	_SyncID.8:
+ 1563 0000 00       		.space	1
+ 1564              		.section	.data.LoggingState,"aw"
+ 1565              		.set	.LANCHOR16,. + 0
+ 1568              	LoggingState:
+ 1569 0000 01       		.byte	1
+ 1570              		.section	.rodata.NvmUpdateCallBacks,"a"
+ 1571              		.align	2
+ 1572              		.set	.LANCHOR20,. + 0
+ 1575              	NvmUpdateCallBacks:
+ 1576 0000 00000000 		.space	60
+ 1576      00000000 
+ 1576      00000000 
+ 1576      00000000 
+ 1576      00000000 
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 41
+
+
+ 1577              		.text
+ 1578              	.Letext0:
+ 1579              		.file 2 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\machine\\_
+ 1580              		.file 3 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\sys\\_stdi
+ 1581              		.file 4 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\lib\\gcc\\arm-none-eabi\\10.3.1\\i
+ 1582              		.file 5 "e:\\gnu_tools\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\stdio.h"
+ 1583              		.file 6 "Drivers/BluetoothComm/BluetoothClassicComm.h"
+ 1584              		.file 7 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xc.h"
+ 1585              		.file 8 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h"
+ 1586              		.file 9 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h"
+ 1587              		.file 10 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h"
+ 1588              		.file 11 "Core/Inc/usart.h"
+ 1589              		.file 12 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h"
+ 1590              		.file 13 "<built-in>"
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 42
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 BluetoothClassicComm.c
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:20     .text.RB_Transmit_Read:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:25     .text.RB_Transmit_Read:00000000 RB_Transmit_Read
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:89     .text.RB_Transmit_Read:0000003c $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1449   .bss.BluMainTransmitMessagesTab:00000000 BluMainTransmitMessagesTab
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:95     .text.RB_Transmit_Write:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:100    .text.RB_Transmit_Write:00000000 RB_Transmit_Write
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:191    .text.RB_Transmit_Write:0000004c $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:197    .text.RB_Receive_GetNextMessageAddress:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:202    .text.RB_Receive_GetNextMessageAddress:00000000 RB_Receive_GetNextMessageAddress
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:284    .text.RB_Receive_GetNextMessageAddress:00000058 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1443   .bss.BluMainReceiveMessagesTab:00000000 BluMainReceiveMessagesTab
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:291    .text.RB_Receive_Read:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:296    .text.RB_Receive_Read:00000000 RB_Receive_Read
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:389    .text.RB_Receive_Read:00000054 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:395    .text.TransmitImuBaseDataReport:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:400    .text.TransmitImuBaseDataReport:00000000 TransmitImuBaseDataReport
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:487    .text.TransmitImuBaseDataReport:00000060 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:495    .text.Statistics_CreateAndTransmitCommunicationStatistics:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:500    .text.Statistics_CreateAndTransmitCommunicationStatistics:00000000 Statistics_CreateAndTransmitCommunicationStatistics
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:656    .text.Statistics_CreateAndTransmitCommunicationStatistics:00000088 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:667    .text.TransmitDataHandler:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:672    .text.TransmitDataHandler:00000000 TransmitDataHandler
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:797    .text.TransmitDataHandler:0000008c $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:808    .text.HAL_UARTEx_RxEventCallback:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:814    .text.HAL_UARTEx_RxEventCallback:00000000 HAL_UARTEx_RxEventCallback
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:918    .text.HAL_UARTEx_RxEventCallback:00000064 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:927    .text.BaseDataReporterTask:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:933    .text.BaseDataReporterTask:00000000 BaseDataReporterTask
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1012   .text.BaseDataReporterTask:0000004c $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1018   .text.BLU_Init:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1024   .text.BLU_Init:00000000 BLU_Init
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1046   .text.BLU_Init:00000010 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1052   .text.BLU_ReportImuData:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1058   .text.BLU_ReportImuData:00000000 BLU_ReportImuData
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1085   .text.BLU_ReportImuData:00000010 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1090   .text.BLU_DbgMsgTransmit:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1096   .text.BLU_DbgMsgTransmit:00000000 BLU_DbgMsgTransmit
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1209   .text.BLU_DbgMsgTransmit:00000064 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1216   .rodata.ReceiveDataHandler.str1.4:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1223   .text.ReceiveDataHandler:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1228   .text.ReceiveDataHandler:00000000 ReceiveDataHandler
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1383   .text.ReceiveDataHandler:00000088 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1394   .text.BLU_Task:00000000 $t
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1400   .text.BLU_Task:00000000 BLU_Task
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1426   .bss.BLU_StatisticTimer.5:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1430   .bss.BLU_StatisticTimer.5:00000000 BLU_StatisticTimer.5
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1433   .bss.BleMainReceiveRingBuffer:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1437   .bss.BleMainReceiveRingBuffer:00000000 BleMainReceiveRingBuffer
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1440   .bss.BluMainReceiveMessagesTab:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1446   .bss.BluMainTransmitMessagesTab:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1452   .bss.BluMainTransmitRingBuffer:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1456   .bss.BluMainTransmitRingBuffer:00000000 BluMainTransmitRingBuffer
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1459   .bss.DefaultBlindBuffer.10:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1463   .bss.DefaultBlindBuffer.10:00000000 DefaultBlindBuffer.10
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1466   .bss.LastReadRingBufferTime.7:00000000 $d
+ARM GAS  C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s 			page 43
+
+
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1470   .bss.LastReadRingBufferTime.7:00000000 LastReadRingBufferTime.7
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1476   .bss.LogDroppedFlag:00000000 LogDroppedFlag
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1477   .bss.LogDroppedFlag:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1479   .bss.MainRingBufferOverFlowCounter.2:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1483   .bss.MainRingBufferOverFlowCounter.2:00000000 MainRingBufferOverFlowCounter.2
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1486   .bss.MessageReceiveBufferAddress.11:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1490   .bss.MessageReceiveBufferAddress.11:00000000 MessageReceiveBufferAddress.11
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1493   .bss.NewestImuDataReport:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1497   .bss.NewestImuDataReport:00000000 NewestImuDataReport
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1503   .bss.NvmDataUpdatedFlag.6:00000000 NvmDataUpdatedFlag.6
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1504   .bss.NvmDataUpdatedFlag.6:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1506   .bss.PreviousDataTransmitTime.4:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1510   .bss.PreviousDataTransmitTime.4:00000000 PreviousDataTransmitTime.4
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1513   .bss.PreviousReportTransmitTime.9:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1517   .bss.PreviousReportTransmitTime.9:00000000 PreviousReportTransmitTime.9
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1523   .bss.Received50BytesAndHitIdleFlag:00000000 Received50BytesAndHitIdleFlag
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1524   .bss.Received50BytesAndHitIdleFlag:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1526   .bss.RingBufferStatisticsHolder.3:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1530   .bss.RingBufferStatisticsHolder.3:00000000 RingBufferStatisticsHolder.3
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1536   .bss.SyncId.0:00000000 SyncId.0
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1537   .bss.SyncId.0:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1542   .bss.SyncIdStat.1:00000000 SyncIdStat.1
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1543   .bss.SyncIdStat.1:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1545   .bss.TransmisstedMessagesCounter:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1549   .bss.TransmisstedMessagesCounter:00000000 TransmisstedMessagesCounter
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1552   .bss.UartBusyCounter:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1556   .bss.UartBusyCounter:00000000 UartBusyCounter
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1562   .bss._SyncID.8:00000000 _SyncID.8
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1563   .bss._SyncID.8:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1568   .data.LoggingState:00000000 LoggingState
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1571   .rodata.NvmUpdateCallBacks:00000000 $d
+C:\Users\Teodor\AppData\Local\Temp\ccxhQ73z.s:1575   .rodata.NvmUpdateCallBacks:00000000 NvmUpdateCallBacks
+
+UNDEFINED SYMBOLS
+memset
+HAL_GetTick
+memcpy
+HAL_UART_Transmit_DMA
+huart1
+HAL_UARTEx_ReceiveToIdle_DMA
+vsprintf
