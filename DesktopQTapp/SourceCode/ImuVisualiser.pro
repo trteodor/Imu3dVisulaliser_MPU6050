@@ -1,8 +1,9 @@
-QT       += core gui bluetooth concurrent quick widgets
+QT       += core gui bluetooth concurrent quick widgets datavisualization
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 CONFIG += c++17
+#CONFIG += no_keywords
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -15,7 +16,8 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     deviceinfo.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    scatterdatamodifier.cpp
 
 HEADERS += \
     GenericLfQCP.h \
@@ -23,13 +25,15 @@ HEADERS += \
     bluetoothclassic.h \
     mainwindow.h \
     deviceinfo.h \
-    qcustomplot.h
+    matplotlibcpp.h \
+    qcustomplot.h \
+    scatterdatamodifier.h
 
 FORMS += \
     mainwindow.ui
 
 TRANSLATIONS += \
-    LF_ServiceApplication_en_150.ts
+    ImuVisualiser_en_150.ts
 CONFIG += lrelease
 CONFIG += embed_translations
 
@@ -39,15 +43,12 @@ RESOURCES += qdarkstyle/light/lightstyle.qrc
 
 RESOURCES += VirtualJoystickQML/resources.qrc
 
-RC_ICONS = LfProjectApp.ico
+#RC_ICONS = LfProjectApp.ico
 
 OTHER_FILES += \
     VirtualJoystickQML/finger.png \
     VirtualJoystickQML/background.png \
     VirtualJoystickQML/virtual_joystick.qml
-
-
-
 
 
 # Default rules for deployment.

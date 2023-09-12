@@ -6,6 +6,11 @@
 #include "bluetoothDataManager.h"
 #include "GenericLfQCP.h"
 
+
+#include <QtDataVisualization>
+#include "scatterdatamodifier.h"
+
+
 //#include <QInputDialog>
 
 QT_BEGIN_NAMESPACE
@@ -124,6 +129,8 @@ private slots:
     void NvM_EncodersConfigDataUpdateDelayTimerTimeout();
     void NvM_ProfileSpeedConfigDataUpdateDelayTimerTimeout();
 
+    void Plot3DDelayTimerTimeout();
+
     void on_GeneraReplotAllPlots_pb_clicked();
 
 
@@ -165,6 +172,10 @@ private:
     QTimer NvM_SpeedProfileUpdateDelayTimer;
 
 
+    QScatter3DSeries ImuDataseries;
+    QScatterDataArray ImuDataArray;
+    Q3DScatter Imuscatter;
+    QTimer RealTimeData3DTimer;
 
     float  NVM_ErrWeitghtsTabHolder[12];
 

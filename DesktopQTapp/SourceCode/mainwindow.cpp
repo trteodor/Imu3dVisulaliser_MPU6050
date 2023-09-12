@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+
 /**************************************************************/
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -104,6 +105,46 @@ MainWindow::MainWindow(QWidget *parent)
 
         LoadDataLineFollowerProjecrOrJson(CurrentLfProjectFilePath);
     }
+
+
+    qputenv("QSG_RHI_BACKEND", "opengl");
+
+
+    Imuscatter.setFlags(Imuscatter.flags() ^ Qt::FramelessWindowHint);
+    Imuscatter.activeTheme()->setType(Q3DTheme::ThemeIsabelle);
+    QFont font = Imuscatter.activeTheme()->font();
+    font.setPointSize(40.0F);
+    Imuscatter.activeTheme()->setFont(font);
+    Imuscatter.setShadowQuality(QAbstract3DGraph::ShadowQualitySoftLow);
+    Imuscatter.scene()->activeCamera()->setCameraPreset(Q3DCamera::CameraPresetFront);
+    Imuscatter.axisX()->setTitle("X");
+    Imuscatter.axisY()->setTitle("Y");
+    Imuscatter.axisZ()->setTitle("Z");
+    Imuscatter.axisX()->setLabelFormat("%.2f mm");
+    Imuscatter.axisY()->setLabelFormat("%.2f mm");
+    Imuscatter.axisZ()->setLabelFormat("%.2f mm");
+
+//    QScatterDataProxy *proxy = new QScatterDataProxy;
+
+
+    ImuDataseries.setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
+    ImuDataseries.setMeshSmooth(true);
+
+
+
+    ImuDataArray << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
+    ImuDataseries.dataProxy()->addItems(ImuDataArray);
+    ImuDataseries.setItemSize(0.1F);
+
+    Imuscatter.addSeries(&ImuDataseries);
+
+    QWidget *container = QWidget::createWindowContainer(&Imuscatter);
+    ui->D3_LayoutTest->addWidget(container);
+
+    connect(&RealTimeData3DTimer, SIGNAL(timeout()), this, SLOT(Plot3DDelayTimerTimeout()));
+    RealTimeData3DTimer.setSingleShot(true);
+    RealTimeData3DTimer.start(100);
+
 }
 
 
@@ -129,6 +170,18 @@ MainWindow::~MainWindow()
     delete ui;
 
     qDebug("Reached end");
+}
+
+void MainWindow::Plot3DDelayTimerTimeout()
+{
+    static float iterData=0;
+    QScatterDataArray tempImuDataArr;
+    tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
+    ImuDataseries.dataProxy()->addItems(tempImuDataArr);
+
+    iterData = iterData + 0.1F;
+    RealTimeData3DTimer.setSingleShot(true);
+    RealTimeData3DTimer.start(100);
 }
 
 void MainWindow::changeEvent( QEvent* e )
