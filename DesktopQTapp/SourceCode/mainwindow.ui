@@ -250,8 +250,20 @@
        </widget>
        <widget class="QWidget" name="tab_6">
         <attribute name="title">
-         <string>Tab 2</string>
+         <string>Imu3D</string>
         </attribute>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <layout class="QGridLayout" name="D3_LayoutTest">
+           <property name="topMargin">
+            <number>20</number>
+           </property>
+           <property name="spacing">
+            <number>0</number>
+           </property>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QSplitter" name="lPlotHorizontaSpliter">
@@ -1858,7 +1870,7 @@ color: rgb(255, 255, 255);</string>
     <widget class="QGroupBox" name="RobotMoverGBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>250</x>
        <y>0</y>
        <width>180</width>
        <height>180</height>
@@ -1947,6 +1959,36 @@ color: rgb(255, 255, 255);</string>
         </property>
        </widget>
       </item>
+     </layout>
+    </widget>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>0</y>
+       <width>131</width>
+       <height>171</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>OrientationRob_3D</string>
+     </property>
+     <layout class="QGridLayout" name="Orientation3DLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
+       <number>0</number>
+      </property>
      </layout>
     </widget>
    </widget>
