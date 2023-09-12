@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mpu6050.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +62,29 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint32_t RecMpuDataCounter = 0;
+
+uint8_t gyroCalibValues[6] = {0, 23, 0, 63, 0, 27};
+
+MpuData_t MpuData;
+
+
+
+
+// As the sensor is set in init, the sensor takes a sample every 5ms (200hz),
+// creates an interrupt, then puts the dma data in the buffer, 
+// then the data is scaled and the orientations are calculated.
+// This process is repeated automatically every 5ms. So dt is 0.005 seconds
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+  MPU6050_ReadDmaDataEndCallBack(&MpuData);
+  RecMpuDataCounter++;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  MPU6050_Read_DMA();
+}
 
 /* USER CODE END 0 */
 
@@ -98,12 +121,45 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_Delay(1000);
+
+  while(!MPU6050_Init(&hi2c1) )
+  {
+    MPU6050_DeviceReset(0);
+    HAL_Delay(1000);
+    MPU6050_DeviceReset(1);
+  }
+
+  // //The sensor must not move during calibration.
+  // uint8_t* newCalibData = MPU6050_Calibrate_Gyro();
+  // BLU_DbgMsgTransmit("\ngyroCalibValues[6] = %hi, %hi, %hi, %hi, %hi, %hi\n", 
+  //                                     *newCalibData, *(newCalibData+1), *(newCalibData+2), 
+  //                                     *(newCalibData+3), *(newCalibData+4), *(newCalibData+5));
+
+  //You can calibrate with your previous calibration values for a hot start.
+  //MPU6050_Set_Calibrate_Gyro(gyroCalibValues);
+  MPU6050_Start_IRQ();
+
+
+  MPU6050_Read_DMA();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    static uint32_t LogAccelTimer = 0;
+
+    if( (HAL_GetTick() - LogAccelTimer > 100 ) ) //
+    {
+      LogAccelTimer = HAL_GetTick();
+      BLU_DbgMsgTransmit("yaw: %.2f pitch: %.2f roll: %.2f Ax:%.2f Ay:%2f Az:%.2f, recDatCnt: %lu", 
+                                    MpuData.yaw, MpuData.pitch,MpuData.roll,
+                                    MpuData.accX,MpuData.accY,MpuData.accZ,RecMpuDataCounter);
+      // BLU_DbgMsgTransmit("DevId: %d",MPU6050_GetDeviceID() );
+
+      MPU6050_Read_DMA();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
