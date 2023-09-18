@@ -38,18 +38,26 @@ CONFIG += lrelease
 CONFIG += embed_translations
 
 RESOURCES += qdarkstyle/dark/darkstyle.qrc
+
 RESOURCES += RobotOriRes.qrc
 RESOURCES += qdarkstyle/light/lightstyle.qrc
 
 RESOURCES += VirtualJoystickQML/resources.qrc
+RESOURCES += CubeDiffFacesQML/resCubeDiff.qrc
 
 #RC_ICONS = LfProjectApp.ico
 
 OTHER_FILES += \
     VirtualJoystickQML/finger.png \
     VirtualJoystickQML/background.png \
-    VirtualJoystickQML/virtual_joystick.qml
-
+    VirtualJoystickQML/virtual_joystick.qml \
+    CubeDiffFacesQML/Dice1.svg \
+    CubeDiffFacesQML/Dice2.svg \
+    CubeDiffFacesQML/Dice3.svg \
+    CubeDiffFacesQML/Dice4.svg \
+    CubeDiffFacesQML/Dice5.svg \
+    CubeDiffFacesQML/Dice6.svg \
+    CubeDiffFacesQML/CubeDiffFaces.qml
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

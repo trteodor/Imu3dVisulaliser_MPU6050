@@ -1,9 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QtQuick/QQuickView>
-#include <QtQuick/QQuickItem>
-#include <QUrl>
+
 
 #include <QFile>
 #include <QJsonArray>
@@ -48,6 +46,23 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     addJoyStick(ui->RobotMoverXYGridLayout);
+
+    /*Assign 3D orientation Cube to correct layout/ container*/
+    view3DOri = new QQuickView();
+    view3DOri->setSource(QUrl("qrc:/res/CubeDiffFaces.qml"));
+    #ifndef _WIN32
+        view3DOri->setClearBeforeRendering(true);
+        view3DOri->setColor(QColor(Qt::transparent));
+    #endif
+    // Create a container widget for the QQuickView
+    QWidget *container3DOri = QWidget::createWindowContainer(view3DOri, this);
+    container3DOri->setMinimumSize(130, 130);
+    container3DOri->setMaximumSize(130, 130);
+    container3DOri->setFocusPolicy(Qt::TabFocus);
+    ui->Orientation3DLayout->addWidget(container3DOri);
+
+
+    object3dview = view3DOri->rootObject();
 
 
     /*Debug Table configure*/
@@ -179,9 +194,26 @@ void MainWindow::Plot3DDelayTimerTimeout()
     tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
     ImuDataseries.dataProxy()->addItems(tempImuDataArr);
 
+    QString returnedValue;
+    //QString msg = "Hello from C++";
+
+    static uint32_t yaw,pitch,roll;
+    yaw = yaw + 10;
+    pitch = pitch +20;
+    roll = roll + 5;
+
+    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
+                            Q_ARG(QVariant, yaw),
+                            Q_ARG(QVariant, pitch),
+                            Q_ARG(QVariant, roll)   );
+
+    //qDebug() << "QML function returned:" << returnedValue;
+
     iterData = iterData + 0.1F;
     RealTimeData3DTimer.setSingleShot(true);
     RealTimeData3DTimer.start(100);
+
+
 }
 
 void MainWindow::changeEvent( QEvent* e )
