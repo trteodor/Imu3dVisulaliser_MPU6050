@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>Dice1.svg</file>
+		<file>Dice2.svg</file>
+		<file>Dice3.svg</file>
+		<file>Dice4.svg</file>
+		<file>Dice5.svg</file>
+		<file>Dice6.svg</file>
+        <file>CubeDiffFaces.qml</file>
+    </qresource>
+</RCC>

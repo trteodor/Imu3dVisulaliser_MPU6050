@@ -6,6 +6,9 @@
 #include "bluetoothDataManager.h"
 #include "GenericLfQCP.h"
 
+#include <QtQuick/QQuickView>
+#include <QtQuick/QQuickItem>
+#include <QUrl>
 
 #include <QtDataVisualization>
 #include "scatterdatamodifier.h"
@@ -176,6 +179,9 @@ private:
     QScatterDataArray ImuDataArray;
     Q3DScatter Imuscatter;
     QTimer RealTimeData3DTimer;
+
+    QQuickView *view3DOri;
+    QObject *object3dview;
 
     float  NVM_ErrWeitghtsTabHolder[12];
 
