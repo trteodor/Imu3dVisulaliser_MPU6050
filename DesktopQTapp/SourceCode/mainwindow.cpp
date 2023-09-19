@@ -197,15 +197,15 @@ void MainWindow::Plot3DDelayTimerTimeout()
     QString returnedValue;
     //QString msg = "Hello from C++";
 
-    static uint32_t yaw,pitch,roll;
-    yaw = yaw + 10;
-    pitch = pitch +20;
-    roll = roll + 5;
+//    static uint32_t yaw,pitch,roll;
+//    yaw = yaw + 10;
+//    pitch = pitch +20;
+//    roll = roll + 5;
 
-    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-                            Q_ARG(QVariant, yaw),
-                            Q_ARG(QVariant, pitch),
-                            Q_ARG(QVariant, roll)   );
+//    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
+//                            Q_ARG(QVariant, yaw),
+//                            Q_ARG(QVariant, pitch),
+//                            Q_ARG(QVariant, roll)   );
 
     //qDebug() << "QML function returned:" << returnedValue;
 

@@ -110,23 +110,32 @@ void  bluetoothClassic::bluetoothSendDataToDevice(QByteArray Data)
 
 void bluetoothClassic::bluetoothSocketReadyToRead(void)
 {
-  while(bluetoothClassicSocket->bytesAvailable() >99 ) {
-        static char Data[5000] = {0};
-        uint32_t Size = bluetoothClassicSocket->read(&Data[0],100);
-        (void)Size;
-        emit bluetoothSignalNewDataReceived(Data,100);
+//  while(bluetoothClassicSocket->bytesAvailable() >99 ) {
+//        static char Data[5000] = {0};
+//        uint32_t Size = bluetoothClassicSocket->read(&Data[0],100);
+//        (void)Size;
+//        emit bluetoothSignalNewDataReceived(Data,100);
 
-//        qDebug() << "SyncID:" << (uint8_t)Data[1] << "Size:" << Size <<"FullFramesCount:" << FullFramesCount;
+//        qDebug() << "SyncID:" << (uint8_t)Data[1] << "Size:" << Size << "Data:" << Data;
 
-//        static uint32_t CleanerAfterWakeUpFlag = 100;
-//        if(CleanerAfterWakeUpFlag != 0 && bluetoothClassicSocket->bytesAvailable() > 0)
-//        {
-//            CleanerAfterWakeUpFlag = CleanerAfterWakeUpFlag - 1;
-//            Size = bluetoothClassicSocket->read(&Data[0],5000);
-//            qDebug() << "Err?: SyncID" << (uint8_t)Data[1] << "Size:" << Size <<"FullFramesCount:" << FullFramesCount;
-//        }
-
-    }
+//                    //        static uint32_t CleanerAfterWakeUpFlag = 100;
+//                    //        if(CleanerAfterWakeUpFlag != 0 && bluetoothClassicSocket->bytesAvailable() > 0)
+//                    //        {
+//                    //            CleanerAfterWakeUpFlag = CleanerAfterWakeUpFlag - 1;
+//                    //            Size = bluetoothClassicSocket->read(&Data[0],5000);
+//                    //            qDebug() << "Err?: SyncID" << (uint8_t)Data[1] << "Size:" << Size <<"FullFramesCount:" << FullFramesCount;
+//                    //        }
+//    }
+  //while(this->bluetoothClassicSocket->canReadLine())
+            while(bluetoothClassicSocket->bytesAvailable() >99 )
+            {
+              char Data[255] = {0};
+              uint32_t Size = bluetoothClassicSocket->read(Data,255);
+              emit bluetoothSignalNewDataReceived(Data,Size);
+              //qDebug() <<"BlutoothMessage:  " << Data;
+              //    QString line = this->bluetoothClassicSocket->readLine();
+              //    qDebug() << line;
+            }
 }
 
 

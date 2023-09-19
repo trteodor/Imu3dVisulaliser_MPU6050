@@ -718,7 +718,7 @@ void BLU_Init(void)
 
 	// HAL_UART_Transmit(&huart1, (uint8_t *)"AT+BAUDA",8,1000);
 	// HAL_Delay(500);
-	//HAL_UART1_CostumUserInit(9600); /*We are almost sure that bluetooth
+	//HAL_UART1_CostumUserInit(460800); /*We are almost sure that bluetooth
 										//* BaudRate is now configured as expected*/
 	// HAL_Delay(500);
 
@@ -814,6 +814,7 @@ void BLU_DbgMsgTransmit(char *DbgString, ...)
 	DebugMessageBufferHelper[0] = BLU_DebugMessage;
 	DebugMessageBufferHelper[1] = SyncId;
 	memcpy(&DebugMessageBufferHelper[2],(uint8_t *)&ucTimeStamp,4);
+	
 
 	if(RB_Transmit_Write(&BluMainTransmitRingBuffer, (uint8_t *)DebugMessageBufferHelper, BLU_SINGLE_MESSAGE_SIZE) != RB_OK)
 	{
