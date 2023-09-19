@@ -59,8 +59,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED1_Pin GPIO_PIN_13
 #define LED1_GPIO_Port GPIOC
-#define Mpu6050Irq_Pin GPIO_PIN_5
-#define Mpu6050Irq_GPIO_Port GPIOB
 #define i2c1scl_mpu6050_Pin GPIO_PIN_6
 #define i2c1scl_mpu6050_GPIO_Port GPIOB
 #define i2c1sda_mpu6050_Pin GPIO_PIN_7

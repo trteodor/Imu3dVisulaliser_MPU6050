@@ -5,14 +5,14 @@
 #include "mpu6050defs.h"
 #include "stdint.h"
 #include "stdbool.h"
-#include "stm32h743xx.h"
+
 
 // #define MPU6050_ADDRESS 0xD0	// AD0 low
 //#define MPU6050_ADDRESS 0xD1	// AD0 high
 #define MPU6050_ADDRESS 0xD2
 // #define MPU6050_ADDRESS 0x69
 
-#define IRQ_GPIO_LINE MPU6050_INT_EXTI_IRQn
+#define IRQ_GPIO_LINE EXTI9_5_IRQn
 
 typedef struct
 {
