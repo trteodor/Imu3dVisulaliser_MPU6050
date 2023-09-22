@@ -60,7 +60,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 uint32_t RecMpuDataCounter = 0;
 
-uint8_t gyroCalibValues[6] = {0, 216, 0, 243, 0, 0};
+uint8_t gyroCalibValues[6] = {0, 193, 0, 21, 255, 241};
 
 //MpuData_t MpuData;
 
@@ -68,6 +68,20 @@ uint8_t gyroCalibValues[6] = {0, 216, 0, 243, 0, 0};
 
   MPU6050_t MPU6050;
 
+// As the sensor is set in init, the sensor takes a sample every 5ms (200hz),
+// creates an interrupt, then puts the dma data in the buffer, 
+// then the data is scaled and the orientations are calculated.
+// This process is repeated automatically every 5ms. So dt is 0.005 seconds
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+  // MPU6050_ReadDmaDataEndCallBack(&MpuData);
+  RecMpuDataCounter++;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  MPU6050_Read_DMA();
+}
 
 /* USER CODE END 0 */
 
@@ -103,9 +117,17 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  while (MPU6050_Init(&hi2c1) == 1){}
+  
   BLU_Init();
 
+
+  while (MPU6050_Init(&hi2c1) == 1){}
+
+  // uint8_t *NewCalibData = MPU6050_Calibrate_Gyro();
+  MPU6050Set_Calibrate_Gyro(gyroCalibValues);
+
+  MPU6050_Start_IRQ();
+  MPU6050_Read_DMA();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,11 +139,14 @@ int main(void)
     if( (HAL_GetTick() - LogAccelTimer > 100 ) ) //
     {
       LogAccelTimer = HAL_GetTick();
-      BLU_DbgMsgTransmit("Az:%.2f Ay:%.2f Ax:%.2f yaw: %.2f pitch: %.2f roll: %.2f", 
-                                    MPU6050.Az, MPU6050.Ax,MPU6050.Ay,
-                                    MPU6050.Gx,MPU6050.Gy,MPU6050.Gz);
-    
-      MPU6050_Read_All(&hi2c1, &MPU6050);
+      // BLU_DbgMsgTransmit("Az:%.2f Ay:%.2f Ax:%.2f yaw: %.2f pitch: %.2f roll: %.2f", 
+      //                               MPU6050.Az, MPU6050.Ax,MPU6050.Ay,
+      //                               MPU6050.Gx,MPU6050.Gy,MPU6050.Gz);
+      BLU_DbgMsgTransmit("RecMpuDataCounter: %d", RecMpuDataCounter);
+
+
+
+      // MPU6050_Read_All(&hi2c1, &MPU6050);
     }
 
     

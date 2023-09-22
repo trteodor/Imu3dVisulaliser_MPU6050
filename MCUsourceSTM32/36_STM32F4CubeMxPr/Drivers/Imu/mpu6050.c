@@ -1,38 +1,6 @@
-/*
- * mpu6050.c
- *
- *  Created on: Nov 13, 2019
- *      Author: Bulanov Konstantin
- *
- *  Contact information
- *  -------------------
- *
- * e-mail   :  leech001@gmail.com
- */
-
-/*
- * |---------------------------------------------------------------------------------
- * | Copyright (C) Bulanov Konstantin,2021
- * |
- * | This program is free software: you can redistribute it and/or modify
- * | it under the terms of the GNU General Public License as published by
- * | the Free Software Foundation, either version 3 of the License, or
- * | any later version.
- * |
- * | This program is distributed in the hope that it will be useful,
- * | but WITHOUT ANY WARRANTY; without even the implied warranty of
- * | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * | GNU General Public License for more details.
- * |
- * | You should have received a copy of the GNU General Public License
- * | along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * |
- * | Kalman filter algorithm used from https://github.com/TKJElectronics/KalmanFilter
- * |---------------------------------------------------------------------------------
- */
-
 #include <math.h>
 #include "mpu6050.h"
+#include "mpu6050defs.h"
 
 #define RAD_TO_DEG 57.295779513082320876798154814105
 
@@ -50,6 +18,14 @@
 const uint16_t i2c_timeout = 100;
 const double Accel_Z_corrector = 14418.0;
 
+uint8_t mpu_buffer[14];
+I2C_HandleTypeDef *i2c;
+#define I2C_TIMEOUT 1000
+#define MPU_ERR_SAMPLING_COUNTER	10000// max: 65536
+#define X       0
+#define Y       1
+#define Z       2
+
 uint32_t timer;
 
 Kalman_t KalmanX = {
@@ -63,11 +39,58 @@ Kalman_t KalmanY = {
     .R_measure = 0.03f,
 };
 
+void MPU6050Set_Calibrate_Gyro(uint8_t *data)
+{
+	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_XG_OFFS_USRH , 1, data, 6, I2C_TIMEOUT);
+}
+
+void GetGyroscopeRAW(int16_t *gyroRaw)//int16_t *x, int16_t *y, int16_t *z)
+{
+	uint8_t tmp[6];
+	HAL_I2C_Mem_Read(i2c, MPU6050_ADDR, MPU6050_RA_GYRO_XOUT_H, 1, tmp, 6, I2C_TIMEOUT);
+
+	gyroRaw[X] = (((int16_t)tmp[0]) << 8) | tmp[1];
+	gyroRaw[Y] = (((int16_t)tmp[2]) << 8) | tmp[3];
+	gyroRaw[Z] = (((int16_t)tmp[4]) << 8) | tmp[5];
+}
+
+uint8_t* MPU6050_Calibrate_Gyro(void)
+{
+	static uint8_t data[6] = {0, 0, 0, 0, 0, 0};
+	int32_t gyroBias[3] = {0, 0, 0};
+	int16_t gyroRaw[3];
+
+	for(uint16_t c = 0; c < MPU_ERR_SAMPLING_COUNTER; c++)
+	{
+		GetGyroscopeRAW(gyroRaw);
+		gyroBias[X] += gyroRaw[X];
+		gyroBias[Y] += gyroRaw[Y];
+		gyroBias[Z] += gyroRaw[Z];
+		HAL_Delay(5);
+	}
+	
+	gyroBias[X] /= MPU_ERR_SAMPLING_COUNTER;
+	gyroBias[Y] /= MPU_ERR_SAMPLING_COUNTER;
+	gyroBias[Z] /= MPU_ERR_SAMPLING_COUNTER;
+
+	data[0] = (-gyroBias[X]/4  >> 8) & 0xFF;
+	data[1] = (-gyroBias[X]/4)       & 0xFF;
+	data[2] = (-gyroBias[Y]/4  >> 8) & 0xFF;
+	data[3] = (-gyroBias[Y]/4)       & 0xFF;
+	data[4] = (-gyroBias[Z]/4  >> 8) & 0xFF;
+	data[5] = (-gyroBias[Z]/4)       & 0xFF;
+
+	MPU6050Set_Calibrate_Gyro(data);
+
+	return data;
+}
+
 uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
 {
-    uint8_t check;
+    uint8_t check = 0;
     uint8_t Data;
 
+	i2c = I2Cx;
     // check device ID WHO_AM_I
 
     HAL_I2C_Mem_Read(I2Cx, MPU6050_ADDR, WHO_AM_I_REG, 1, &check, 1, i2c_timeout);
@@ -96,12 +119,31 @@ uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
         Data = 0x00;
         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, GYRO_CONFIG_REG, 1, &Data, 1, i2c_timeout);
 
+
+        tmp = 0x30;
+        HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_PIN_CFG, 1, &tmp, 1, I2C_TIMEOUT);
+
+
         // uint8_t gyroCalibValues[6] = {0, 23, 0, 63, 0, 27};
         // HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, 0x13 , 1, gyroCalibValues, 6, i2c_timeout);
 
         return 0;
     }
     return 1;
+}
+
+void MPU6050_Start_IRQ(void) //Enable Int
+{
+	uint8_t tmp = 0x01;
+	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_INT_ENABLE, 1, &tmp, 1, I2C_TIMEOUT);
+
+	HAL_NVIC_SetPriority(IRQ_GPIO_LINE, 0, 0);
+  	HAL_NVIC_EnableIRQ(IRQ_GPIO_LINE);
+}
+
+void MPU6050_Read_DMA(void)
+{
+	HAL_I2C_Mem_Read_DMA(i2c, MPU6050_ADDR, MPU6050_RA_ACCEL_XOUT_H, 1, mpu_buffer, 14);
 }
 
 void MPU6050_Read_Accel(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct)
