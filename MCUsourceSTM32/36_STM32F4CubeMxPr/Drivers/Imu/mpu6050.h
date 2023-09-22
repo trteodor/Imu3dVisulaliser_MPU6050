@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include "i2c.h"
 
+#define IRQ_GPIO_LINE GPIO_PIN_5
+
 // MPU6050 structure
 typedef struct
 {
@@ -49,6 +51,12 @@ typedef struct
 } Kalman_t;
 
 uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx);
+uint8_t* MPU6050_Calibrate_Gyro(void);
+void MPU6050Set_Calibrate_Gyro(uint8_t *data);
+void MPU6050_Start_IRQ(void);
+void MPU6050_Read_DMA(void);
+
+
 
 void MPU6050_Read_Accel(I2C_HandleTypeDef *I2Cx, MPU6050_t *DataStruct);
 
