@@ -68,13 +68,15 @@ uint8_t gyroCalibValues[6] = {0, 193, 0, 21, 255, 241};
 
   MPU6050_t MPU6050;
 
+  MpuData_t MpuData;
+
 // As the sensor is set in init, the sensor takes a sample every 5ms (200hz),
 // creates an interrupt, then puts the dma data in the buffer, 
 // then the data is scaled and the orientations are calculated.
 // This process is repeated automatically every 5ms. So dt is 0.005 seconds
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-  // MPU6050_ReadDmaDataEndCallBack(&MpuData);
+  MPU6050_ReadDmaDataEndCallBack(&MpuData);
   RecMpuDataCounter++;
 }
 
@@ -121,7 +123,11 @@ int main(void)
   BLU_Init();
 
 
-  while (MPU6050_Init(&hi2c1) == 1){}
+  while (MPU6050_Init(&hi2c1) == 1){
+    // MPU6050_DeviceReset(0);
+    // HAL_Delay(1000);
+    // MPU6050_DeviceReset(1);
+  }
 
   // uint8_t *NewCalibData = MPU6050_Calibrate_Gyro();
   MPU6050Set_Calibrate_Gyro(gyroCalibValues);
@@ -139,11 +145,32 @@ int main(void)
     if( (HAL_GetTick() - LogAccelTimer > 100 ) ) //
     {
       LogAccelTimer = HAL_GetTick();
-      // BLU_DbgMsgTransmit("Az:%.2f Ay:%.2f Ax:%.2f yaw: %.2f pitch: %.2f roll: %.2f", 
-      //                               MPU6050.Az, MPU6050.Ax,MPU6050.Ay,
-      //                               MPU6050.Gx,MPU6050.Gy,MPU6050.Gz);
-      BLU_DbgMsgTransmit("RecMpuDataCounter: %d", RecMpuDataCounter);
 
+      minusGravity(&MpuData);
+
+      BLU_DbgMsgTransmit("y: %.2f p: %.2f r: %.2f || nAX: %.2f nAY: %.2f nAZ: %.2f || aX %.2f aY %.2f aZ %.2f", 
+                                    MpuData.yaw , 
+                                    MpuData.pitch,
+                                    MpuData.roll,
+                                    MpuData.normalizedAccX, 
+                                    MpuData.normalizedAccY,
+                                    MpuData.normalizedAccZ,
+                                    MpuData.accX, 
+                                    MpuData.accY, 
+                                    MpuData.accZ
+                                                              );
+      
+      // BLU_DbgMsgTransmit("gyroX: %.2f gyroY: %.2f gyroZ: %.2f ", 
+      //                               MpuData.gyroX * (180.0F/3.14F), 
+      //                               MpuData.gyroY* (180.0F/3.14F),
+      //                               MpuData.gyroZ* (180.0F/3.14F)
+      //                               );
+
+      // BLU_DbgMsgTransmit("nAccX: %.2f nAccY: %.2f nAccZ: %.2f ", 
+      //                               MpuData.normalizedAccX, 
+      //                               MpuData.normalizedAccY,
+      //                               MpuData.normalizedAccZ
+      //                               );
 
 
       // MPU6050_Read_All(&hi2c1, &MPU6050);

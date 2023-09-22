@@ -26,6 +26,7 @@
 #define BLU_SINGLE_REC_MESSAGE_SIZE        100
 #define BLU_STATISTICS_PERIOD              5000
 #define BLU_DATA_REPORTING_TIME            20
+#define BLU_MINIMUM_MESS_BREAK_TIM         30
 
 /**!
  * \brief BluRingBufferStatus_t
@@ -673,6 +674,7 @@ static void ReceiveDataHandler(void)
 static void TransmitDataHandler(void)
 {
 	static uint32_t BLU_StatisticTimer = 0;
+	static uint32_t PreviousDataTransmitTime = 0;
 
 	if( HAL_UART_STATE_READY == huart1.gState)
 	{
@@ -685,6 +687,10 @@ static void TransmitDataHandler(void)
 		}
 		else
 		{
+			if( (HAL_GetTick() - PreviousDataTransmitTime) > BLU_MINIMUM_MESS_BREAK_TIM)
+			{
+				PreviousDataTransmitTime = HAL_GetTick();
+
 				uint8_t *MessageToTransmit_p = NULL;
 				uint8_t MessageToSize_p = 0U;
 				if(RB_Transmit_Read(&BluMainTransmitRingBuffer, &MessageToSize_p, &MessageToTransmit_p) == RB_OK)
@@ -692,6 +698,8 @@ static void TransmitDataHandler(void)
 					TransmisstedMessagesCounter++;
 					HAL_UART_Transmit_DMA(&huart1, MessageToTransmit_p, BLU_SINGLE_MESSAGE_SIZE);
 				}
+			}
+
 		}
 	}
 	else
