@@ -18,13 +18,21 @@
 const uint16_t i2c_timeout = 100;
 const double Accel_Z_corrector = 14418.0;
 
-uint8_t mpu_buffer[14];
-I2C_HandleTypeDef *i2c;
+
 #define I2C_TIMEOUT 1000
 #define MPU_ERR_SAMPLING_COUNTER	10000// max: 65536
+#define CONF_SAMPLE_FREQ 0.001F
+const float mpuScale[] = {2048.34f, 131.072f}; // acc, gyro
+#define acc     0
+#define gyro    1
 #define X       0
 #define Y       1
 #define Z       2
+
+uint8_t mpu_buffer[14];
+float mpuDataScaled[2][3];
+I2C_HandleTypeDef *i2c;
+
 
 uint32_t timer;
 
@@ -85,6 +93,15 @@ uint8_t* MPU6050_Calibrate_Gyro(void)
 	return data;
 }
 
+void MPU6050_DeviceReset(uint8_t Reset)
+{
+	uint8_t tmp;
+	HAL_I2C_Mem_Read(i2c, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &tmp, 1, I2C_TIMEOUT);
+	tmp &= ~(1<<MPU6050_PWR1_DEVICE_RESET_BIT);
+	tmp |= ((Reset & 0x1) << MPU6050_PWR1_DEVICE_RESET_BIT);
+	HAL_I2C_Mem_Write(i2c, MPU6050_ADDR, MPU6050_RA_PWR_MGMT_1, 1, &tmp, 1, I2C_TIMEOUT);
+}
+
 uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
 {
     uint8_t check = 0;
@@ -101,7 +118,7 @@ uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
         Data = 0;
         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, PWR_MGMT_1_REG, 1, &Data, 1, i2c_timeout);
 
-        // Set DATA RATE of 1KHz by writing SMPLRT_DIV register
+        // Set DATA RATE of 0x07 - 1KH  || 0x04 - 200 z by writing SMPLRT_DIV register
         Data = 0x07;
         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, SMPLRT_DIV_REG, 1, &Data, 1, i2c_timeout);
 
@@ -286,3 +303,192 @@ double Kalman_getAngle(Kalman_t *Kalman, double newAngle, double newRate, double
 
     return Kalman->angle;
 };
+
+
+/*!
+ ************************************************************************************************
+ * \brief ScaleReceivedData_DMA
+ * \details Function used to scale received data
+ * \param 
+ * \param out 
+ * \param out 
+ *
+ * */
+void ScaleReceivedData_DMA()
+{
+	for(uint8_t coordinat = 0; coordinat < 2; coordinat++)
+	{
+		for(uint8_t axis = 0; axis < 3; axis++)
+		{
+		mpuDataScaled[coordinat][axis] = ((float)((int16_t)((((int16_t)mpu_buffer[(coordinat*8)+(axis*2)]) << 8) | mpu_buffer[(coordinat*8)+(axis*2)+1])) / mpuScale[coordinat]);// - mpuErr[coordinat][axis];
+		}
+	}	
+}
+
+
+//Fast inverse sqrt for madgwick filter
+static float invSqrt(float x) {
+  unsigned int i = 0x5F1F1412 - (*(unsigned int*)&x >> 1);
+  float tmp = *(float*)&i;
+  float y = tmp * (1.69000231f - 0.714158168f * x * tmp * tmp);
+  return y;
+}
+
+/*!
+ ************************************************************************************************
+ * \brief GetEulerAngles_MadgwickFilter
+ * \details 
+ * \param in
+ * \param out
+ * \param out
+ * \param out
+ *
+ * */
+static void GetEulerAngles_MadgwickFilter(float *roll, float *pitch, float *yaw, const float invSampleFreq)//float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq, float* roll_IMU, float* pitch_IMU, float* yaw_IMU) {
+{
+	static float q0 = 1.0f; //initialize quaternion for madgwick filter
+	static float q1 = 0.0f;
+	static float q2 = 0.0f;
+	static float q3 = 0.0f;
+	static float B_madgwick = 0.04;  //Madgwick filter parameter
+
+	//DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
+	/*
+	* See description of Madgwick() for more information. This is a 6DOF implimentation for when magnetometer data is not
+	* available (for example when using the recommended MPU6050 IMU for the default setup).
+	*/
+	float recipNorm;
+	float s0, s1, s2, s3;
+	float qDot1, qDot2, qDot3, qDot4;
+	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+
+	//Convert gyroscope degrees/sec to radians/sec
+	mpuDataScaled[gyro][X] *= 0.0174533f;
+	mpuDataScaled[gyro][Y] *= 0.0174533f;
+	mpuDataScaled[gyro][Z] *= 0.0174533f;
+
+	//Rate of change of quaternion from gyroscope
+	qDot1 = 0.5f * (-q1 * mpuDataScaled[gyro][X] - q2 * mpuDataScaled[gyro][Y] - q3 * mpuDataScaled[gyro][Z]);
+	qDot2 = 0.5f * (q0 * mpuDataScaled[gyro][X] + q2 * mpuDataScaled[gyro][Z] - q3 * mpuDataScaled[gyro][Y]);
+	qDot3 = 0.5f * (q0 * mpuDataScaled[gyro][Y] - q1 * mpuDataScaled[gyro][Z] + q3 * mpuDataScaled[gyro][X]);
+	qDot4 = 0.5f * (q0 * mpuDataScaled[gyro][Z] + q1 * mpuDataScaled[gyro][Y] - q2 * mpuDataScaled[gyro][X]);
+
+	//Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+	if(!((mpuDataScaled[acc][X] == 0.0f) && (mpuDataScaled[acc][Y] == 0.0f) && (mpuDataScaled[acc][Z] == 0.0f))) {
+		//Normalise accelerometer measurement
+		recipNorm = invSqrt(mpuDataScaled[acc][X] * mpuDataScaled[acc][X] + mpuDataScaled[acc][Y] * mpuDataScaled[acc][Y] + mpuDataScaled[acc][Z] * mpuDataScaled[acc][Z]);
+		mpuDataScaled[acc][X] *= recipNorm;
+		mpuDataScaled[acc][Y] *= recipNorm;
+		mpuDataScaled[acc][Z] *= recipNorm;
+
+		//Auxiliary variables to avoid repeated arithmetic
+		_2q0 = 2.0f * q0;
+		_2q1 = 2.0f * q1;
+		_2q2 = 2.0f * q2;
+		_2q3 = 2.0f * q3;
+		_4q0 = 4.0f * q0;
+		_4q1 = 4.0f * q1;
+		_4q2 = 4.0f * q2;
+		_8q1 = 8.0f * q1;
+		_8q2 = 8.0f * q2;
+		q0q0 = q0 * q0;
+		q1q1 = q1 * q1;
+		q2q2 = q2 * q2;
+		q3q3 = q3 * q3;
+
+		//Gradient decent algorithm corrective step
+		s0 = _4q0 * q2q2 + _2q2 * mpuDataScaled[acc][X] + _4q0 * q1q1 - _2q1 * mpuDataScaled[acc][Y];
+		s1 = _4q1 * q3q3 - _2q3 * mpuDataScaled[acc][X] + 4.0f * q0q0 * q1 - _2q0 * mpuDataScaled[acc][Y] - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * mpuDataScaled[acc][Z];
+		s2 = 4.0f * q0q0 * q2 + _2q0 * mpuDataScaled[acc][X] + _4q2 * q3q3 - _2q3 * mpuDataScaled[acc][Y] - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * mpuDataScaled[acc][Z];
+		s3 = 4.0f * q1q1 * q3 - _2q1 * mpuDataScaled[acc][X] + 4.0f * q2q2 * q3 - _2q2 * mpuDataScaled[acc][Y];
+		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+		s0 *= recipNorm;
+		s1 *= recipNorm;
+		s2 *= recipNorm;
+		s3 *= recipNorm;
+
+		//Apply feedback step
+		qDot1 -= B_madgwick * s0;
+		qDot2 -= B_madgwick * s1;
+		qDot3 -= B_madgwick * s2;
+		qDot4 -= B_madgwick * s3;
+	}
+
+	//Integrate rate of change of quaternion to yield quaternion
+	q0 += qDot1 * invSampleFreq;
+	q1 += qDot2 * invSampleFreq;
+	q2 += qDot3 * invSampleFreq;
+	q3 += qDot4 * invSampleFreq;
+
+	//Normalise quaternion
+	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+	q0 *= recipNorm;
+	q1 *= recipNorm;
+	q2 *= recipNorm;
+	q3 *= recipNorm;
+
+	//compute angles
+	*roll = atan2(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
+	*pitch = -asin(-2.0f * (q1*q3 - q0*q2));
+	*yaw = -atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+}
+
+void minusGravity(MpuData_t *RecMpuData)
+{
+float inYawRad = RecMpuData->yaw;
+float inPitchRad = RecMpuData->pitch; 
+float inRollRad = RecMpuData->roll; 
+
+float x = RecMpuData->accX;
+float y = RecMpuData->accY;
+float z = RecMpuData->accZ;
+double alpha=  inYawRad    ;// some aribitar values for testing //pitch
+double beta=   inPitchRad    ;// some aribitar values for testing //yaw
+double theta = inRollRad ;// some aribitar values for testing //roll
+
+double accel[3]=   {x,    y,      z};// data will come from the accelerometers
+double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
+double rG[3],rA[3];
+double mA[3];
+
+double R[3][3] =
+{
+  { cos(alpha)*cos(beta) , cos(alpha)*sin(beta)*sin(theta) - sin(alpha)*cos(theta) , cos(alpha)*sin(beta)*cos(theta) + sin(alpha)*sin(theta)},
+  { sin(alpha)*cos(beta) , sin(alpha)*sin(beta)*sin(theta) + cos(alpha)*cos(theta) , sin(alpha)*sin(beta)*cos(theta) - cos(alpha)*sin(theta)},
+  {     -1* sin(beta)    ,                  cos(beta) * sin(theta)                 ,               cos(beta) * cos(theta)                   }
+};
+
+rG[0]= gravity[0]*R[0][0] + gravity[1]*R[0][1] + gravity[2]*R[0][2] ;
+rG[1]= gravity[0]*R[1][0] + gravity[1]*R[1][1] + gravity[2]*R[1][2] ;
+rG[2]= gravity[0]*R[2][0] + gravity[1]*R[2][1] + gravity[2]*R[2][2] ;
+
+rA[0]= accel[0]*R[0][0]   + accel[1]*R[0][1]   + accel[2]*R[0][2] ;
+rA[1]= accel[0]*R[1][0]   + accel[1]*R[1][1]   + accel[2]*R[1][2] ;
+rA[2]= accel[0]*R[2][0]   + accel[1]*R[2][1]   + accel[2]*R[2][2] ;
+
+mA[0]= accel[0]-rG[0];
+mA[1]= rG[1] + accel[1];
+mA[2]= accel[2]-rG[2];
+
+RecMpuData->normalizedAccX = mA[0];
+RecMpuData->normalizedAccY = mA[1];
+RecMpuData->normalizedAccZ = mA[2];
+
+}
+
+void MPU6050_ReadDmaDataEndCallBack(MpuData_t *RecMpuData)
+{
+	ScaleReceivedData_DMA();
+	// Madgwick Orientation Filter with 6 degrees of freedom
+	GetEulerAngles_MadgwickFilter(&RecMpuData->roll, &RecMpuData->pitch, &RecMpuData->yaw, CONF_SAMPLE_FREQ);
+    // minusGravity(RecMpuData);
+
+	RecMpuData->gyroX = mpuDataScaled[gyro][X];
+	RecMpuData->gyroY = mpuDataScaled[gyro][Y];
+	RecMpuData->gyroZ = mpuDataScaled[gyro][Z];
+	RecMpuData->accX  = mpuDataScaled[acc][X];
+	RecMpuData->accY  = mpuDataScaled[acc][Y];
+	RecMpuData->accZ  = mpuDataScaled[acc][Z];
+
+	RecMpuData->flagUpdated = true;
+}
