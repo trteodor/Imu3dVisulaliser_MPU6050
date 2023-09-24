@@ -1,9 +1,22 @@
 
+/******************************************************************************************
+ * @file mpu6050defs.h
+ * @author teodor rosolowski, trteodor@gmail.com
+ * 
+ * @date 23.09.2023
+ * @brief Source file contatning functionality related to IMU MPU6050 unit.
+ * This file is distributed under MIT license
+ *
+ *******************************************************************************************/
+
+
 #ifndef MPU6050_REGS_H_
 #define MPU6050_REGS_H_
-//
-//	Registers addresses
-//
+
+/******************************************************************************************/
+/*                                 DEFINES                                                */
+/******************************************************************************************/
+
 #define MPU6050_RA_SELF_TEST_X      0x0D
 #define MPU6050_RA_SELF_TEST_Y      0x0E
 #define MPU6050_RA_SELF_TEST_Z      0x0F

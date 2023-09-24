@@ -22,11 +22,11 @@
 #include "math.h"
 
 #define SIMULATOR_PROBES_COUNT             300
-#define BLU_SINGLE_MESSAGE_SIZE            100
-#define BLU_SINGLE_REC_MESSAGE_SIZE        100
+#define BLU_SINGLE_MESSAGE_SIZE            120
+#define BLU_SINGLE_REC_MESSAGE_SIZE        120
 #define BLU_STATISTICS_PERIOD              5000
 #define BLU_DATA_REPORTING_TIME            20
-#define BLU_MINIMUM_MESS_BREAK_TIM         30
+#define BLU_MINIMUM_MESS_BREAK_TIM         10
 
 /**!
  * \brief BluRingBufferStatus_t
@@ -62,12 +62,6 @@ typedef struct
 	bool ReadyToRead[BLU_RECEIVE_RING_BUFFER_SIZE];
 } BluRingBufferReceive_t;
 
-typedef struct
-{
-	float X[SIMULATOR_PROBES_COUNT];
-	float Y[SIMULATOR_PROBES_COUNT];
-	uint16_t T[SIMULATOR_PROBES_COUNT];
-}Sim_PositionOnTruck_t;
 
 typedef enum InternalRobotState_t
 {
@@ -92,12 +86,8 @@ typedef enum LoggingState_t
 
 static void (*NvmUpdateCallBacks[BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT])(void) = {0};
 
-static void (*ManualCtrlRequestCallBackPointer)(float vecV_X, float vecV_Y);
 
 static LoggingState_t LoggingState = Suspended;
-static InternalRobotState_t InternalRobotState = Standstill;
-
-Sim_PositionOnTruck_t  SimFakeXY_MapDat;
 
 static bool LogDroppedFlag =false;
 static uint16_t RetransmissionCounter = 0U;
@@ -112,7 +102,7 @@ static BluRingBufferReceive_t BleMainReceiveRingBuffer;
 static uint8_t BluMainReceiveMessagesTab[BLU_RECEIVE_RING_BUFFER_SIZE][BLU_SINGLE_REC_MESSAGE_SIZE];
 
 
-static BLU_LfDataReport_t NewestLfDataReport = {0};
+static BLU_ImuBaseDataReport_t NewestImuDataReport = {0};
 
 
 /*
@@ -121,7 +111,6 @@ static BLU_LfDataReport_t NewestLfDataReport = {0};
  ********************************************************************************************
  */
 
-static void Sim_Create_XY_FakeMap(void);
 static BluRingBufferStatus_t RB_Transmit_Read(BluRingBufferTransmit_t *Buf, uint8_t *MessageSize, uint8_t **MessagePointer);
 static BluRingBufferStatus_t RB_Transmit_Write(BluRingBufferTransmit_t *Buf,uint8_t *DataToWrite, uint8_t MessageSize);
 static BluRingBufferStatus_t RB_Receive_GetNextMessageAddress(BluRingBufferReceive_t *Buf, uint8_t **WriteAddress);
@@ -317,20 +306,20 @@ static BluRingBufferStatus_t RB_Receive_Read(BluRingBufferReceive_t *Buf, uint8_
 	return RB_OK;
 }
 
-static BLU_CallStatus_t TransmitLfBaseDataReport(void)
+static BLU_CallStatus_t TransmitImuBaseDataReport(void)
 {
 	uint8_t DataBuffer[BLU_SINGLE_MESSAGE_SIZE] = {'B'};
 	static uint8_t _SyncID = 0;
 
 	BLU_CallStatus_t retval = BLU_Ok;
 
-	NewestLfDataReport.SyncId = _SyncID;
-	NewestLfDataReport.ucTimeStamp = HAL_GetTick();
+	NewestImuDataReport.SyncId = _SyncID;
+	NewestImuDataReport.ucTimeStamp = HAL_GetTick();
 
-	DataBuffer[0] = BLU_BaseDataReport;
-	DataBuffer[1] = NewestLfDataReport.SyncId;
+	DataBuffer[0] = BLU_ImuData;
+	DataBuffer[1] = NewestImuDataReport.SyncId;
 
-	memcpy(&DataBuffer[2], &NewestLfDataReport.ucTimeStamp,54);
+	memcpy(&DataBuffer[2], &NewestImuDataReport.ucTimeStamp,sizeof(BLU_ImuBaseDataReport_t) -2 );
 
 	if(RB_Transmit_Write(&BluMainTransmitRingBuffer, (uint8_t *)DataBuffer, BLU_SINGLE_MESSAGE_SIZE) != RB_OK)
 	{
@@ -399,79 +388,6 @@ static void Statistics_CreateAndTransmitCommunicationStatistics(void)
  *****************************************************************************************************
  */
 
-static void Sim_Create_XY_FakeMap(void)
-{
-	static uint32_t ExtraShifter = 0u;
-
-	for(int i=0;  i<100; i++)
-	{
-		SimFakeXY_MapDat.T[i]=    HAL_GetTick();
-		SimFakeXY_MapDat.X[i]=  (float)i + (float)ExtraShifter;
-		SimFakeXY_MapDat.Y[i] = 0.0F + (float)ExtraShifter;
-	}
-	for(int i=0;  i<100; i++)
-	{
-		SimFakeXY_MapDat.T[i+100]= HAL_GetTick();
-		SimFakeXY_MapDat.X[i+100]= 100.0F + (float)ExtraShifter;
-		SimFakeXY_MapDat.Y[i+100] = (float)i  + (float)ExtraShifter;
-	}
-	for(int i=0;  i<100; i++)
-	{
-		SimFakeXY_MapDat.T[i+200]= HAL_GetTick();
-		SimFakeXY_MapDat.X[i+200]= 100.0F - ((float)i*1.0F) + (float)ExtraShifter;
-		SimFakeXY_MapDat.Y[i+200] =100.0F     + (float)ExtraShifter;
-	}
-
-	ExtraShifter = ExtraShifter + 5;
-}
-
-void Sim_FakeBaseDataReportTask(void)
-{
-	static uint16_t ProbeIterator = 0u;
-	static uint8_t SyncIdIter = 1;
-	static float WaveHelper = 0.0F;
-
-	for(int i =0; i<1; i++)
-	{
-		if(ProbeIterator == SIMULATOR_PROBES_COUNT)
-		{
-			Sim_Create_XY_FakeMap();
-			ProbeIterator = 1U;
-		}
-		NewestLfDataReport.ucTimeStamp = HAL_GetTick();
-		NewestLfDataReport.CurrMapData.PosX = SimFakeXY_MapDat.X[ProbeIterator];
-		NewestLfDataReport.CurrMapData.PosY = SimFakeXY_MapDat.Y[ProbeIterator];
-		NewestLfDataReport.CurrMapData.TravelledDistance = SyncIdIter;
-		NewestLfDataReport.CurrMapData.PosO = M_PI * sin(2 * M_PI * WaveHelper);
-		NewestLfDataReport.CurrMapData.WhLftSp = (2 * sin( 2 * M_PI * WaveHelper)) + (0.05 * sin( 2* M_PI * 3 * WaveHelper));
-		NewestLfDataReport.CurrMapData.WhRhtSp = (2 * cos( 2 * M_PI * WaveHelper)) + (0.05 * sin( 2* M_PI * 7 * WaveHelper));
-		NewestLfDataReport.CurrMapData.YawRate = (2 * sin( 2 * M_PI * WaveHelper)) + (0.3 * sin( 2* M_PI * 10 * WaveHelper));
-		NewestLfDataReport.CurrSensorData.SensorData[0] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[1] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[2] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[3] = 63;
-		NewestLfDataReport.CurrSensorData.SensorData[4] = 64;
-		NewestLfDataReport.CurrSensorData.SensorData[5] = (uint8_t)(65 + SyncIdIter);
-		NewestLfDataReport.CurrSensorData.SensorData[6] = (uint8_t)(66 + SyncIdIter);
-		NewestLfDataReport.CurrSensorData.SensorData[7] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[8] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[9] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[10] = 40;
-		NewestLfDataReport.CurrSensorData.SensorData[11] = 40;
-		NewestLfDataReport.CurrSensorData.LastLeftLinePosConfidence = SyncIdIter;
-		NewestLfDataReport.CurrSensorData.LastRightLinePosConfidence = SyncIdIter+5;
-		NewestLfDataReport.CurrSensorData.PosError = 1 * sin( 2 * M_PI * WaveHelper);
-		NewestLfDataReport.LinePidRegData.LinePidRegVal = (2 * sin( 2 * M_PI * WaveHelper)) + (0.2 * sin( 2* M_PI * 13 * WaveHelper));;
-
-		WaveHelper = WaveHelper + 0.01;
-		ProbeIterator++;
-		SyncIdIter++;
-	
-	}
-
-}
-
-
 void BaseDataReporterTask(void)
 {
 	static uint32_t PreviousReportTransmitTime = 0;
@@ -480,18 +396,14 @@ void BaseDataReporterTask(void)
 			&& (TrueDataLogging == LoggingState))
 	{
 		PreviousReportTransmitTime = HAL_GetTick();
-		TransmitLfBaseDataReport(); 
-		/*Base data report struct is updated asynchronicly 
-		* by another modules
-		* Check desprition of functions BLE_Report..
-		*/
+		TransmitImuBaseDataReport(); 
 	}
 	else if(  (HAL_GetTick() - PreviousReportTransmitTime >= BLU_DATA_REPORTING_TIME )
 						&& (SimulatorDataLogging == LoggingState) )
 	{
 		PreviousReportTransmitTime = HAL_GetTick();
-		Sim_FakeBaseDataReportTask();
-		TransmitLfBaseDataReport();
+		//Sim_FakeBaseDataReportTask();
+		TransmitImuBaseDataReport();
 	}
 	else//Suspended == LoggingState
 	{
@@ -519,119 +431,14 @@ static void ReceiveDataHandler(void)
 
 			switch(ReceivedMessageId)
 			{
-				case BLU_NvM_ErrWeigthSensorData:
-				{
-					NvmDataUpdatedFlag= true;
-					break;
-				}
-
-				case BLU_NvM_ErrWeigthSensorDataReq:
-				{
-					break;
-				}
-
-				case BLU_NvM_LinePidRegDataReq:
-				{
-					break;
-				}
-
-				case BLU_NvM_LinePidRegData:
-				{
-					NvmDataUpdatedFlag= true;
-					break;
-				}
-
-				case BLU_NvM_VehCfgReq:
-				{
-	//				BLU_DbgMsgTransmit("VehCfgReq");
-					break;
-				}
-
-				case BLU_NvM_VehCfgData:
-				{
-					NvmDataUpdatedFlag= true;
-					// BLU_DbgMsgTransmit("Received BaseMotSpd: %f, LedSt %d, EndLMark %d",
-					// 		BaseMotSpd,LedState,TryDetEndLine );
-
-					break;
-				}
-
-				case BLU_RobotStart:
-				{
-					InternalRobotState = Driving;
-					LoggingState = TrueDataLogging;
-					BLU_DbgMsgTransmit("LineFollower start!");
-					break;
-				}
-				case BLU_RobotStop:
-				{
-					InternalRobotState = Standstill;
-					LoggingState = Suspended;
-					BLU_DbgMsgTransmit("LineFollower stop");
-					break;
-				}
-
-				case BLU_SimulatorStart:
-				{
-					LoggingState = SimulatorDataLogging;
-					BLU_DbgMsgTransmit("Simulator data start");
-					break;
-				}
-
-				case BLU_TrueBaseLoggingStart:
+				case BLU_LoggingStart:
 				{
 					LoggingState = TrueDataLogging;
-					BLU_DbgMsgTransmit("True data logger start");
 					break;
 				}
-
-				case BLU_SimuAndTrueDataLoggingStop:
+				case BLU_LoggingStop:
 				{
 					LoggingState = Suspended;
-					BLU_DbgMsgTransmit("Logger stop");
-					break;
-				}
-
-				case BLU_NvM_MotorsFactorsReq:
-				{
-					break;
-				}
-
-				case BLU_NvM_MotorsFactorsData:
-				{
-					NvmDataUpdatedFlag= true;
-					break;
-
-				}
-
-				case BLU_NvM_EncoderModCfgReq:
-				{
-					break;
-				}
-				case BLU_NvM_EncoderModCfgData :
-				{
-					NvmDataUpdatedFlag= true;
-					break;
-				}
-
-				case	BLU_NvM_ManualCntrlCommand:/* Virutal analog controller frame */
-				{
-					break;
-				}
-
-				case BLU_NvM_SpdProfileReq:
-				{
-					break;
-				}
-
-				case BLU_NvM_SpdProfileData:
-				{
-					NvmDataUpdatedFlag= true;
-					break;
-				}
-
-				case BLU_SetNewRobotName:
-				{
 					break;
 				}
 
@@ -699,7 +506,6 @@ static void TransmitDataHandler(void)
 					HAL_UART_Transmit_DMA(&huart1, MessageToTransmit_p, BLU_SINGLE_MESSAGE_SIZE);
 				}
 			}
-
 		}
 	}
 	else
@@ -730,35 +536,8 @@ void BLU_Init(void)
 										//* BaudRate is now configured as expected*/
 	// HAL_Delay(500);
 
-	// if(true == DevNameUpdateFlag)
-	// {
-
-	// 	char DevName[16];
-	// 	char FakeRecBuf[20];
-	// 	char DevNameFullCommandBuffor[16+7+2] = "AT+NAME";
-	// 	uint8_t DevNameSize =7;
-
-	// 	for(int i=0; i<16; i++)
-	// 	{
-	// 		if(DevName[i] == '\0'){
-	// 			break;
-	// 		}
-	// 		DevNameSize++;
-	// 	}
-
-	// 	for(int i=7; i<(DevNameSize+7); i++){
-	// 		DevNameFullCommandBuffor[i] = DevName[i-7];
-	// 	}
-
-	// 	HAL_UART_Transmit_DMA(&huart1, (uint8_t *)DevNameFullCommandBuffor, BLU_SINGLE_MESSAGE_SIZE);
-	// 	HAL_UART_Receive(&huart1, (uint8_t *)FakeRecBuf, 20,100);
-	// 	//	HAL_Delay(50); /*Short delay to ignore answer :) */
-	// }
-
 	// HAL_UART_Receive_DMA(&huart1, &BluMainReceiveMessagesTab[0][0], BLU_SINGLE_REC_MESSAGE_SIZE);
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &BluMainReceiveMessagesTab[0][0], BLU_SINGLE_REC_MESSAGE_SIZE);
-	Sim_Create_XY_FakeMap();
-
 }
 
 void BLU_Task(void)
@@ -768,42 +547,11 @@ void BLU_Task(void)
 	TransmitDataHandler();
 }
 
-void BLU_ReportMapData(BLU_MapDataReport_t *MapData)
-{
-	NewestLfDataReport.CurrMapData = *MapData;
-}
 
-void BLU_ReportSensorData(BLU_SensorDataReport_t *SensorData)
-{
-	NewestLfDataReport.CurrSensorData = *SensorData;
-}
 
-void BLU_RegisterNvMdataUpdateInfoCallBack(void UpdateInfoCb(void) )
+void BLU_ReportImuData(BLU_ImuBaseDataReport_t *ImuData)
 {
-	for(int i=0; i<BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT; i++)
-	{
-		if(NvmUpdateCallBacks[i] == 0)
-		{
-			NvmUpdateCallBacks[i] = UpdateInfoCb;
-			break;
-		}
-	}
-}
-
-void BLU_RegisterManualCntrlRequestCallBack(void ManualCtrlReqCb(float vecV_X, float vecV_Y) )
-{
-	ManualCtrlRequestCallBackPointer = ManualCtrlReqCb;
-}
-
-bool BLU_isExpectedStateDriving(void)
-{
-	bool retVal = false;
-
-	if(InternalRobotState ==  Driving)
-	{
-		retVal = true;
-	}
-	return retVal;
+	NewestImuDataReport = *ImuData;
 }
 
 

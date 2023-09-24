@@ -1,5 +1,5 @@
-#ifndef GENERICLFQCP_H
-#define GENERICLFQCP_H
+#ifndef GENERICQCP_H
+#define GENERICQCP_H
 
 
 #include <QMainWindow>
@@ -7,23 +7,23 @@
 #include "QWidget"
 #include "qcustomplot.h"
 
-class GenericLfQCP : public QMainWindow
+class GenericQCP : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit GenericLfQCP(void);
-    ~GenericLfQCP();
+    explicit GenericQCP(void);
+    ~GenericQCP();
 
     void LfGraphInitialize(QCustomPlot *UIPassedplot,QCPGraph::LineStyle LineStyle);
-    void LfGraph_AppendData(float X_Pos1,float Y_Pos1,
+    void Graph_AppendData(float X_Pos1,float Y_Pos1,
                             float X_Pos2=0,float Y_Pos2=0,
                             float X_Pos3=0,float Y_Pos3=0,
                             float X_Pos4=0,float Y_Pos4=0,
                             float X_Pos5=0,float Y_Pos5=0,
                             float X_Pos6=0,float Y_Pos6=0);
-    void LfGraph_UpdateReplot(void);
-    void LfGraph_ClearData(void);
-    void LfGraph_DrawMarkersAtDataIndex(int DataIndex);
+    void Graph_UpdateReplot(void);
+    void Graph_ClearData(void);
+    void Graph_DrawMarkersAtDataIndex(int DataIndex);
 
 
     QCustomPlot *UIplotP;
@@ -43,17 +43,17 @@ signals:
 private slots:
     /******************************************************************************/
 
-    void LfGraph_axisLabelDoubleClick(QCPAxis* axis, QCPAxis::SelectablePart part);
-    void LfGraph_legendDoubleClick(QCPLegend* legend, QCPAbstractLegendItem* item);
-    void LfGraph_selectionChanged();
-    void LfGraph_mousePress();
-    void LfGraph_mouseWheel();
-    void LfGraph_addRandomGraph();
-    void LfGraph_removeSelectedGraph();
-    void LfGraph_removeAllGraphs();
-    void LfGraph_contextMenuRequest(QPoint pos);
-    void LfGraph_moveLegend();
-    void LfGraph_graphClicked(QCPAbstractPlottable *plottable, int dataIndex);
+    void Graph_axisLabelDoubleClick(QCPAxis* axis, QCPAxis::SelectablePart part);
+    void Graph_legendDoubleClick(QCPLegend* legend, QCPAbstractLegendItem* item);
+    void Graph_selectionChanged();
+    void Graph_mousePress();
+    void Graph_mouseWheel();
+    void Graph_addRandomGraph();
+    void Graph_removeSelectedGraph();
+    void Graph_removeAllGraphs();
+    void Graph_contextMenuRequest(QPoint pos);
+    void Graph_moveLegend();
+    void Graph_graphClicked(QCPAbstractPlottable *plottable, int dataIndex);
     /******************************************************************************/
 
 private:
@@ -85,4 +85,4 @@ private:
 
 
 
-#endif // GENERICLFQCP_H
+#endif // GENERICQCP_H

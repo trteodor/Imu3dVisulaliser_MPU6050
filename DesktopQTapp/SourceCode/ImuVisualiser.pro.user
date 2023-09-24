@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 10.0.2, 2023-09-20T22:14:05. -->
+<!-- Written by QtCreator 10.0.2, 2023-09-24T14:38:33. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -243,8 +243,9 @@
     <valuelist type="QVariantList" key="CustomOutputParsers"/>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:E:/STM32_VSCodeWorkSpace/Imu_3D_Visulalser/DesktopQTapp/SourceCode/ImuVisualiser.pro</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">E:/STM32_VSCodeWorkSpace/Imu_3D_Visulalser/DesktopQTapp/SourceCode/ImuVisualiser.pro</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">ImuVisualiser2</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:E:/STM32_VSCodeWorkSpace/Imu_3D_Visulaliser/DesktopQTapp/SourceCode/ImuVisualiser.pro</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">E:/STM32_VSCodeWorkSpace/Imu_3D_Visulaliser/DesktopQTapp/SourceCode/ImuVisualiser.pro</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>

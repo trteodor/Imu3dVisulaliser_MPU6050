@@ -10,7 +10,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    GenericLfQCP.cpp \
+    GenericQCP.cpp \
     bluetoothDataManager.cpp \
     bluetoothclassic.cpp \
     main.cpp \
@@ -20,7 +20,7 @@ SOURCES += \
     scatterdatamodifier.cpp
 
 HEADERS += \
-    GenericLfQCP.h \
+    GenericQCP.h \
     bluetoothDataManager.h \
     bluetoothclassic.h \
     mainwindow.h \
@@ -42,15 +42,12 @@ RESOURCES += qdarkstyle/dark/darkstyle.qrc
 RESOURCES += RobotOriRes.qrc
 RESOURCES += qdarkstyle/light/lightstyle.qrc
 
-RESOURCES += VirtualJoystickQML/resources.qrc
+
 RESOURCES += CubeDiffFacesQML/resCubeDiff.qrc
 
 #RC_ICONS = LfProjectApp.ico
 
 OTHER_FILES += \
-    VirtualJoystickQML/finger.png \
-    VirtualJoystickQML/background.png \
-    VirtualJoystickQML/virtual_joystick.qml \
     CubeDiffFacesQML/Dice1.svg \
     CubeDiffFacesQML/Dice2.svg \
     CubeDiffFacesQML/Dice3.svg \

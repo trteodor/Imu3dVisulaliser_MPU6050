@@ -62,13 +62,9 @@ uint32_t RecMpuDataCounter = 0;
 
 uint8_t gyroCalibValues[6] = {0, 193, 0, 21, 255, 241};
 
-//MpuData_t MpuData;
+MpuData_t MpuData;
 
-
-
-  MPU6050_t MPU6050;
-
-  MpuData_t MpuData;
+BLU_ImuBaseDataReport_t BluImuBaseDataReport;
 
 // As the sensor is set in init, the sensor takes a sample every 5ms (200hz),
 // creates an interrupt, then puts the dma data in the buffer, 
@@ -83,6 +79,37 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   MPU6050_Read_DMA();
+}
+
+void ReportBaseImuData(void)
+{
+  BluImuBaseDataReport.gyroX               = MpuData.gyroX;
+  BluImuBaseDataReport.gyroY               = MpuData.gyroY;
+  BluImuBaseDataReport.gyroZ               = MpuData.gyroZ;
+  BluImuBaseDataReport.accX                = MpuData.accX;
+  BluImuBaseDataReport.accY                = MpuData.accY;
+  BluImuBaseDataReport.accZ                = MpuData.accZ;
+  BluImuBaseDataReport.normalizedAccX      = MpuData.normalizedAccX;
+  BluImuBaseDataReport.normalizedAccY      = MpuData.normalizedAccY;
+  BluImuBaseDataReport.normalizedAccZ      = MpuData.normalizedAccZ;
+  BluImuBaseDataReport.fildAccX            = MpuData.fildAccX;
+  BluImuBaseDataReport.fildAccY            = MpuData.fildAccY;
+  BluImuBaseDataReport.fildAccZ            = MpuData.fildAccZ;
+  BluImuBaseDataReport.jerkX               = MpuData.jerkX;
+  BluImuBaseDataReport.jerkY               = MpuData.jerkY;
+  BluImuBaseDataReport.jerkZ               = MpuData.jerkZ;
+  BluImuBaseDataReport.roll                = MpuData.roll; 
+  BluImuBaseDataReport.pitch               = MpuData.pitch; 
+  BluImuBaseDataReport.yaw                 = MpuData.yaw;
+  BluImuBaseDataReport.velX                = MpuData.velX;
+  BluImuBaseDataReport.velY                = MpuData.velY;
+  BluImuBaseDataReport.velZ                = MpuData.velZ;
+  BluImuBaseDataReport.posX                = MpuData.posX;
+  BluImuBaseDataReport.posY                = MpuData.posY;
+  BluImuBaseDataReport.posZ                = MpuData.posZ;
+
+  BLU_ReportImuData(&BluImuBaseDataReport);
+
 }
 
 /* USER CODE END 0 */
@@ -122,18 +149,18 @@ int main(void)
   
   BLU_Init();
 
-
-  while (MPU6050_Init(&hi2c1) == 1){
-    // MPU6050_DeviceReset(0);
-    // HAL_Delay(1000);
-    // MPU6050_DeviceReset(1);
-  }
+  MPU6050_Init(&hi2c1);
+  // while (MPU6050_Init(&hi2c1) == 1){
+  //   // MPU6050_DeviceReset(0);
+  //   // HAL_Delay(1000);
+  //   // MPU6050_DeviceReset(1);
+  // }
 
   // uint8_t *NewCalibData = MPU6050_Calibrate_Gyro();
   MPU6050Set_Calibrate_Gyro(gyroCalibValues);
-
   MPU6050_Start_IRQ();
   MPU6050_Read_DMA();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,41 +169,27 @@ int main(void)
   {
     static uint32_t LogAccelTimer = 0;
 
-    if( (HAL_GetTick() - LogAccelTimer > 100 ) ) //
+    if( (HAL_GetTick() - LogAccelTimer > 99 ) ) //
     {
       LogAccelTimer = HAL_GetTick();
 
-      minusGravity(&MpuData);
+      BLU_DbgMsgTransmit("vX %.2f vY: %.2f vZ: %.2f||fX %.2f fY %.2f fZ %.2f||pX %.2f pY %.2f pZ %.2f", 
+                                    MpuData.velX, 
+                                    MpuData.velY,
+                                    MpuData.velZ,
+                                    MpuData.fildAccX,
+                                    MpuData.fildAccY,
+                                    MpuData.fildAccZ,
+                                    MpuData.posX,
+                                    MpuData.posY,
+                                    MpuData.posZ
+                                    );
 
-      BLU_DbgMsgTransmit("y: %.2f p: %.2f r: %.2f || nAX: %.2f nAY: %.2f nAZ: %.2f || aX %.2f aY %.2f aZ %.2f", 
-                                    MpuData.yaw , 
-                                    MpuData.pitch,
-                                    MpuData.roll,
-                                    MpuData.normalizedAccX, 
-                                    MpuData.normalizedAccY,
-                                    MpuData.normalizedAccZ,
-                                    MpuData.accX, 
-                                    MpuData.accY, 
-                                    MpuData.accZ
-                                                              );
-      
-      // BLU_DbgMsgTransmit("gyroX: %.2f gyroY: %.2f gyroZ: %.2f ", 
-      //                               MpuData.gyroX * (180.0F/3.14F), 
-      //                               MpuData.gyroY* (180.0F/3.14F),
-      //                               MpuData.gyroZ* (180.0F/3.14F)
-      //                               );
+      ReportBaseImuData();
+      // BLU_DbgMsgTransmit("RecDataCnt %d ",RecMpuDataCounter);
 
-      // BLU_DbgMsgTransmit("nAccX: %.2f nAccY: %.2f nAccZ: %.2f ", 
-      //                               MpuData.normalizedAccX, 
-      //                               MpuData.normalizedAccY,
-      //                               MpuData.normalizedAccZ
-      //                               );
-
-
-      // MPU6050_Read_All(&hi2c1, &MPU6050);
     }
 
-    
     BLU_Task();
     /* USER CODE END WHILE */
 
