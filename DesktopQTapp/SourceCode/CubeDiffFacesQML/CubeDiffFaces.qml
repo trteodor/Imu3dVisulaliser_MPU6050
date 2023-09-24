@@ -5,8 +5,8 @@ import QtQuick3D
 
 Rectangle {
     id: root
-    width: 130
-    height: 130
+    width: 220
+    height: 220
     visible: true
     color: "black"
 
@@ -62,7 +62,7 @@ Rectangle {
             scale: Qt.vector3d(1, 2, 1)
         }
 
-        scale: Qt.vector3d(0.8,0.8,0.8)
+        scale: Qt.vector3d(1.3,1.3,1.3)
     }
 
     View3D {

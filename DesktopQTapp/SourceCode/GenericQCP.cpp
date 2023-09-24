@@ -1,13 +1,13 @@
-#include "GenericLfQCP.h"
+#include "GenericQCP.h"
 
 
-GenericLfQCP::GenericLfQCP(void)
+GenericQCP::GenericQCP(void)
 {
-//    qDebug() << "Construct Called Class:GenericLfQCP";
+//    qDebug() << "Construct Called Class:GenericQCP";
 }
 
 
-void GenericLfQCP::LfGraphInitialize(QCustomPlot *UIPassedplot,QCPGraph::LineStyle LineStyle)
+void GenericQCP::LfGraphInitialize(QCustomPlot *UIPassedplot,QCPGraph::LineStyle LineStyle)
 {
     UIplotP = UIPassedplot;
 
@@ -32,23 +32,23 @@ void GenericLfQCP::LfGraphInitialize(QCustomPlot *UIPassedplot,QCPGraph::LineSty
 
     UIplotP->rescaleAxes();
     // connect slot that ties some axis selections together (especially opposite axes):
-    connect(UIplotP, SIGNAL(selectionChangedByUser()), this, SLOT(LfGraph_selectionChanged()));
+    connect(UIplotP, SIGNAL(selectionChangedByUser()), this, SLOT(Graph_selectionChanged()));
     // connect slots that takes care that when an axis is selected, only that direction can be dragged and zoomed:
-    connect(UIplotP, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(LfGraph_mousePress()));
-    connect(UIplotP, SIGNAL(mouseWheel(QWheelEvent*)), this, SLOT(LfGraph_mouseWheel()));
+    connect(UIplotP, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(Graph_mousePress()));
+    connect(UIplotP, SIGNAL(mouseWheel(QWheelEvent*)), this, SLOT(Graph_mouseWheel()));
     // make bottom and left axes transfer their ranges to top and right axes:
     connect(UIplotP->xAxis, SIGNAL(rangeChanged(QCPRange)), UIplotP->xAxis2, SLOT(setRange(QCPRange)));
     connect(UIplotP->yAxis, SIGNAL(rangeChanged(QCPRange)), UIplotP->yAxis2, SLOT(setRange(QCPRange)));
     // connect some interaction slots:
-    connect(UIplotP, SIGNAL(axisDoubleClick(QCPAxis*,QCPAxis::SelectablePart,QMouseEvent*)), this, SLOT(LfGraph_axisLabelDoubleClick(QCPAxis*,QCPAxis::SelectablePart)));
-    connect(UIplotP, SIGNAL(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*,QMouseEvent*)), this, SLOT(LfGraph_legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*)));
-    //    connect(title, SIGNAL(doubleClicked(QMouseEvent*)), this, SLOT(LfGraph_titleDoubleClick(QMouseEvent*)));
+    connect(UIplotP, SIGNAL(axisDoubleClick(QCPAxis*,QCPAxis::SelectablePart,QMouseEvent*)), this, SLOT(Graph_axisLabelDoubleClick(QCPAxis*,QCPAxis::SelectablePart)));
+    connect(UIplotP, SIGNAL(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*,QMouseEvent*)), this, SLOT(Graph_legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*)));
+    //    connect(title, SIGNAL(doubleClicked(QMouseEvent*)), this, SLOT(Graph_titleDoubleClick(QMouseEvent*)));
     // connect slot that shows a message in the status bar when a graph is clicked:
-    connect(UIplotP, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(LfGraph_graphClicked(QCPAbstractPlottable*,int)));
+    connect(UIplotP, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(Graph_graphClicked(QCPAbstractPlottable*,int)));
 
     // setup policy and connect slot for context menu popup:
     UIplotP->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(UIplotP, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(LfGraph_contextMenuRequest(QPoint)));
+    connect(UIplotP, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(Graph_contextMenuRequest(QPoint)));
 
     Graph1 = UIplotP->addGraph();
 
@@ -155,7 +155,7 @@ void GenericLfQCP::LfGraphInitialize(QCustomPlot *UIPassedplot,QCPGraph::LineSty
 }
 
 
-GenericLfQCP::~GenericLfQCP()
+GenericQCP::~GenericQCP()
 {
 //    qDebug() << "Plot X Deconstructed";
 
@@ -180,7 +180,7 @@ GenericLfQCP::~GenericLfQCP()
 
 
 
-void GenericLfQCP::LfGraph_AppendData(float X_Pos1,float Y_Pos1,
+void GenericQCP::Graph_AppendData(float X_Pos1,float Y_Pos1,
                                         float X_Pos2,float Y_Pos2,
                                         float X_Pos3,float Y_Pos3,
                                         float X_Pos4,float Y_Pos4,
@@ -201,7 +201,7 @@ void GenericLfQCP::LfGraph_AppendData(float X_Pos1,float Y_Pos1,
     DataVector_Y6.append( ((float)Y_Pos6));
 }
 
-void GenericLfQCP::LfGraph_UpdateReplot(void)
+void GenericQCP::Graph_UpdateReplot(void)
 {
     Graph1->setData(DataVector_X1,DataVector_Y1);
     Graph2->setData(DataVector_X2,DataVector_Y2);
@@ -234,7 +234,7 @@ void GenericLfQCP::LfGraph_UpdateReplot(void)
     }
 }
 
-void GenericLfQCP::LfGraph_ClearData(void)
+void GenericQCP::Graph_ClearData(void)
 {
     DataVector_X1.clear();
     DataVector_Y1.clear();
@@ -283,7 +283,7 @@ void GenericLfQCP::LfGraph_ClearData(void)
 }
 
 
-void GenericLfQCP::LfGraph_axisLabelDoubleClick(QCPAxis *axis, QCPAxis::SelectablePart part)
+void GenericQCP::Graph_axisLabelDoubleClick(QCPAxis *axis, QCPAxis::SelectablePart part)
 {
     // Set an axis label by double clicking on it
     if (part == QCPAxis::spAxisLabel) // only react when the actual axis label is clicked, not tick label or axis backbone
@@ -298,7 +298,7 @@ void GenericLfQCP::LfGraph_axisLabelDoubleClick(QCPAxis *axis, QCPAxis::Selectab
     }
 }
 
-void GenericLfQCP::LfGraph_legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item)
+void GenericQCP::Graph_legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item)
 {
     // Rename a graph by double clicking on its legend item
     Q_UNUSED(legend)
@@ -315,7 +315,7 @@ void GenericLfQCP::LfGraph_legendDoubleClick(QCPLegend *legend, QCPAbstractLegen
     }
 }
 
-void GenericLfQCP::LfGraph_selectionChanged()
+void GenericQCP::Graph_selectionChanged()
 {
     /*
    normally, axis base line, axis tick labels and axis labels are selectable separately, but we want
@@ -358,7 +358,7 @@ void GenericLfQCP::LfGraph_selectionChanged()
     }
 }
 
-void GenericLfQCP::LfGraph_mousePress()
+void GenericQCP::Graph_mousePress()
 {
     // if an axis is selected, only allow the direction of that axis to be dragged
     // if no axis is selected, both directions may be dragged
@@ -371,7 +371,7 @@ void GenericLfQCP::LfGraph_mousePress()
         UIplotP->axisRect()->setRangeDrag(Qt::Horizontal|Qt::Vertical);
 }
 
-void GenericLfQCP::LfGraph_mouseWheel()
+void GenericQCP::Graph_mouseWheel()
 {
     // if an axis is selected, only allow the direction of that axis to be zoomed
     // if no axis is selected, both directions may be zoomed
@@ -384,7 +384,7 @@ void GenericLfQCP::LfGraph_mouseWheel()
         UIplotP->axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
 }
 
-void GenericLfQCP::LfGraph_addRandomGraph()
+void GenericQCP::Graph_addRandomGraph()
 {
     int n = 50; // number of points in graph
     double xScale = (std::rand()/(double)RAND_MAX + 0.5)*2;
@@ -414,7 +414,7 @@ void GenericLfQCP::LfGraph_addRandomGraph()
     UIplotP->replot();
 }
 
-void GenericLfQCP::LfGraph_removeSelectedGraph()
+void GenericQCP::Graph_removeSelectedGraph()
 {
     if (UIplotP->selectedGraphs().size() > 0)
     {
@@ -423,37 +423,37 @@ void GenericLfQCP::LfGraph_removeSelectedGraph()
     }
 }
 
-void GenericLfQCP::LfGraph_removeAllGraphs()
+void GenericQCP::Graph_removeAllGraphs()
 {
     UIplotP->clearGraphs();
     UIplotP->replot();
 }
 
-void GenericLfQCP::LfGraph_contextMenuRequest(QPoint pos)
+void GenericQCP::Graph_contextMenuRequest(QPoint pos)
 {
     QMenu *menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
     if (UIplotP->legend->selectTest(pos, false) >= 0) // context menu on legend requested
     {
-        menu->addAction("Move to top left", this, SLOT(LfGraph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignLeft));
-        menu->addAction("Move to top center", this, SLOT(LfGraph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignHCenter));
-        menu->addAction("Move to top right", this, SLOT(LfGraph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignRight));
-        menu->addAction("Move to bottom right", this, SLOT(LfGraph_moveLegend()))->setData((int)(Qt::AlignBottom|Qt::AlignRight));
-        menu->addAction("Move to bottom left", this, SLOT(LfGraph_moveLegend()))->setData((int)(Qt::AlignBottom|Qt::AlignLeft));
+        menu->addAction("Move to top left", this, SLOT(Graph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignLeft));
+        menu->addAction("Move to top center", this, SLOT(Graph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignHCenter));
+        menu->addAction("Move to top right", this, SLOT(Graph_moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignRight));
+        menu->addAction("Move to bottom right", this, SLOT(Graph_moveLegend()))->setData((int)(Qt::AlignBottom|Qt::AlignRight));
+        menu->addAction("Move to bottom left", this, SLOT(Graph_moveLegend()))->setData((int)(Qt::AlignBottom|Qt::AlignLeft));
     } else  // general context menu on graphs requested
     {
-//        menu->addAction("Add random graph", this, SLOT(LfGraph_addRandomGraph()));
+//        menu->addAction("Add random graph", this, SLOT(Graph_addRandomGraph()));
 //        if (UIplotP->selectedGraphs().size() > 0)
-//            menu->addAction("Remove selected graph", this, SLOT(LfGraph_removeSelectedGraph()));
+//            menu->addAction("Remove selected graph", this, SLOT(Graph_removeSelectedGraph()));
 //        if (UIplotP->graphCount() > 0)
-//            menu->addAction("Remove all graphs", this, SLOT(LfGraph_removeAllGraphs()));
+//            menu->addAction("Remove all graphs", this, SLOT(Graph_removeAllGraphs()));
     }
 
     menu->popup(UIplotP->mapToGlobal(pos));
 }
 
-void GenericLfQCP::LfGraph_moveLegend()
+void GenericQCP::Graph_moveLegend()
 {
     if (QAction* contextAction = qobject_cast<QAction*>(sender())) // make sure this slot is really called by a context menu action, so it carries the data we need
     {
@@ -467,7 +467,7 @@ void GenericLfQCP::LfGraph_moveLegend()
     }
 }
 
-void GenericLfQCP::LfGraph_graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
+void GenericQCP::Graph_graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
 {
     double ValY = plottable->interface1D()->dataMainValue(dataIndex);
     double ValX = plottable->interface1D()->dataMainKey(dataIndex);
@@ -498,7 +498,7 @@ void GenericLfQCP::LfGraph_graphClicked(QCPAbstractPlottable *plottable, int dat
 }
 
 
-void GenericLfQCP::LfGraph_DrawMarkersAtDataIndex(int DataIndex)
+void GenericQCP::Graph_DrawMarkersAtDataIndex(int DataIndex)
 {
     /*Align to Graph1 it\s best idea what I figured out*/
 //    double dataValueVer =    Graph1->dataMainKey(DataIndex);
@@ -539,5 +539,5 @@ void GenericLfQCP::LfGraph_DrawMarkersAtDataIndex(int DataIndex)
     }
 
 
-    LfGraph_UpdateReplot(); //?? is need?
+    Graph_UpdateReplot(); //?? is need?
 }
