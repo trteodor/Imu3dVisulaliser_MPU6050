@@ -130,7 +130,7 @@ MainWindow::~MainWindow()
 
 //    TODO: Veriyfy? emit BLU_DisconnectDevice();
 
-    QSettings settings("LfServiceApp", "BluDeviceName");
+    QSettings settings("Imu3DVisuApp", "BluDeviceName");
     QString NewSearchedBluDeviceName = ui->BLU_AutoConnDevNameL->text();
     settings.setValue("CurrDeviceName", NewSearchedBluDeviceName);
 
@@ -188,15 +188,15 @@ void MainWindow::Plot3DDelayTimerTimeout()
     QString returnedValue;
     //QString msg = "Hello from C++";
 
-    static uint32_t yaw,pitch,roll;
-    yaw = yaw + 10;
-    pitch = pitch +20;
-    roll = roll + 5;
+//    static uint32_t yaw,pitch,roll;
+//    yaw = yaw + 10;
+//    pitch = pitch +20;
+//    roll = roll + 5;
 
-    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-                            Q_ARG(QVariant, yaw),
-                            Q_ARG(QVariant, pitch),
-                            Q_ARG(QVariant, roll)   );
+//    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
+//                            Q_ARG(QVariant, yaw),
+//                            Q_ARG(QVariant, pitch),
+//                            Q_ARG(QVariant, roll)   );
 
     //qDebug() << "QML function returned:" << returnedValue;
 
@@ -521,17 +521,17 @@ void MainWindow::BLU_InitializeQTConnections(void)
 
 
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_DebugTable_InsertDataRow(uint32_t,uint32_t,uint8_t,QString,QColor) )
-//        ,this
-//        ,SLOT(MainWin_DebugTable_InsertDataRow(uint32_t,uint32_t,uint8_t,QString,QColor) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_DebugTable_InsertDataRow(uint32_t,uint32_t,uint8_t,QString,QColor) )
+        ,this
+        ,SLOT(MainWin_DebugTable_InsertDataRow(uint32_t,uint32_t,uint8_t,QString,QColor) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_DebugTable_ScrollToBottom() )
-//        ,this
-//        ,SLOT(MainWin_DebugTable_ScrollToBottom() ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_DebugTable_ScrollToBottom() )
+        ,this
+        ,SLOT(MainWin_DebugTable_ScrollToBottom() ) );
 
 
 
@@ -548,11 +548,11 @@ void MainWindow::BLU_InitializeQTConnections(void)
 //                                               float) )
 //        );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) )
-//        ,this
-//        ,SLOT(MainWin_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) )
+        ,this
+        ,SLOT(MainWin_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) ) );
 
 
 //    connect(
@@ -599,9 +599,21 @@ void MainWindow::BLU_InitializeQTConnections(void)
 //        ,this
 //        ,SLOT(MainWin_DrawOrientationIndicator(float) ) );
 
+        connect(
+            &BluInputDataProcessingWrapper,
+            SIGNAL(BluDatMngrSignal_Update3DOrientation(float,float,float) )
+            ,this
+            ,SLOT(MainWinVis_Update3DOrientation(float,float,float) ) );
+
 }
 
-
+void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float roll)
+{
+    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
+                                  Q_ARG(QVariant, yaw * (180/M_PI) ),
+                            Q_ARG(QVariant, pitch* (180/M_PI)      ),
+                            Q_ARG(QVariant, roll* (180/M_PI)       ) );
+}
 /*********************************************************************************************************/
 void MainWindow::MainWin_DebugTable_InsertDataRow(uint32_t ucTimeStamp, uint32_t FrameCounter, uint8_t SyncId, QString DecodedDataString,QColor RowColor )
 {
@@ -651,6 +663,8 @@ void MainWindow::MainWin_DebugTable_ScrollToBottom()
     BluInputDataProcessingWrapper.DebugTableScrollingBottomIsActivState = false;
     BluInputDataProcessingWrapper.DebugTableScrollingBottonMutex.unlock();
 }
+
+
 
 void MainWindow::on_DebugTable_DisableBaseDataLogging_clicked(bool checked)
 {

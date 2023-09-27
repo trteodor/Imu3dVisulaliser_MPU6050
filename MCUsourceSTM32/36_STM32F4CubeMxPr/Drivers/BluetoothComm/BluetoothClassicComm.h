@@ -50,18 +50,18 @@ typedef enum
 /*
  * Type definition of Common Header or message ID for Embedded software and desktop application
  * */
-typedef enum
-{
-    BLU_None = 0,
-    BLU_ConfirmationTag,
-	BLU_CommunicationStats,
-    BLU_DebugMessage,
+    typedef enum
+    {
+        BLU_None = 0,
+        BLU_ConfirmationTag,
+        BLU_CommunicationStats,
+        BLU_DebugMessage,
 
-	BLU_LoggingStart,
-	BLU_LoggingStop,
+        BLU_LoggingStart,
+        BLU_LoggingStop,
 
-	BLU_ImuData,
-}BLU_MessageID_t;
+        BLU_ImuData,
+    }BLU_MessageID_t;
 
 /////////////////////////////////////////////////////////////////////////////////
 typedef struct
