@@ -80,111 +80,58 @@ void BluDataManager::BluDatMngr_BaseDataInsertToDebugTable(uint32_t FrameCounter
 //                                  .arg(LftWhlSpdSimu_s).arg(RgtWhlSpdSimu_s)
 //                                  .arg(BluDataManager::FullBaseData.CurrMapData.YawRate) ;
 
-//        QString BaseSensorDataP1 = QString("SenDat1: S0: %1 |S1: %2 |S2: %3 |S3: %4 |S4: %5 |S5: %6 |Err: %7")
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[0])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[1])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[2])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[3])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[4])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[5])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.PosError);
-
-//        QString BaseSensorDataP2 = QString("SenDat2: S6: %1 |S7: %2 |S8: %3 |S9: %4 |S10: %5 |S11: %6 |Err: %7")
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[6])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[7])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[8])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[9])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[10])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.SensorData[11])
-//                                       .arg(BluDataManager::FullBaseData.CurrSensorData.PosError);
-
 ////        QColor RowColor = QColor(255,255,255); /*Default row color (not modify color*/
 //        emit BluDatMngrSignal_DebugTable_InsertDataRow(FullBaseData.ucTimeStamp,FrameCounter,BluDataManager::FullBaseData.SyncId,BaseMapData);
-//        emit BluDatMngrSignal_DebugTable_InsertDataRow(FullBaseData.ucTimeStamp,FrameCounter,BluDataManager::FullBaseData.SyncId,BaseSensorDataP1);
-//        emit BluDatMngrSignal_DebugTable_InsertDataRow(FullBaseData.ucTimeStamp,FrameCounter,BluDataManager::FullBaseData.SyncId,BaseSensorDataP2);
-
-        FrameCounter++;
 }
 
 
 void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
 {
-//    (void)Size;
-//    static uint32_t PrevSyncId = 255U;
-//    static uint32_t FullFrameCounter = 0;
-//    uint8_t _inputSyncId = ((uint8_t)data[1]);
+    (void)Size;
+    static uint32_t FullFrameCounter = 0;
+    uint8_t _inputSyncId = ((uint8_t)data[1]);
 
-//    FullBaseData.SyncId = _inputSyncId;
-//    FullBaseData.ucTimeStamp = ConvToUint32(&data[2]);
+    ImuDataRep.SyncId = _inputSyncId;
+    ImuDataRep.ucTimeStamp = ConvToUint32(&data[2]);
+    ImuDataRep.gyroX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[6])) ;
+    ImuDataRep.gyroY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[10])) ;
+    ImuDataRep.gyroZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[14])) ;
+    ImuDataRep.accX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[18])) ;
+    ImuDataRep.accY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[22])) ;
+    ImuDataRep.accZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[26])) ;
+    ImuDataRep.normalizedAccX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[30])) ;
+    ImuDataRep.normalizedAccY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[34])) ;
+    ImuDataRep.normalizedAccZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[38])) ;
+    ImuDataRep.fildAccX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[42])) ;
+    ImuDataRep.fildAccY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[46])) ;
+    ImuDataRep.fildAccZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[50])) ;
+    ImuDataRep.jerkX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[54])) ;
+    ImuDataRep.jerkY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[58])) ;
+    ImuDataRep.jerkZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[62])) ;
+    ImuDataRep.roll = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[66])) ;
+    ImuDataRep.pitch = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[70])) ;
+    ImuDataRep.yaw = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[74])) ;
+    ImuDataRep.velX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[78])) ;
+    ImuDataRep.velY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[82])) ;
+    ImuDataRep.velZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[86])) ;
+    ImuDataRep.posX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[90])) ;
+    ImuDataRep.posY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[94])) ;
+    ImuDataRep.posZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[98])) ;
 
-//    FullBaseData.CurrMapData.WhLftSp = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[6])) ;
-//    FullBaseData.CurrMapData.WhRhtSp =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[10])) ;
-//    FullBaseData.CurrMapData.YawRate =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[14])) ;
-//    FullBaseData.CurrMapData.PosX = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[18])) ;
-//    FullBaseData.CurrMapData.PosY =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[22])) ;
-//    FullBaseData.CurrMapData.PosO =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[26])) ;
-//    FullBaseData.CurrMapData.TravelledDistance =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[30])) ;
-
-//    FullBaseData.CurrSensorData.SensorData[0] =((uint8_t)data[34]) ;
-//    FullBaseData.CurrSensorData.SensorData[1] =((uint8_t)data[35]) ;
-//    FullBaseData.CurrSensorData.SensorData[2] =((uint8_t)data[36]) ;
-//    FullBaseData.CurrSensorData.SensorData[3] =((uint8_t)data[37]) ;
-//    FullBaseData.CurrSensorData.SensorData[4] =((uint8_t)data[38]) ;
-//    FullBaseData.CurrSensorData.SensorData[5] =((uint8_t)data[39]) ;
-//    FullBaseData.CurrSensorData.SensorData[6]  =((uint8_t)data[40]) ;
-//    FullBaseData.CurrSensorData.SensorData[7]  =((uint8_t)data[41]) ;
-//    FullBaseData.CurrSensorData.SensorData[8]  =((uint8_t)data[42]) ;
-//    FullBaseData.CurrSensorData.SensorData[9]  =((uint8_t)data[43]) ;
-//    FullBaseData.CurrSensorData.SensorData[10] =((uint8_t)data[44]) ;
-//    FullBaseData.CurrSensorData.SensorData[11] =((uint8_t)data[45]) ;
-//    FullBaseData.CurrSensorData.PosError =ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[46]));
-//    FullBaseData.CurrSensorData.LastLeftLinePosConfidence =((uint8_t)(data[50])) ;
-//    FullBaseData.CurrSensorData.LastRightLinePosConfidence =((uint8_t)(data[51])) ;
-
-//    FullBaseData.LinePidRegData.PidRegCorrValue = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[52]) );
-
-//    /*56*/
-//    FullFrameCounter++;
+    FullFrameCounter++;
 
 
-//    emit BluDatMngrSignal_UpdateOrientation(FullBaseData.CurrMapData.PosO);
 
-//    if(true == DebugTable_BaseDataLoggingState)
-//    {
-//    BluDatMngr_BaseDataInsertToDebugTable(FullFrameCounter);
-//    }
+    if(true == DebugTable_BaseDataLoggingState)
+    {
+        BluDatMngr_BaseDataInsertToDebugTable(FullFrameCounter);
+    }
 
-//    emit BluDatMngrSignal_RefreshErrorIndicatorView( FullBaseData.CurrSensorData.SensorData[0],
-//                                                        FullBaseData.CurrSensorData.SensorData[1],
-//                                                        FullBaseData.CurrSensorData.SensorData[2],
-//                                                        FullBaseData.CurrSensorData.SensorData[3],
-//                                                        FullBaseData.CurrSensorData.SensorData[4],
-//                                                        FullBaseData.CurrSensorData.SensorData[5],
-//                                                        FullBaseData.CurrSensorData.SensorData[6],
-//                                                        FullBaseData.CurrSensorData.SensorData[7],
-//                                                        FullBaseData.CurrSensorData.SensorData[8],
-//                                                        FullBaseData.CurrSensorData.SensorData[9],
-//                                                        FullBaseData.CurrSensorData.SensorData[10],
-//                                                        FullBaseData.CurrSensorData.SensorData[11],
-//                                                        FullBaseData.CurrSensorData.LastRightLinePosConfidence,
-//                                                        FullBaseData.CurrSensorData.LastLeftLinePosConfidence,
-//                                                        FullBaseData.CurrSensorData.PosError);
-
-//    emit BluDatMngrSignal_PlotMapAppendData(FullBaseData.CurrMapData.PosX,FullBaseData.CurrMapData.PosY);
-//    emit BluDatMngrSignal_PlotYawRateAppendData(FullFrameCounter,FullBaseData.CurrMapData.YawRate);
-//    emit BluDatMngrSignal_PlotSpdAppendData(FullFrameCounter,FullBaseData.CurrMapData.WhLftSp,FullBaseData.CurrMapData.WhRhtSp);
-//    emit BluDatMngrSignal_PlotPosErrAppendData(FullFrameCounter,FullBaseData.CurrSensorData.PosError);
-//    emit BluDatMngrSignal_PlotPidRegValAppendData(FullFrameCounter,FullBaseData.LinePidRegData.PidRegCorrValue);
-//    emit BluDatMngrSignal_PlotOrientationAppendData(FullFrameCounter, FullBaseData.CurrMapData.PosO);
-//    emit BluDatMngrSignal_PlotTrvDistanceAppendData(FullFrameCounter, FullBaseData.CurrMapData.TravelledDistance);
-//    emit BluDatMngrSignal_PlotPosConfidenceAppendData(FullFrameCounter,
-//                                                      FullBaseData.CurrSensorData.LastLeftLinePosConfidence,
-//                                                      FullBaseData.CurrSensorData.LastRightLinePosConfidence);
+    emit BluDatMngrSignal_Update3DOrientation(ImuDataRep.yaw,ImuDataRep.pitch,ImuDataRep.roll);
+    //    emit BluDatMngrSignal_PlotMapAppendData(FullBaseData.CurrMapData.PosX,FullBaseData.CurrMapData.PosY);
 
 
-//    if( (false == MapPlotPlottingState) && (false == YawRatePlotPlottingState) && (false == SpdPlotPlottingState)
-//        && (false == DebugTableScrollingBottomIsActivState) && (false == PosErrPlotPlottingState) && (false == PidRegValPlotPlottingState)
-//        && (false == LinePosConfPlotPlottingState) && (false == TrvDistancePlotPlottingState) && (false == OrientationPlotPlottingState) )
+//    if( (false == MapPlotPlottingState) && (false == YawRatePlotPlottingState)) )
 //    {
 //        PlottingInfoMutex.lock();
 //        MapPlotPlottingState = true;
@@ -218,15 +165,16 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
 //    }
 
 
-//    if( ((uint8_t)(PrevSyncId+1)) != _inputSyncId)
-//    {
-//        QString SyncErrorString = QString("!!!Synchronization Error!!! BaseDataHandler SyncId: %1 |PrSyncId: %2").arg(_inputSyncId).arg(PrevSyncId) ;
-//        QColor RowColor = QColor(255,0,0);
-//        emit BluDatMngrSignal_DebugTable_InsertDataRow(0,0,0,SyncErrorString,RowColor);
-//        emit BluDatMngrSignal_DebugTable_ScrollToBottom();
-//    }
+    static uint32_t PrevSyncId = 255U;
+    if( ((uint8_t)(PrevSyncId+1)) != _inputSyncId)
+    {
+        QString SyncErrorString = QString("!!!Synchronization Error!!! BaseDataHandler SyncId: %1 |PrSyncId: %2").arg(_inputSyncId).arg(PrevSyncId) ;
+        QColor RowColor = QColor(255,0,0);
+        emit BluDatMngrSignal_DebugTable_InsertDataRow(0,0,0,SyncErrorString,RowColor);
+        emit BluDatMngrSignal_DebugTable_ScrollToBottom();
+    }
 
-//    PrevSyncId = _inputSyncId;
+    PrevSyncId = _inputSyncId;
 }
 
 void BluDataManager::BluDatMngr_DebugMessagerHandler(char *data,uint32_t size, BLU_MessageID_t BLE_MessID)
@@ -281,6 +229,11 @@ void BluDataManager::BluDatMngr_InputHanlder( char* data, uint32_t Size)
             break;
         }
 
+        case BLU_MessageID_t::BLU_ImuData:
+        {
+            BluDatMngr_BaseDataHandler(data,Size);
+            break;
+        }
 
 
         default:

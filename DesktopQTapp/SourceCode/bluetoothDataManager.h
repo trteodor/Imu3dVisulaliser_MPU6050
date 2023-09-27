@@ -100,6 +100,9 @@ public:
         uint16_t RetransmissionCounter;
     }BLU_StatisticData_t ;
 
+
+    BLU_ImuBaseDataReport_t ImuDataRep;
+
 signals:
 
 
@@ -110,47 +113,38 @@ signals:
     void BluDatMngrSignal_CommunicationStatisticsUpdate(uint32_t ucTimeStamp,uint16_t RingBufferRemainingSize,uint16_t RingBufferOverFlowCounter,
                                                             uint16_t TransmisstedMessagesCounter,uint16_t RetransmissionCounter);
 
+    void BluDatMngrSignal_Update3DOrientation(float yaw,float pitch,float roll);
+//    void BluDatMngrSignal_UpdateOrientation(float Orientation);
 
-    void BluDatMngrSignal_UpdateOrientation(float Orientation);
-
-    void BluDatMngrSignal_PlotMapUpdate(void);
-    void BluDatMngrSignal_PlotRawUpdate(void);
-    void BluDatMngrSignal_PlotEulerAgAUpdate(void);
-    void BluDatMngrSignal_PlotFildAccUpdate(void);
-    void BluDatMngrSignal_PlotAccJerkUpdate(void);
-    void BluDatMngrSignal_PlotGyroUpdate(void);
-    void BluDatMngrSignal_PlotNormAccUpdate(void);
-    void BluDatMngrSignal_PlotVelUpdate(void);
+//    void BluDatMngrSignal_PlotMapUpdate(void);
+//    void BluDatMngrSignal_PlotRawUpdate(void);
+//    void BluDatMngrSignal_PlotEulerAgAUpdate(void);
+//    void BluDatMngrSignal_PlotFildAccUpdate(void);
+//    void BluDatMngrSignal_PlotAccJerkUpdate(void);
+//    void BluDatMngrSignal_PlotGyroUpdate(void);
+//    void BluDatMngrSignal_PlotNormAccUpdate(void);
+//    void BluDatMngrSignal_PlotVelUpdate(void);
 
 
-    void BluDatMngrSignal_PlotMapAppendData(float PosX, float PosY);
-    void BluDatMngrSignal_PlotRawAccAppendData(uint32_t FrameId, float YrValue);
-    void BluDatMngrSignal_PlotEulerAgAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
-    void BluDatMngrSignal_PlotFildAccAppendData(uint32_t FrameId, float PossErrValue);
-    void BluDatMngrSignal_PlotAccJerkAppendData(uint32_t FrameId, float PidRegVal);
-    void BluDatMngrSignal_PlotGyroAppendData(uint32_t FrameId, float Orientation);
-    void BluDatMngrSignal_PlotNormAccAppendData(uint32_t FrameId, float TrvDistance);
-    void BluDatMngrSignal_PlotVelAppendData(uint32_t FrameId, uint8_t LeftPosConf, uint8_t RightPosConf);
+//    void BluDatMngrSignal_PlotMapAppendData(float PosX, float PosY);
+//    void BluDatMngrSignal_PlotRawAccAppendData(uint32_t FrameId, float YrValue);
+//    void BluDatMngrSignal_PlotEulerAgAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
+//    void BluDatMngrSignal_PlotFildAccAppendData(uint32_t FrameId, float PossErrValue);
+//    void BluDatMngrSignal_PlotAccJerkAppendData(uint32_t FrameId, float PidRegVal);
+//    void BluDatMngrSignal_PlotGyroAppendData(uint32_t FrameId, float Orientation);
+//    void BluDatMngrSignal_PlotNormAccAppendData(uint32_t FrameId, float TrvDistance);
+//    void BluDatMngrSignal_PlotVelAppendData(uint32_t FrameId, uint8_t LeftPosConf, uint8_t RightPosConf);
 
 
 
 private slots:
     void BluDatMngr_InputHanlder( char* data, uint32_t Size);
 
-
 private:
-
+    void BluDatMngr_BaseDataInsertToDebugTable(uint32_t FrameCounter);
     void BluDatMngr_DebugMessagerHandler(char *data,uint32_t size, BLU_MessageID_t BLE_MessID);
     void BluDatMngr_BaseDataHandler(char *data,uint32_t Size);
-    void BluDatMngr_ErrorWeigthDataHandler(char *data,uint32_t Size);
     void BluDatMngr_CommunicationStatistics_Handler(char *data,uint32_t Size);
-    void BluDatMngr_BaseDataInsertToDebugTable(uint32_t FrameCounter);
-    void BluDatMngr_PidDataHandler(char* data, uint32_t Size);
-    void BluDatMngr_VehCfgDataHandler(char* data, uint32_t Size);
-    void BluDatMngr_MotorsFactorsDataHandler(char* data, uint32_t Size);
-    void BluDatMngr_EncodersCfgDataHandler(char* data, uint32_t Size);
-    void BluDatMngr_SpeedProfileDataHandler(char* data, uint32_t Size);
-    void BluDatMngr_SpeedProfileHandler( char* data, uint32_t Size);
 
 };
 

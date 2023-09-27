@@ -169,27 +169,22 @@ int main(void)
   {
     static uint32_t LogAccelTimer = 0;
 
-    if( (HAL_GetTick() - LogAccelTimer > 99 ) ) //
+    if( (HAL_GetTick() - LogAccelTimer > 499 ) ) //
     {
       LogAccelTimer = HAL_GetTick();
 
-      BLU_DbgMsgTransmit("vX %.2f vY: %.2f vZ: %.2f||fX %.2f fY %.2f fZ %.2f||pX %.2f pY %.2f pZ %.2f", 
-                                    MpuData.velX, 
-                                    MpuData.velY,
-                                    MpuData.velZ,
-                                    MpuData.fildAccX,
-                                    MpuData.fildAccY,
-                                    MpuData.fildAccZ,
-                                    MpuData.posX,
-                                    MpuData.posY,
-                                    MpuData.posZ
+      BLU_DbgMsgTransmit("yaw %.2f pitch: %.2f roll: %.2f", 
+                                    MpuData.yaw, 
+                                    MpuData.pitch,
+                                    MpuData.roll
                                     );
 
-      ReportBaseImuData();
+      
       // BLU_DbgMsgTransmit("RecDataCnt %d ",RecMpuDataCounter);
 
     }
 
+    ReportBaseImuData();
     BLU_Task();
     /* USER CODE END WHILE */
 

@@ -48,6 +48,8 @@ private slots:
 
     void MainWin_DebugTable_ScrollToBottom();
 
+    void MainWinVis_Update3DOrientation(float yaw,float pitch,float roll);
+
 //    void MainWinPlot_PlotMapReplot(void);
 //    void MainWinPlot_PlotYawRateReplot(void);
 //    void MainWinPlot_PlotSpdReplot(void);
