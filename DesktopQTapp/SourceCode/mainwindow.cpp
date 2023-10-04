@@ -609,6 +609,7 @@ void MainWindow::BLU_InitializeQTConnections(void)
 
 void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float roll)
 {
+    //qDebug() << "Hello? :/ ";
     QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
                                   Q_ARG(QVariant, yaw * (180/M_PI) ),
                             Q_ARG(QVariant, pitch* (180/M_PI)      ),
