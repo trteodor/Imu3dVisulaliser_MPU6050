@@ -270,8 +270,20 @@ static void computeObjectVelocity(MpuData_t *RecMpuData)
 /******************************************************************************************/
 extern void MPU6050_ReadDmaDataEndCallBack(MpuData_t *RecMpuData)
 {
+	static float prvYaw,prvPitch,prvRoll;
+
 	scaleReceivedDataByDMA();
 	computeEulerAnglesMadgwickFilter(&RecMpuData->roll, &RecMpuData->pitch, &RecMpuData->yaw, CONF_SAMPLE_FREQ);
+	if(RecMpuData->roll == NAN){
+		RecMpuData->roll = prvRoll;
+	}
+	if(RecMpuData->pitch == NAN){
+		RecMpuData->pitch = prvPitch;
+	}
+	if(RecMpuData->yaw == NAN){
+		RecMpuData->yaw = prvYaw;
+	}
+
     minus3dGravityVector(RecMpuData);
     computeObjectVelocity(RecMpuData);
 
@@ -283,6 +295,11 @@ extern void MPU6050_ReadDmaDataEndCallBack(MpuData_t *RecMpuData)
 	RecMpuData->accZ  = mpuDataScaled[acc][Z];
 
 	RecMpuData->flagUpdated = true;
+
+
+	prvYaw = RecMpuData->roll;
+	prvPitch = RecMpuData->pitch;
+	prvRoll = RecMpuData->roll;
 }
 
 extern void MPU6050_DeviceReset(uint8_t Reset)

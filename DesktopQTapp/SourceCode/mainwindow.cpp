@@ -611,9 +611,9 @@ void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float ro
 {
     //qDebug() << "Hello? :/ ";
     QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-                                  Q_ARG(QVariant, yaw * (180/M_PI) ),
-                            Q_ARG(QVariant, pitch* (180/M_PI)      ),
-                            Q_ARG(QVariant, roll* (180/M_PI)       ) );
+                                  Q_ARG(QVariant, pitch* (180/M_PI)   ),
+                              Q_ARG(QVariant, yaw * (180/M_PI) * ( -1.0F)    ),
+                            Q_ARG(QVariant, roll* (180/M_PI)   * ( -1.0F)    ) );
 }
 /*********************************************************************************************************/
 void MainWindow::MainWin_DebugTable_InsertDataRow(uint32_t ucTimeStamp, uint32_t FrameCounter, uint8_t SyncId, QString DecodedDataString,QColor RowColor )
