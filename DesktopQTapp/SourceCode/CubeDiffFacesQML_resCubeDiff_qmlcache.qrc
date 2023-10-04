@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<RCC>
+    <qresource prefix="/res">
+        <file alias="Dice1.svg">CubeDiffFacesQML/Dice1.svg</file>
+        <file alias="Dice2.svg">CubeDiffFacesQML/Dice2.svg</file>
+        <file alias="Dice3.svg">CubeDiffFacesQML/Dice3.svg</file>
+        <file alias="Dice4.svg">CubeDiffFacesQML/Dice4.svg</file>
+        <file alias="Dice5.svg">CubeDiffFacesQML/Dice5.svg</file>
+        <file alias="Dice6.svg">CubeDiffFacesQML/Dice6.svg</file>
+        <file alias="CubeDiffFaces.qml">CubeDiffFacesQML/CubeDiffFaces.qml</file>
+    </qresource>
+</RCC>

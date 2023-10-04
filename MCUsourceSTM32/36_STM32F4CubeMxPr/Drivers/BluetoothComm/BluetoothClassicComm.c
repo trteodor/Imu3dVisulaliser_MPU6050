@@ -25,8 +25,8 @@
 #define BLU_SINGLE_MESSAGE_SIZE            120
 #define BLU_SINGLE_REC_MESSAGE_SIZE        120
 #define BLU_STATISTICS_PERIOD              5000
-#define BLU_DATA_REPORTING_TIME            20
-#define BLU_MINIMUM_MESS_BREAK_TIM         10
+#define BLU_DATA_REPORTING_TIME            50
+#define BLU_MINIMUM_MESS_BREAK_TIM         35
 
 /**!
  * \brief BluRingBufferStatus_t

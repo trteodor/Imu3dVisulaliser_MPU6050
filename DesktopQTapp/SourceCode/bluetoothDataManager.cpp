@@ -214,6 +214,8 @@ void BluDataManager::BluDatMngr_InputHanlder( char* data, uint32_t Size)
     static volatile BLU_MessageID_t BLU_MessageID;
     BLU_MessageID = ((BLU_MessageID_t)data[0] );
 
+    //qDebug() << "RecBaseData? MessID: " << BLU_MessageID;
+
     switch(BLU_MessageID)
     {
         case BLU_MessageID_t::BLU_CommunicationStats:
