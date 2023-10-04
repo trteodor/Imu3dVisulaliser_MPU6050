@@ -168,10 +168,10 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
     static uint32_t PrevSyncId = 255U;
     if( ((uint8_t)(PrevSyncId+1)) != _inputSyncId)
     {
-        QString SyncErrorString = QString("!!!Synchronization Error!!! BaseDataHandler SyncId: %1 |PrSyncId: %2").arg(_inputSyncId).arg(PrevSyncId) ;
-        QColor RowColor = QColor(255,0,0);
-        emit BluDatMngrSignal_DebugTable_InsertDataRow(0,0,0,SyncErrorString,RowColor);
-        emit BluDatMngrSignal_DebugTable_ScrollToBottom();
+//        QString SyncErrorString = QString("!!!Synchronization Error!!! BaseDataHandler SyncId: %1 |PrSyncId: %2").arg(_inputSyncId).arg(PrevSyncId) ;
+//        QColor RowColor = QColor(255,0,0);
+//        emit BluDatMngrSignal_DebugTable_InsertDataRow(0,0,0,SyncErrorString,RowColor);
+//        emit BluDatMngrSignal_DebugTable_ScrollToBottom();
     }
 
     PrevSyncId = _inputSyncId;
