@@ -435,7 +435,7 @@ public:
         sizePolicy7.setHeightForWidth(dockWidget789->sizePolicy().hasHeightForWidth());
         dockWidget789->setSizePolicy(sizePolicy7);
         dockWidget789->setMinimumSize(QSize(200, 300));
-        dockWidget789->setMaximumSize(QSize(524287, 250));
+        dockWidget789->setMaximumSize(QSize(524287, 300));
         dockWidget789->setSizeIncrement(QSize(0, 0));
         dockWidget789->setBaseSize(QSize(0, 0));
         dockWidget789->setFloating(false);
@@ -471,7 +471,7 @@ public:
         sizePolicy8.setVerticalStretch(1);
         sizePolicy8.setHeightForWidth(dockWidget_888->sizePolicy().hasHeightForWidth());
         dockWidget_888->setSizePolicy(sizePolicy8);
-        dockWidget_888->setMinimumSize(QSize(500, 130));
+        dockWidget_888->setMinimumSize(QSize(500, 167));
         dockWidget_888->setMaximumSize(QSize(1000, 524287));
         dockWidget_888->setSizeIncrement(QSize(1, 1));
         dockWidget_888->setBaseSize(QSize(0, 0));
@@ -568,7 +568,7 @@ public:
 
         MainTabWidget->setCurrentIndex(0);
         PlotWidgetTab1->setCurrentIndex(0);
-        tabWidget_4->setCurrentIndex(0);
+        tabWidget_4->setCurrentIndex(2);
 
 
         QMetaObject::connectSlotsByName(MainWindow);

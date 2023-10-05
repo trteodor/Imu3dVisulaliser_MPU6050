@@ -51,7 +51,7 @@ private slots:
     void MainWinVis_Update3DOrientation(float yaw,float pitch,float roll);
 
 //    void MainWinPlot_PlotMapReplot(void);
-//    void MainWinPlot_PlotYawRateReplot(void);
+    void MainWinPlot_PlotRawAccReplot(void);
 //    void MainWinPlot_PlotSpdReplot(void);
 //    void MainWinPlot_PlotPosErrReplot(void);
 //    void MainWinPlot_PlotPidRegValReplot(void);
@@ -61,7 +61,7 @@ private slots:
 
 
 //    void MainWinPlot_PlotMapAppendData(float PosX, float PosY);
-//    void MainWinPlot_PlotYawRateAppendData(uint32_t FrameId, float YrValue);
+    void MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,float AccY,float AccZ);
 //    void MainWinPlot_PlotSpdAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
 //    void MainWinPlot_PlotPosErrAppendData(uint32_t FrameId, float PossErrValue);
 //    void MainWinPlot_PlotPidRegValAppendData(uint32_t FrameId, float PidRegVal);
@@ -114,14 +114,6 @@ private:
 
     bool  NvM_DataLoadedFromExternalSourceFlag = false;
 
-    QTimer NvM_ErrWeigthUpdateDelayTimer;
-    QTimer NvM_PidDatahUpdateDelayTimer;
-    QTimer NvM_VehCfghUpdateDelayTimer;
-
-    QTimer NvM_EncoderCfgUpdateDelayTimer;
-    QTimer NvM_MotorsFactorsUpdateDelayTimer;
-    QTimer NvM_SpeedProfileUpdateDelayTimer;
-
 
     QScatter3DSeries ImuDataseries;
     QScatterDataArray ImuDataArray;
@@ -131,48 +123,24 @@ private:
     QQuickView *view3DOri;
     QObject *object3dview;
 
-    float  NVM_ErrWeitghtsTabHolder[12];
-
-    float  NvM_PID_Kp;
-    float  NvM_PID_Ki;
-    float  NvM_PID_Kd;
-    uint32_t  NvM_ProbeTim;
-
-    float  NvM_ExpectedAvSpeed;
-    uint32_t  NvM_BlinkLedSt;
-    uint32_t  NvM_TryDetEndLinSt;
-    uint32_t  NvM_isIrSensorEnabled;
-
-
-    float  NVM_OneImpulsDistance;
-    float  NVM_WheelBase;
-
-    uint32_t  NvM_FacA_Lft;
-    uint32_t  NvM_FacA_Rgt;
-    uint32_t  NvM_FacB_Lft;
-    uint32_t  NvM_FacB_Rht;
-
-
     QList<QString> FoundDevices;
     BluDataManager BluInputDataProcessingWrapper;
 
 
     QDoubleValidator dblValidator;
 
-    void ReadNvMDataFromLineFollower();
-    void RefreshErrorIndicatorView(void);
     void BLE_CommunicationStatistics_Handler(const QByteArray &value);
     void LoadDataImuDataVisualiserProject(QString FilePath);
     void ConfigureTextLineAndNvMConnections(void);
 
     GenericQCP PlotMap;
-    GenericQCP PlotYawRate;
-    GenericQCP PlotSpd;
-    GenericQCP PlotPosErr;
-    GenericQCP PlotPidRegVal;
-    GenericQCP PlotTrvDistance;
-    GenericQCP PlotOrientation;
-    GenericQCP PlotLinePosConfidence;
+    GenericQCP PlotAcc;
+    GenericQCP PlotFildAcc;
+    GenericQCP PlotEulerAg;
+    GenericQCP PlotGyro;
+    GenericQCP PlotNacc;
+    GenericQCP PlotJrk;
+    GenericQCP PlotVelo;
 
 };
 #endif // MAINWINDOW_H

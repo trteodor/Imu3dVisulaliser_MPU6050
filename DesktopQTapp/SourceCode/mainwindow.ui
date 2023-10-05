@@ -246,7 +246,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="title">
@@ -566,7 +566,7 @@
    <property name="maximumSize">
     <size>
      <width>524287</width>
-     <height>250</height>
+     <height>300</height>
     </size>
    </property>
    <property name="sizeIncrement">
@@ -689,7 +689,7 @@
    <property name="minimumSize">
     <size>
      <width>500</width>
-     <height>130</height>
+     <height>167</height>
     </size>
    </property>
    <property name="maximumSize">

@@ -117,7 +117,7 @@ signals:
 //    void BluDatMngrSignal_UpdateOrientation(float Orientation);
 
 //    void BluDatMngrSignal_PlotMapUpdate(void);
-//    void BluDatMngrSignal_PlotRawUpdate(void);
+    void BluDatMngrSignal_PlotRawAccUpdate(void);
 //    void BluDatMngrSignal_PlotEulerAgAUpdate(void);
 //    void BluDatMngrSignal_PlotFildAccUpdate(void);
 //    void BluDatMngrSignal_PlotAccJerkUpdate(void);
@@ -127,7 +127,7 @@ signals:
 
 
 //    void BluDatMngrSignal_PlotMapAppendData(float PosX, float PosY);
-//    void BluDatMngrSignal_PlotRawAccAppendData(uint32_t FrameId, float YrValue);
+    void BluDatMngrSignal_PlotRawAccAppendData(uint32_t FrameId,float AccX,float AccY,float AccZ);
 //    void BluDatMngrSignal_PlotEulerAgAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
 //    void BluDatMngrSignal_PlotFildAccAppendData(uint32_t FrameId, float PossErrValue);
 //    void BluDatMngrSignal_PlotAccJerkAppendData(uint32_t FrameId, float PidRegVal);

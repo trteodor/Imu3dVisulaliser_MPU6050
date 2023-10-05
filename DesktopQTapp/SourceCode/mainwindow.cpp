@@ -21,23 +21,23 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 //    /*All declared plots/ graph must be initialized!!!*/
-//    PlotMap.LfGraphInitialize(ui->MapViewWidget,QCPGraph::lsNone);
-//    PlotYawRate.LfGraphInitialize(ui->PlotYawRateW,QCPGraph::lsLine);
-//    PlotSpd.LfGraphInitialize(ui->PlotSpdW,QCPGraph::lsLine);
-//    PlotPosErr.LfGraphInitialize(ui->PlotNormAcc,QCPGraph::lsLine);
-//    PlotPidRegVal.LfGraphInitialize(ui->PlotAccJerk,QCPGraph::lsLine);
-//    PlotTrvDistance.LfGraphInitialize(ui->PlotFildAcc,QCPGraph::lsLine);
-//    PlotOrientation.LfGraphInitialize(ui->PlotEulerAg,QCPGraph::lsLine);
-//    PlotLinePosConfidence.LfGraphInitialize(ui->PlotLinePosConfW,QCPGraph::lsLine);
+    PlotMap.LfGraphInitialize(ui->MapViewWidget,QCPGraph::lsNone);
+    PlotAcc.LfGraphInitialize(ui->PlotAccRaw,QCPGraph::lsLine);
+    PlotFildAcc.LfGraphInitialize(ui->PlotFildAcc,QCPGraph::lsLine);
+    PlotEulerAg.LfGraphInitialize(ui->PlotEulerAg,QCPGraph::lsLine);
+    PlotGyro.LfGraphInitialize(ui->PlotGyro,QCPGraph::lsLine);
+    PlotNacc.LfGraphInitialize(ui->PlotNormAcc,QCPGraph::lsLine);
+    PlotJrk.LfGraphInitialize(ui->PlotAccJerk,QCPGraph::lsLine);
+    PlotVelo.LfGraphInitialize(ui->PlotVel,QCPGraph::lsLine);
 
-//    connect(&PlotMap, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotYawRate, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotSpd, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotPosErr, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotPidRegVal, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotTrvDistance, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotOrientation, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
-//    connect(&PlotLinePosConfidence, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotMap, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotAcc, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotFildAcc, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotEulerAg, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotGyro, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotNacc, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotJrk, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
+    connect(&PlotVelo, SIGNAL(LfGraphSignal_graphClicked(int)), this, SLOT(MainWinPlot_DrawMarkersAtDataIndexInfo(int) ));
 
 
     /*Initialize all needed connections for Bluetooth Data Manager*/
@@ -417,11 +417,11 @@ void MainWindow::BLU_InitializeQTConnections(void)
 //        ,this
 //        ,SLOT(MainWinPlot_PlotMapReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotYawRateUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotYawRateReplot() ));
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotRawAccUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotRawAccReplot() ));
 
 //    connect(
 //        &BluInputDataProcessingWrapper,
@@ -450,11 +450,11 @@ void MainWindow::BLU_InitializeQTConnections(void)
 //        ,this
 //        ,SLOT(MainWinPlot_PlotMapAppendData(float,float) ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotYawRateAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotYawRateAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotRawAccAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotRawAccAppendData(uint32_t,float,float,float) ) );
 
 //    connect(
 //        &BluInputDataProcessingWrapper,
@@ -687,37 +687,82 @@ void MainWindow::on_DebugTable_DisableBaseDataLogging_clicked(bool checked)
 void MainWindow::on_GeneralPlotDataClear_pb_clicked()
 {
     PlotMap.Graph_ClearData();
-    PlotSpd.Graph_ClearData();
-    PlotYawRate.Graph_ClearData();
-    PlotPosErr.Graph_ClearData();
-    PlotPidRegVal.Graph_ClearData();
-    PlotTrvDistance.Graph_ClearData();
-    PlotOrientation.Graph_ClearData();
-    PlotLinePosConfidence.Graph_ClearData();
+    PlotAcc.Graph_ClearData();
+    PlotFildAcc.Graph_ClearData();
+    PlotEulerAg.Graph_ClearData();
+    PlotGyro.Graph_ClearData();
+    PlotNacc.Graph_ClearData();
+    PlotJrk.Graph_ClearData();
+    PlotVelo.Graph_ClearData();
 }
 
 
 
 /*********************************************************************************************************/
 
-//void MainWindow::MainWinPlot_PlotPosErrReplot(void)
-//{
-//    int Index = ui->tabWidget_4->currentIndex();
-//    if(Index== 2)
-//    {
-//        PlotPosErr.Graph_UpdateReplot();
-//    }
+//GenericQCP PlotMap;
+//GenericQCP PlotAcc;
+//GenericQCP PlotFildAcc;
+//GenericQCP PlotEulerAg;
+//GenericQCP PlotGyro;
+//GenericQCP PlotNacc;
+//GenericQCP PlotJrk;
+//GenericQCP PlotVelo;
 
+void MainWindow::MainWinPlot_PlotRawAccReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 2)
+    {
+        PlotAcc.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.rawAccPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,float AccY,float AccZ)
+{
+    PlotAcc.Graph_AppendData(FrameId,AccX,FrameId,AccY,FrameId,AccZ);
+}
+
+
+
+//void MainWindow::MainWinPlot_PlotMapAppendData(float PosX, float PosY)
+//{
+//    PlotMap.Graph_AppendData(PosX,PosY);
+
+//}
+
+//void MainWindow::MainWinPlot_PlotMapReplot(void)
+//{
+
+////    QElapsedTimer timer;
+////    timer.start();
+//    int Index = ui->MainTabWidget->currentIndex();
+//    if(Index== 1)
+//    {
+//        PlotMap.Graph_UpdateReplot();
+//    }
+////    qDebug() << "MainWinPlot_PlotMapReplot TOOK: " << timer.elapsed() << "milliseconds";
 //    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
-//    BluInputDataProcessingWrapper.PosErrPlotPlottingState = FALSE;
+//    BluInputDataProcessingWrapper.MapPlotPlottingState = FALSE;
 //    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
 //}
 
 
-//void MainWindow::MainWinPlot_PlotPosErrAppendData(uint32_t FrameId, float PossErrValue)
-//{
-//    PlotPosErr.Graph_AppendData(FrameId,PossErrValue);
-//}
+
+
+
+
+
+
+
+
+
+
 
 void MainWindow::MainWinPlot_DrawMarkersAtDataIndexInfo(int DataIndex)
 {
@@ -787,27 +832,7 @@ void MainWindow::on_RemoveMarkers_pb_clicked()
 //    PlotLinePosConfidence.Graph_DrawMarkersAtDataIndex(0);
 }
 
-//void MainWindow::MainWinPlot_PlotMapAppendData(float PosX, float PosY)
-//{
-//    PlotMap.Graph_AppendData(PosX,PosY);
 
-//}
-
-//void MainWindow::MainWinPlot_PlotMapReplot(void)
-//{
-
-////    QElapsedTimer timer;
-////    timer.start();
-//    int Index = ui->MainTabWidget->currentIndex();
-//    if(Index== 1)
-//    {
-//        PlotMap.Graph_UpdateReplot();
-//    }
-////    qDebug() << "MainWinPlot_PlotMapReplot TOOK: " << timer.elapsed() << "milliseconds";
-//    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
-//    BluInputDataProcessingWrapper.MapPlotPlottingState = FALSE;
-//    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
-//}
 /*********************************************************************************************************/
 void MainWindow::on_BLU_SimulatorSuspendButton_clicked()
 {

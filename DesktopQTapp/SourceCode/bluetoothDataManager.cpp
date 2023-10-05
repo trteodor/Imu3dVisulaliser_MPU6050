@@ -129,13 +129,15 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
 
     emit BluDatMngrSignal_Update3DOrientation(ImuDataRep.yaw,ImuDataRep.pitch,ImuDataRep.roll);
     //    emit BluDatMngrSignal_PlotMapAppendData(FullBaseData.CurrMapData.PosX,FullBaseData.CurrMapData.PosY);
+    emit BluDatMngrSignal_PlotRawAccAppendData(FullFrameCounter,ImuDataRep.accX,ImuDataRep.accY,ImuDataRep.accZ);
 
 
 //    if( (false == MapPlotPlottingState) && (false == YawRatePlotPlottingState)) )
-//    {
-//        PlottingInfoMutex.lock();
+    if(false == rawAccPlotPlottingState)
+    {
+        PlottingInfoMutex.lock();
 //        MapPlotPlottingState = true;
-//        YawRatePlotPlottingState = true;
+        rawAccPlotPlottingState = true;
 //        SpdPlotPlottingState = true;
 //        PosErrPlotPlottingState = true;
 //        PidRegValPlotPlottingState = true;
@@ -143,18 +145,18 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
 //        TrvDistancePlotPlottingState = true;
 //        OrientationPlotPlottingState = true;
 
-//        PlottingInfoMutex.unlock();
+        PlottingInfoMutex.unlock();
 
 
-//        if(true == DebugTable_BaseDataLoggingState)
-//        {
-//            DebugTableScrollingBottonMutex.lock();
-//            emit BluDatMngrSignal_DebugTable_ScrollToBottom();
-//            DebugTableScrollingBottonMutex.unlock();
-//        }
+        if(true == DebugTable_BaseDataLoggingState)
+        {
+            DebugTableScrollingBottonMutex.lock();
+            emit BluDatMngrSignal_DebugTable_ScrollToBottom();
+            DebugTableScrollingBottonMutex.unlock();
+        }
 
 //        emit BluDatMngrSignal_PlotMapUpdate(); /*Move plotting to MainWindow process*/
-//        emit BluDatMngrSignal_PlotYawRateUpdate(); /*Move plotting to MainWindow process*/
+        emit BluDatMngrSignal_PlotRawAccUpdate(); /*Move plotting to MainWindow process*/
 //        emit BluDatMngrSignal_PlotSpdUpdate(); /*Move plotting to MainWindow process*/
 //        emit BluDatMngrSignal_PlotPosErrUpdate();
 //        emit BluDatMngrSignal_PlotPidRegValUpdate();
@@ -162,7 +164,7 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
 //        emit BluDatMngrSignal_PlotTrvDistanceReplot();
 //        emit BluDatMngrSignal_PlotPosConfidenceReplot();
 
-//    }
+    }
 
 
     static uint32_t PrevSyncId = 255U;
