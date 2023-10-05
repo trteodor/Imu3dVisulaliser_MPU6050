@@ -609,11 +609,19 @@ void MainWindow::BLU_InitializeQTConnections(void)
 
 void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float roll)
 {
-    //qDebug() << "Hello? :/ ";
-    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-                                  Q_ARG(QVariant, pitch* (180/M_PI)   ),
-                              Q_ARG(QVariant, yaw * (180/M_PI) * ( -1.0F)    ),
-                            Q_ARG(QVariant, roll* (180/M_PI)   * ( -1.0F)    ) );
+        if(yaw != NAN && pitch != NAN && roll != NAN)
+        {
+        if( ( yaw > (-1.0F * (M_PI) ) && yaw < (1.0F * (M_PI) ) ) &&
+            (pitch > (-1.0F * (M_PI) ) && pitch < (1.0F * (M_PI) )) &&
+            (roll > (-1.0F * (M_PI) ) && roll < (1.0F * (M_PI) ))
+             )
+            {
+                QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
+                                    Q_ARG(QVariant, yaw * (180/M_PI) * ( -1.0F)    ),
+                                    Q_ARG(QVariant, (pitch )* (180/M_PI) * ( 1.0F)    ),
+                                    Q_ARG(QVariant, (roll) * (180/M_PI)   * ( -1.0F)    ) );
+            }
+        }
 }
 /*********************************************************************************************************/
 void MainWindow::MainWin_DebugTable_InsertDataRow(uint32_t ucTimeStamp, uint32_t FrameCounter, uint8_t SyncId, QString DecodedDataString,QColor RowColor )
