@@ -49,15 +49,18 @@ Rectangle {
                         z: 50
                     }
                 }
-                eulerRotation.x: 52 + 90 + 90
-                eulerRotation.y: 0
-                eulerRotation.z: 90 + 90
+                eulerRotation.x: 40
+                eulerRotation.y: 20
+                eulerRotation.z: 0
             }
+//            eulerRotation.x: 52 + 90 + 90
+//            eulerRotation.y: 0
+//            eulerRotation.z: 90 + 90
         }
         OrthographicCamera {
             id: cameraOrthographicFront
             lookAtNode: node
-            x: 0; y: 800; z: 1000
+            x: 0; y: 0; z: 100
             //property double sc: 300/Math.max(Math.min(page.width, page.height), 1)
             scale: Qt.vector3d(1, 2, 1)
         }
@@ -91,8 +94,8 @@ Rectangle {
 
 
     function updateCubeOrientation(yaw: QVariant,pitch: QVariant,roll: QVariant){
-      node.eulerRotation.x = yaw
-      node.eulerRotation.y = pitch
+      node.eulerRotation.x = pitch
+      node.eulerRotation.y = yaw
       node.eulerRotation.z = roll
     }
 }
