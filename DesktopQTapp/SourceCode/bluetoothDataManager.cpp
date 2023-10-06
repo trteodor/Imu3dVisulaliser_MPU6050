@@ -118,9 +118,21 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
     ImuDataRep.posY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[94])) ;
     ImuDataRep.posZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[98])) ;
 
+    if(fabs(ImuDataRep.accX) > 2.5F || fabs(ImuDataRep.accY) > 2.5F || fabs(ImuDataRep.accZ) > 2.5F ||
+        fabs(ImuDataRep.normalizedAccX) > 2.5F || fabs(ImuDataRep.normalizedAccY) > 2.5F || fabs(ImuDataRep.normalizedAccZ) > 2.5F ||
+        fabs(ImuDataRep.fildAccX) > 2.5F || fabs(ImuDataRep.fildAccY) > 2.5F || fabs(ImuDataRep.fildAccZ) > 2.5F ||
+        fabs(ImuDataRep.jerkX) > 2.5F || fabs(ImuDataRep.jerkY) > 2.5F || fabs(ImuDataRep.jerkZ) > 2.5F ||
+        fabs(ImuDataRep.accX) > 2.5F || fabs(ImuDataRep.accY) > 2.5F || fabs(ImuDataRep.accZ) > 2.5F ||
+        fabs(ImuDataRep.yaw) > M_PI || fabs(ImuDataRep.pitch) > M_PI || fabs(ImuDataRep.roll) > M_PI
+        )
+    {
+        return;
+    }
+
+
     FullFrameCounter++;
 
-
+    //qDebug() << "BaseDatHndlr";
 
     if(true == DebugTable_BaseDataLoggingState)
     {
@@ -130,20 +142,31 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
     emit BluDatMngrSignal_Update3DOrientation(ImuDataRep.yaw,ImuDataRep.pitch,ImuDataRep.roll);
     //    emit BluDatMngrSignal_PlotMapAppendData(FullBaseData.CurrMapData.PosX,FullBaseData.CurrMapData.PosY);
     emit BluDatMngrSignal_PlotRawAccAppendData(FullFrameCounter,ImuDataRep.accX,ImuDataRep.accY,ImuDataRep.accZ);
+    emit BluDatMngrSignal_PlotEulerAgAppendData(FullFrameCounter,ImuDataRep.yaw,ImuDataRep.pitch,ImuDataRep.roll);
+    emit BluDatMngrSignal_PlotFildAccAppendData(FullFrameCounter,ImuDataRep.fildAccX,ImuDataRep.fildAccY,ImuDataRep.fildAccZ);
+    emit BluDatMngrSignal_PlotAccJerkAppendData(FullFrameCounter,ImuDataRep.jerkX,ImuDataRep.jerkY,ImuDataRep.jerkZ);
+    emit BluDatMngrSignal_PlotGyroAppendData(FullFrameCounter,ImuDataRep.gyroX,ImuDataRep.gyroY,ImuDataRep.gyroZ);
+    emit BluDatMngrSignal_PlotNormAccAppendData(FullFrameCounter,ImuDataRep.normalizedAccX,ImuDataRep.normalizedAccY,ImuDataRep.normalizedAccZ);
+    emit BluDatMngrSignal_PlotVelAppendData(FullFrameCounter,ImuDataRep.velX,ImuDataRep.velY,ImuDataRep.velZ);
 
+    emit BluDatMngrSignal_3DPosUpdateAppendData(ImuDataRep.posX,ImuDataRep.posY,ImuDataRep.posZ);
 
 //    if( (false == MapPlotPlottingState) && (false == YawRatePlotPlottingState)) )
-    if(false == rawAccPlotPlottingState)
+    if(false == rawAccPlotPlottingState && eulerAgPlotPlottingState == false &&
+        false == fildAccPlotPlottingState && accJerkPlotPlottingState == false &&
+        false == gyroPlotPlottingState && normAccPlotPlottingState == false &&
+        false == velPlotPlottingState
+        )
     {
         PlottingInfoMutex.lock();
 //        MapPlotPlottingState = true;
         rawAccPlotPlottingState = true;
-//        SpdPlotPlottingState = true;
-//        PosErrPlotPlottingState = true;
-//        PidRegValPlotPlottingState = true;
-//        LinePosConfPlotPlottingState = true;
-//        TrvDistancePlotPlottingState = true;
-//        OrientationPlotPlottingState = true;
+        eulerAgPlotPlottingState = true;
+        fildAccPlotPlottingState = true;
+        accJerkPlotPlottingState = true;
+        gyroPlotPlottingState = true;
+        normAccPlotPlottingState = true;
+        velPlotPlottingState = true;
 
         PlottingInfoMutex.unlock();
 
@@ -156,14 +179,13 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
         }
 
 //        emit BluDatMngrSignal_PlotMapUpdate(); /*Move plotting to MainWindow process*/
-        emit BluDatMngrSignal_PlotRawAccUpdate(); /*Move plotting to MainWindow process*/
-//        emit BluDatMngrSignal_PlotSpdUpdate(); /*Move plotting to MainWindow process*/
-//        emit BluDatMngrSignal_PlotPosErrUpdate();
-//        emit BluDatMngrSignal_PlotPidRegValUpdate();
-//        emit BluDatMngrSignal_PlotOrientationReplot();
-//        emit BluDatMngrSignal_PlotTrvDistanceReplot();
-//        emit BluDatMngrSignal_PlotPosConfidenceReplot();
-
+        emit BluDatMngrSignal_PlotRawAccUpdate();
+        emit BluDatMngrSignal_PlotEulerAgAUpdate();
+        emit BluDatMngrSignal_PlotFildAccUpdate();
+        emit BluDatMngrSignal_PlotAccJerkUpdate();
+        emit BluDatMngrSignal_PlotGyroUpdate();
+        emit BluDatMngrSignal_PlotNormAccUpdate();
+        emit BluDatMngrSignal_PlotVelUpdate();
     }
 
 
@@ -198,7 +220,7 @@ void BluDataManager::BluDatMngr_DebugMessagerHandler(char *data,uint32_t size, B
         QString SyncErrorString = QString("!!!Synchronization Error!!! DebugMessagerHandler SyncId: %2 |PrSyncId: %3 ")
                                       .arg(_inputSyncId).arg(PrevSyncId) ;
         QColor RowColor = QColor(255,0,0);
-        qDebug() << SyncErrorString;
+        //qDebug() << SyncErrorString;
         emit BluDatMngrSignal_DebugTable_InsertDataRow(0,0,0,SyncErrorString,RowColor);
         emit BluDatMngrSignal_DebugTable_ScrollToBottom();
     }

@@ -105,8 +105,8 @@ void ReportBaseImuData(void)
   BluImuBaseDataReport.velY                = MpuData.velY;
   BluImuBaseDataReport.velZ                = MpuData.velZ;
   BluImuBaseDataReport.posX                = MpuData.posX;
-  BluImuBaseDataReport.posY                = MpuData.posY;
-  BluImuBaseDataReport.posZ                = MpuData.posZ;
+  BluImuBaseDataReport.posY                = MpuData.posZ; /*!!!Intended!!!*/
+  BluImuBaseDataReport.posZ                = MpuData.posY; 
 
   BLU_ReportImuData(&BluImuBaseDataReport);
 
@@ -173,11 +173,11 @@ int main(void)
     {
       LogAccelTimer = HAL_GetTick();
 
-      BLU_DbgMsgTransmit("yaw %.2f pitch: %.2f roll: %.2f", 
-                                    MpuData.yaw, 
-                                    MpuData.pitch,
-                                    MpuData.roll
-                                    );
+      // BLU_DbgMsgTransmit("posX %.2f posY: %.2f posZ: %.2f", 
+      //                               MpuData.posX, 
+      //                               MpuData.posY,
+      //                               MpuData.posZ
+      //                               );
 
       
       // BLU_DbgMsgTransmit("RecDataCnt %d ",RecMpuDataCounter);

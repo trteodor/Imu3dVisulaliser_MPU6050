@@ -16,13 +16,13 @@
 #include "mpu6050.h"
 #include "mpu6050defs.h"
 
-
+#define EXTRA_GYRO_Z_OFF_SET 0.0046
 /******************************************************************************************/
 /*                                 DEFINES                                                */
 /******************************************************************************************/
 #define I2C_TIMEOUT 1000
 
-#define MPU_ERR_SAMPLING_COUNTER	10000// max: 65536
+#define MPU_ERR_SAMPLING_COUNTER	1000// max: 65536
 
 #define CONF_SAMPLE_FREQ 0.001F
 
@@ -46,7 +46,7 @@
 /*                                 PRIVATE STATIC VARIABLES                               */
 /******************************************************************************************/
 
-const float mpuScale[] = {2048.34f, 131.072f}; // acc, gyro
+const float mpuScale[] = {16384.34f, 131.072f}; // acc, gyro
 uint8_t mpuRawDataBuffer[14];
 float mpuDataScaled[2][3];
 
@@ -89,6 +89,12 @@ static void scaleReceivedDataByDMA(void)
 		mpuDataScaled[coordinat][axis] = ((float)((int16_t)((((int16_t)mpuRawDataBuffer[(coordinat*8)+(axis*2)]) << 8) | mpuRawDataBuffer[(coordinat*8)+(axis*2)+1])) / mpuScale[coordinat]);// - mpuErr[coordinat][axis];
 		}
 	}	
+	
+	//Convert gyroscope degrees/sec to radians/sec
+	mpuDataScaled[gyro][X] *= 0.0174533f;
+	mpuDataScaled[gyro][Y] *= 0.0174533f;
+	mpuDataScaled[gyro][Z] *= 0.0174533f;
+	mpuDataScaled[gyro][Z] = mpuDataScaled[gyro][Z] + EXTRA_GYRO_Z_OFF_SET;
 }
 
 static float invSqrt(float x) {
@@ -98,13 +104,13 @@ static float invSqrt(float x) {
   return y;
 }
 
-static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float invSampleFreq)//float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq, float* roll_IMU, float* pitch_IMU, float* yaw_IMU) {
+static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float invSampleFreq)
 {
 	static float q0 = 1.0f; //initialize quaternion for madgwick filter
 	static float q1 = 0.0f;
 	static float q2 = 0.0f;
 	static float q3 = 0.0f;
-	static float B_madgwick = 0.04;  //Madgwick filter parameter
+	static float B_madgwick = 0.2;  //Madgwick filter parameter
 
 	//DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
 	/*
@@ -116,10 +122,7 @@ static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *y
 	float qDot1, qDot2, qDot3, qDot4;
 	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
 
-	//Convert gyroscope degrees/sec to radians/sec
-	mpuDataScaled[gyro][X] *= 0.0174533f;
-	mpuDataScaled[gyro][Y] *= 0.0174533f;
-	mpuDataScaled[gyro][Z] *= 0.0174533f;
+
 
 	//Rate of change of quaternion from gyroscope
 	qDot1 = 0.5f * (-q1 * mpuDataScaled[gyro][X] - q2 * mpuDataScaled[gyro][Y] - q3 * mpuDataScaled[gyro][Z]);
@@ -196,7 +199,7 @@ double theta = RecMpuData->roll ;// some aribitar values for testing //roll
 double accel[3]=   {RecMpuData->accX,    RecMpuData->accY,      RecMpuData->accZ};
 double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
 double rG[3];
-// double rA[3];
+//double rA[3];
 double mA[3];
 
 double R[3][3] =
@@ -218,9 +221,9 @@ mA[0]= accel[0]-rG[0];
 mA[1]= rG[1] + accel[1];
 mA[2]= accel[2]-rG[2];
 
-RecMpuData->normalizedAccX = mA[0];
-RecMpuData->normalizedAccY = mA[1];
-RecMpuData->normalizedAccZ = mA[2];
+RecMpuData->normalizedAccX = (float)mA[0];
+RecMpuData->normalizedAccY = (float)mA[1];
+RecMpuData->normalizedAccZ = (float)mA[2];
 
 }
 
@@ -229,39 +232,49 @@ static float lowPassAlfaFiltering(float FilteredState, float newRawVal,float alf
     return(newRawVal * alfa + FilteredState * (1.0F-alfa) );
 }
 
-static void computeObjectVelocity(MpuData_t *RecMpuData)
+static void TryComputeObjectPosition(MpuData_t *RecMpuData)
 {
-    static uint32_t timerTest1 = 0;
-    static bool oneTimeFlag = 0;
+	static float pAccX,pAccY,pAccZ;
+	static const float alfaHighPassF = 0.72F;
 
-    RecMpuData->jerkX = RecMpuData->fildAccX - RecMpuData->normalizedAccX;
-    RecMpuData->jerkY = RecMpuData->fildAccY - RecMpuData->normalizedAccY;
-    RecMpuData->jerkZ = RecMpuData->fildAccZ - RecMpuData->normalizedAccZ;
+	RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX,RecMpuData->accX,0.3);
+	RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY,RecMpuData->accY,0.3);
+	RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ,RecMpuData->accZ,0.3);
 
-    RecMpuData->velX = RecMpuData->velX + (RecMpuData->jerkX * (9.81F) * CONF_SAMPLE_FREQ);
-    RecMpuData->velY = RecMpuData->velY + (RecMpuData->jerkY * (9.81F) * CONF_SAMPLE_FREQ);
-    RecMpuData->velZ = RecMpuData->velZ + (RecMpuData->jerkZ * (9.81F) * CONF_SAMPLE_FREQ);
+    RecMpuData->jerkX = alfaHighPassF * (RecMpuData->jerkX + RecMpuData->fildAccX - pAccX);
+    RecMpuData->jerkY = alfaHighPassF * (RecMpuData->jerkY + RecMpuData->fildAccY - pAccY);
+    RecMpuData->jerkZ = alfaHighPassF * (RecMpuData->jerkZ + RecMpuData->fildAccZ - pAccZ);
 
-    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX * CONF_SAMPLE_FREQ);
-    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY * CONF_SAMPLE_FREQ);
-    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ * CONF_SAMPLE_FREQ);
+	pAccX = RecMpuData->fildAccX;
+	pAccY = RecMpuData->fildAccY;
+	pAccZ = RecMpuData->fildAccZ;
 
-    RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX, RecMpuData->normalizedAccX, 0.01);
-    RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY, RecMpuData->normalizedAccY, 0.01);
-    RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ, RecMpuData->normalizedAccZ, 0.01);
+	static const float alfaVelo = 0.99;
 
+    RecMpuData->velX = alfaVelo* RecMpuData->velX + ( (1.0F - alfaVelo) * RecMpuData->jerkX * (9.81F) ); //CONF_SAMPLE_FREQ
+    RecMpuData->velY = alfaVelo* RecMpuData->velY + ( (1.0F - alfaVelo) * RecMpuData->jerkY * (9.81F) );
+    RecMpuData->velZ = alfaVelo* RecMpuData->velZ + ( (1.0F - alfaVelo) * RecMpuData->jerkZ * (9.81F) );
 
-    if(HAL_GetTick() - timerTest1 > 5000 && oneTimeFlag == 0)
-    {
-        oneTimeFlag = 1;
+	if(RecMpuData->velX > 0.0F){
+		RecMpuData->velX = RecMpuData->velX - 0.0001;
+	}else if(RecMpuData->velX < 0.0F){
+		RecMpuData->velX = RecMpuData->velX + 0.0001;
+	}
+	if(RecMpuData->velY > 0.0F){
+		RecMpuData->velY = RecMpuData->velY - 0.0001;
+	}else if(RecMpuData->velY < 0.0F){
+		RecMpuData->velY = RecMpuData->velY + 0.0001;
+	}
+		if(RecMpuData->velZ > 0.0F){
+		RecMpuData->velZ = RecMpuData->velZ - 0.0001;
+	}else if(RecMpuData->velZ < 0.0F){
+		RecMpuData->velZ = RecMpuData->velZ + 0.0001;
+	}
 
-        RecMpuData->velX = 0;
-        RecMpuData->velY = 0;
-        RecMpuData->velZ = 0;
-        RecMpuData->posX = 0;
-        RecMpuData->posY = 0;
-        RecMpuData->posZ = 0;
-    }
+    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX* 0.1);
+    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY* 0.1);
+    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ* 0.1);
+
 
 }
 
@@ -285,7 +298,7 @@ extern void MPU6050_ReadDmaDataEndCallBack(MpuData_t *RecMpuData)
 	}
 
     minus3dGravityVector(RecMpuData);
-    computeObjectVelocity(RecMpuData);
+    TryComputeObjectPosition(RecMpuData);
 
 	RecMpuData->gyroX = mpuDataScaled[gyro][X];
 	RecMpuData->gyroY = mpuDataScaled[gyro][Y];
@@ -336,7 +349,7 @@ extern uint8_t MPU6050_Init(I2C_HandleTypeDef *I2Cx)
         uint8_t tmp;
         HAL_I2C_Mem_Read(I2Cx, MPU6050_ADDR, MPU6050_RA_ACCEL_CONFIG, 1, &tmp, 1, I2C_TIMEOUT);
         tmp &= 0xE7;
-        tmp |= ((0x3 & 0x7) << 3);
+        tmp |= ((0x0 & 0x7) << 3);
         //Data = 0x00;
         HAL_I2C_Mem_Write(I2Cx, MPU6050_ADDR, MPU6050_RA_ACCEL_CONFIG, 1, &tmp, 1, I2C_TIMEOUT);
 

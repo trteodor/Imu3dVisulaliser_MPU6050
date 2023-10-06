@@ -45,7 +45,7 @@ RESOURCES += qdarkstyle/light/lightstyle.qrc
 
 RESOURCES += CubeDiffFacesQML/resCubeDiff.qrc
 
-#RC_ICONS = LfProjectApp.ico
+RC_ICONS = ImuIconn.ico
 
 OTHER_FILES += \
     CubeDiffFacesQML/Dice1.svg \

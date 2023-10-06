@@ -115,25 +115,26 @@ signals:
 
     void BluDatMngrSignal_Update3DOrientation(float yaw,float pitch,float roll);
 //    void BluDatMngrSignal_UpdateOrientation(float Orientation);
+    void BluDatMngrSignal_3DPosUpdateAppendData(float PosX,float PosY,float PosZ);
 
 //    void BluDatMngrSignal_PlotMapUpdate(void);
     void BluDatMngrSignal_PlotRawAccUpdate(void);
-//    void BluDatMngrSignal_PlotEulerAgAUpdate(void);
-//    void BluDatMngrSignal_PlotFildAccUpdate(void);
-//    void BluDatMngrSignal_PlotAccJerkUpdate(void);
-//    void BluDatMngrSignal_PlotGyroUpdate(void);
-//    void BluDatMngrSignal_PlotNormAccUpdate(void);
-//    void BluDatMngrSignal_PlotVelUpdate(void);
+    void BluDatMngrSignal_PlotEulerAgAUpdate(void);
+    void BluDatMngrSignal_PlotFildAccUpdate(void);
+    void BluDatMngrSignal_PlotAccJerkUpdate(void);
+    void BluDatMngrSignal_PlotGyroUpdate(void);
+    void BluDatMngrSignal_PlotNormAccUpdate(void);
+    void BluDatMngrSignal_PlotVelUpdate(void);
 
 
 //    void BluDatMngrSignal_PlotMapAppendData(float PosX, float PosY);
     void BluDatMngrSignal_PlotRawAccAppendData(uint32_t FrameId,float AccX,float AccY,float AccZ);
-//    void BluDatMngrSignal_PlotEulerAgAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
-//    void BluDatMngrSignal_PlotFildAccAppendData(uint32_t FrameId, float PossErrValue);
-//    void BluDatMngrSignal_PlotAccJerkAppendData(uint32_t FrameId, float PidRegVal);
-//    void BluDatMngrSignal_PlotGyroAppendData(uint32_t FrameId, float Orientation);
-//    void BluDatMngrSignal_PlotNormAccAppendData(uint32_t FrameId, float TrvDistance);
-//    void BluDatMngrSignal_PlotVelAppendData(uint32_t FrameId, uint8_t LeftPosConf, uint8_t RightPosConf);
+    void BluDatMngrSignal_PlotEulerAgAppendData(uint32_t FrameId,float yaw,float pitch,float roll);
+    void BluDatMngrSignal_PlotFildAccAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void BluDatMngrSignal_PlotAccJerkAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void BluDatMngrSignal_PlotGyroAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void BluDatMngrSignal_PlotNormAccAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void BluDatMngrSignal_PlotVelAppendData(uint32_t FrameId,float X,float Y,float Z);
 
 
 

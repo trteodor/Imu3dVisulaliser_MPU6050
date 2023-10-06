@@ -54,12 +54,12 @@ public:
     QSplitter *PlotVerticalSplitter;
     QTabWidget *MainTabWidget;
     QWidget *tab_7;
-    QWidget *MapViewTabViewOrg;
-    QGridLayout *gridLayout_5;
-    QCustomPlot *MapViewWidget;
     QWidget *tab_6;
     QGridLayout *gridLayout_6;
     QGridLayout *D3_LayoutTest;
+    QWidget *MapViewTabViewOrg;
+    QGridLayout *gridLayout_5;
+    QCustomPlot *MapViewWidget;
     QSplitter *lPlotHorizontaSpliter;
     QTabWidget *PlotWidgetTab1;
     QWidget *tab_5;
@@ -102,8 +102,6 @@ public:
     QHBoxLayout *horizontalLayout_4;
     QDockWidget *dockWidget789;
     QWidget *dockWidgetContents_789;
-    QGroupBox *OrientationVect;
-    QLabel *OrientationVectlabel;
     QGroupBox *groupBox;
     QGridLayout *Orientation3DLayout;
     QDockWidget *dockWidget_888;
@@ -203,6 +201,18 @@ public:
         tab_7 = new QWidget();
         tab_7->setObjectName("tab_7");
         MainTabWidget->addTab(tab_7, QString());
+        tab_6 = new QWidget();
+        tab_6->setObjectName("tab_6");
+        gridLayout_6 = new QGridLayout(tab_6);
+        gridLayout_6->setObjectName("gridLayout_6");
+        D3_LayoutTest = new QGridLayout();
+        D3_LayoutTest->setSpacing(0);
+        D3_LayoutTest->setObjectName("D3_LayoutTest");
+        D3_LayoutTest->setContentsMargins(-1, 20, -1, -1);
+
+        gridLayout_6->addLayout(D3_LayoutTest, 0, 0, 1, 1);
+
+        MainTabWidget->addTab(tab_6, QString());
         MapViewTabViewOrg = new QWidget();
         MapViewTabViewOrg->setObjectName("MapViewTabViewOrg");
         gridLayout_5 = new QGridLayout(MapViewTabViewOrg);
@@ -217,18 +227,6 @@ public:
         gridLayout_5->addWidget(MapViewWidget, 0, 0, 1, 1);
 
         MainTabWidget->addTab(MapViewTabViewOrg, QString());
-        tab_6 = new QWidget();
-        tab_6->setObjectName("tab_6");
-        gridLayout_6 = new QGridLayout(tab_6);
-        gridLayout_6->setObjectName("gridLayout_6");
-        D3_LayoutTest = new QGridLayout();
-        D3_LayoutTest->setSpacing(0);
-        D3_LayoutTest->setObjectName("D3_LayoutTest");
-        D3_LayoutTest->setContentsMargins(-1, 20, -1, -1);
-
-        gridLayout_6->addLayout(D3_LayoutTest, 0, 0, 1, 1);
-
-        MainTabWidget->addTab(tab_6, QString());
         PlotVerticalSplitter->addWidget(MainTabWidget);
         lPlotHorizontaSpliter = new QSplitter(PlotVerticalSplitter);
         lPlotHorizontaSpliter->setObjectName("lPlotHorizontaSpliter");
@@ -434,7 +432,7 @@ public:
         sizePolicy7.setVerticalStretch(0);
         sizePolicy7.setHeightForWidth(dockWidget789->sizePolicy().hasHeightForWidth());
         dockWidget789->setSizePolicy(sizePolicy7);
-        dockWidget789->setMinimumSize(QSize(200, 300));
+        dockWidget789->setMinimumSize(QSize(200, 400));
         dockWidget789->setMaximumSize(QSize(524287, 300));
         dockWidget789->setSizeIncrement(QSize(0, 0));
         dockWidget789->setBaseSize(QSize(0, 0));
@@ -443,21 +441,9 @@ public:
         dockWidget789->setAllowedAreas(Qt::AllDockWidgetAreas);
         dockWidgetContents_789 = new QWidget();
         dockWidgetContents_789->setObjectName("dockWidgetContents_789");
-        OrientationVect = new QGroupBox(dockWidgetContents_789);
-        OrientationVect->setObjectName("OrientationVect");
-        OrientationVect->setGeometry(QRect(280, 60, 131, 171));
-        OrientationVect->setMinimumSize(QSize(80, 80));
-        OrientationVectlabel = new QLabel(OrientationVect);
-        OrientationVectlabel->setObjectName("OrientationVectlabel");
-        OrientationVectlabel->setGeometry(QRect(10, 40, 111, 111));
-        sizePolicy2.setHeightForWidth(OrientationVectlabel->sizePolicy().hasHeightForWidth());
-        OrientationVectlabel->setSizePolicy(sizePolicy2);
-        OrientationVectlabel->setMinimumSize(QSize(100, 100));
-        OrientationVectlabel->setPixmap(QPixmap(QString::fromUtf8(":/RobOri/RobOrientation/robotOriResource/RobotOriIndicator.png")));
-        OrientationVectlabel->setAlignment(Qt::AlignCenter);
         groupBox = new QGroupBox(dockWidgetContents_789);
         groupBox->setObjectName("groupBox");
-        groupBox->setGeometry(QRect(0, 0, 251, 281));
+        groupBox->setGeometry(QRect(30, 0, 381, 371));
         Orientation3DLayout = new QGridLayout(groupBox);
         Orientation3DLayout->setSpacing(6);
         Orientation3DLayout->setObjectName("Orientation3DLayout");
@@ -568,7 +554,7 @@ public:
 
         MainTabWidget->setCurrentIndex(0);
         PlotWidgetTab1->setCurrentIndex(0);
-        tabWidget_4->setCurrentIndex(2);
+        tabWidget_4->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(MainWindow);
@@ -586,8 +572,8 @@ public:
         LoadProject_pb->setText(QCoreApplication::translate("MainWindow", "Load", nullptr));
         ClickedPointInfo_lb->setText(QCoreApplication::translate("MainWindow", "Clicked at point: ? (Please click at graph to show informations about cliked point)", nullptr));
         MainTabWidget->setTabText(MainTabWidget->indexOf(tab_7), QCoreApplication::translate("MainWindow", "nA", nullptr));
-        MainTabWidget->setTabText(MainTabWidget->indexOf(MapViewTabViewOrg), QCoreApplication::translate("MainWindow", "MapView", nullptr));
         MainTabWidget->setTabText(MainTabWidget->indexOf(tab_6), QCoreApplication::translate("MainWindow", "Imu3D", nullptr));
+        MainTabWidget->setTabText(MainTabWidget->indexOf(MapViewTabViewOrg), QCoreApplication::translate("MainWindow", "r1", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(tab_5), QCoreApplication::translate("MainWindow", "nA", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(PlotAccRaw), QCoreApplication::translate("MainWindow", "acc", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(PlotFildAcc), QCoreApplication::translate("MainWindow", "fAcc", nullptr));
@@ -608,12 +594,10 @@ public:
         label->setText(QCoreApplication::translate("MainWindow", "DataLogging:", nullptr));
         BLU_AutoConnCheckBox->setText(QCoreApplication::translate("MainWindow", "LookFor:", nullptr));
         BLU_AutoConnDevNameL->setText(QCoreApplication::translate("MainWindow", "ANDRZEJ", nullptr));
-        BLU_ScanButton->setText(QCoreApplication::translate("MainWindow", "Scan BLE", nullptr));
+        BLU_ScanButton->setText(QCoreApplication::translate("MainWindow", "Scan BLU", nullptr));
         BLU_SimulatorSuspendButton->setText(QCoreApplication::translate("MainWindow", "Suspend", nullptr));
         BLU_TrueLogStartButton->setText(QCoreApplication::translate("MainWindow", "Activate", nullptr));
         dockWidget789->setWindowTitle(QCoreApplication::translate("MainWindow", "ManualMoveDockWindow", nullptr));
-        OrientationVect->setTitle(QCoreApplication::translate("MainWindow", "Orientation2D", nullptr));
-        OrientationVectlabel->setText(QString());
         groupBox->setTitle(QCoreApplication::translate("MainWindow", "Orientation3D", nullptr));
         dockWidget_888->setWindowTitle(QCoreApplication::translate("MainWindow", "Logger", nullptr));
         DebugTable_DisableBaseDataLogging->setText(QCoreApplication::translate("MainWindow", "Disable", nullptr));

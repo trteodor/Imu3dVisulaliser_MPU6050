@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
 
-    this->setWindowTitle("Imu Data 3D Visuliser QT");
+    this->setWindowTitle("Imu Data 3D Visuliser | Bluetooth HC-05 | QT");
 
 
 //    /*All declared plots/ graph must be initialized!!!*/
@@ -53,8 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     #endif
     // Create a container widget for the QQuickView
     QWidget *container3DOri = QWidget::createWindowContainer(view3DOri, this);
-    container3DOri->setMinimumSize(220, 220);
-    container3DOri->setMaximumSize(220, 220);
+    container3DOri->setMinimumSize(340, 340);
+    container3DOri->setMaximumSize(340, 340);
     container3DOri->setFocusPolicy(Qt::TabFocus);
     ui->Orientation3DLayout->addWidget(container3DOri);
 
@@ -100,13 +100,13 @@ MainWindow::MainWindow(QWidget *parent)
 //        qDebug() << "argumentsCount" << qApp->arguments().at(0);
 //    }
 
-    if(qApp->arguments().count() > 1  && qApp->arguments().at(1).endsWith(".lfp") ==true)
+    if(qApp->arguments().count() > 1  && qApp->arguments().at(1).endsWith(".imu") ==true)
     {
-        CurrentLfProjectFilePath = qApp->arguments().at(1);
-        QString LoadedProjectInfo = QString("DataLoadedFromProjectFile: %1").arg(CurrentLfProjectFilePath);
+        CurrentImuProjectFilePath = qApp->arguments().at(1);
+        QString LoadedProjectInfo = QString("DataLoadedFromProjectFile: %1").arg(CurrentImuProjectFilePath);
         MainWin_DebugTable_InsertDataRow(0, 0, 0, LoadedProjectInfo);
 
-        LoadDataImuDataVisualiserProject(CurrentLfProjectFilePath);
+        LoadDataImuDataVisualiserProject(CurrentImuProjectFilePath);
     }
 
 
@@ -164,8 +164,8 @@ void MainWindow::Plot3DInit3DScatter3DPosVisualser(void)
     ImuDataseries.setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
     ImuDataseries.setMeshSmooth(true);
 
-    ImuDataArray << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
-    ImuDataseries.dataProxy()->addItems(ImuDataArray);
+    //ImuDataArray << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
+    //ImuDataseries.dataProxy()->addItems(ImuDataArray);
     ImuDataseries.setItemSize(0.1F);
 
     Imuscatter.addSeries(&ImuDataseries);
@@ -173,38 +173,32 @@ void MainWindow::Plot3DInit3DScatter3DPosVisualser(void)
     QWidget *container = QWidget::createWindowContainer(&Imuscatter);
     ui->D3_LayoutTest->addWidget(container);
 
-    connect(&RealTimeData3DTimer, SIGNAL(timeout()), this, SLOT(Plot3DDelayTimerTimeout()));
-    RealTimeData3DTimer.setSingleShot(true);
-    RealTimeData3DTimer.start(100);
+
+//    connect(&RealTimeData3DTimer, SIGNAL(timeout()), this, SLOT(Plot3DDelayTimerTimeout()));
+//    RealTimeData3DTimer.setSingleShot(true);
+//    RealTimeData3DTimer.start(100);
 }
 
 void MainWindow::Plot3DDelayTimerTimeout()
 {
-    static float iterData=0;
+//    static float iterData=0;
+//    QScatterDataArray tempImuDataArr;
+//    tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
+//    ImuDataseries.dataProxy()->addItems(tempImuDataArr);
+
+//    QString returnedValue;
+
+//    iterData = iterData + 0.1F;
+//    RealTimeData3DTimer.setSingleShot(true);
+//    RealTimeData3DTimer.start(100);
+}
+
+void MainWindow::MainWinPlot_3DPosUpdateAppendData(float PosX,float PosY,float PosZ)
+{
     QScatterDataArray tempImuDataArr;
-    tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
+    tempImuDataArr << QVector3D(PosX,PosY,PosZ);
+    //qDebug() << "PosX" << PosX << "PosY" << PosY << "PosZ" << PosZ;
     ImuDataseries.dataProxy()->addItems(tempImuDataArr);
-
-    QString returnedValue;
-    //QString msg = "Hello from C++";
-
-//    static uint32_t yaw,pitch,roll;
-//    yaw = yaw + 10;
-//    pitch = pitch +20;
-//    roll = roll + 5;
-
-//    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-//                            Q_ARG(QVariant, yaw),
-//                            Q_ARG(QVariant, pitch),
-//                            Q_ARG(QVariant, roll)   );
-
-    //qDebug() << "QML function returned:" << returnedValue;
-
-    iterData = iterData + 0.1F;
-    RealTimeData3DTimer.setSingleShot(true);
-    RealTimeData3DTimer.start(100);
-
-
 }
 
 void MainWindow::changeEvent( QEvent* e )
@@ -258,7 +252,7 @@ void MainWindow::MainWin_bluetoothSlotDeviceDiscovered(QString name)
     }
     else
     {
-        ui->statusbar->showMessage("Please select BLE device",1000);
+        ui->statusbar->showMessage("Please select BLU device",1000);
     }
 }
 
@@ -403,52 +397,11 @@ void MainWindow::BLU_InitializeQTConnections(void)
 
 
 
-
-
-
-
-
-
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotMapUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotMapReplot() ));
-
     connect(
         &BluInputDataProcessingWrapper,
         SIGNAL(BluDatMngrSignal_PlotRawAccUpdate() )
         ,this
         ,SLOT(MainWinPlot_PlotRawAccReplot() ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotSpdUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotSpdReplot() ));
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosErrUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosErrReplot() ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPidRegValUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPidRegValReplot() ));
-
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotMapAppendData(float,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotMapAppendData(float,float) ));
 
     connect(
         &BluInputDataProcessingWrapper,
@@ -456,70 +409,78 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,this
         ,SLOT(MainWinPlot_PlotRawAccAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotSpdAppendData(uint32_t,float,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotSpdAppendData(uint32_t,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosErrAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosErrAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotEulerAgAUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotEulerAgAReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPidRegValAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPidRegValAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotEulerAgAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotEulerAgAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotFildAccUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotFildAccReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotFildAccAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotFildAccAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotAccJerkUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotAccJerkReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotAccJerkAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotAccJerkAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotOrientationAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotOrientationAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotGyroUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotGyroReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotGyroAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotGyroAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotOrientationReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotOrientationReplot() ));
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotNormAccUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotNormAccReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotTrvDistanceAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotTrvDistanceAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotNormAccAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotNormAccAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotVelUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotVelReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotTrvDistanceReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotTrvDistanceReplot() ));
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosConfidenceAppendData(uint32_t, uint8_t, uint8_t) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosConfidenceAppendData(uint32_t, uint8_t, uint8_t) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosConfidenceReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosConfidenceReplot() ));
-
-
-
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotVelAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotVelAppendData(uint32_t,float,float,float) ) );
 
     connect(
         &BluInputDataProcessingWrapper,
@@ -534,20 +495,6 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,SLOT(MainWin_DebugTable_ScrollToBottom() ) );
 
 
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_RefreshErrorIndicatorView(uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                                          uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                                          uint8_t,uint8_t,
-//                                                          float) )
-//        ,this
-//        ,SLOT(MainWin_RefreshErrorIndicatorView(uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                               uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                               uint8_t,uint8_t,
-//                                               float) )
-//        );
-
     connect(
         &BluInputDataProcessingWrapper,
         SIGNAL(BluDatMngrSignal_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) )
@@ -555,60 +502,28 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,SLOT(MainWin_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) ) );
 
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateErrorWeigthData(float,float,float,float,float,float,float,float,float,float,float,float))
-//        ,this
-//        ,SLOT(MainWin_UpdateNvmErrorWeigthData(float,float,float,float,float,float,float,float,float,float,float,float) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateVehCfgData(float,uint32_t,uint32_t,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateNvM_VehCfgData(float, uint32_t, uint32_t,uint32_t) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdatePidData(float,float,float,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateNvM_PidData(float,float,float,uint32_t) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateMotorsFactors(uint32_t,uint32_t,uint32_t,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateMotorsFactors(uint32_t, uint32_t, uint32_t,uint32_t) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateEncoderCfgData(float,float) )
-//        ,this
-//        ,SLOT(MainWin_UpdateEncoderCfgData(float,float) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateSpeedProfileData(BluDataManager::BLU_NvM_SpdProfileData_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateSpeedProfileData(BluDataManager::BLU_NvM_SpdProfileData_t) ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateOrientation(float) )
-//        ,this
-//        ,SLOT(MainWin_DrawOrientationIndicator(float) ) );
-
         connect(
             &BluInputDataProcessingWrapper,
             SIGNAL(BluDatMngrSignal_Update3DOrientation(float,float,float) )
             ,this
             ,SLOT(MainWinVis_Update3DOrientation(float,float,float) ) );
 
+
+
+
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_3DPosUpdateAppendData(float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_3DPosUpdateAppendData(float,float,float) ) );
+
+
+
 }
 
 void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float roll)
 {
+        //qDebug() << "Hello from update 3D Ori!";
         if(yaw != NAN && pitch != NAN && roll != NAN)
         {
         if( ( yaw > (-1.0F * (M_PI) ) && yaw < (1.0F * (M_PI) ) ) &&
@@ -702,25 +617,19 @@ void MainWindow::on_GeneralPlotDataClear_pb_clicked()
     PlotNacc.Graph_ClearData();
     PlotJrk.Graph_ClearData();
     PlotVelo.Graph_ClearData();
+
+    int item3dCount = ImuDataseries.dataProxy()->itemCount();
+    ImuDataseries.dataProxy()->removeItems(0,item3dCount);
 }
 
 
 
 /*********************************************************************************************************/
 
-//GenericQCP PlotMap;
-//GenericQCP PlotAcc;
-//GenericQCP PlotFildAcc;
-//GenericQCP PlotEulerAg;
-//GenericQCP PlotGyro;
-//GenericQCP PlotNacc;
-//GenericQCP PlotJrk;
-//GenericQCP PlotVelo;
-
 void MainWindow::MainWinPlot_PlotRawAccReplot(void)
 {
-    int Index = ui->tabWidget_4->currentIndex();
-    if(Index== 2)
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 1)
     {
         PlotAcc.Graph_UpdateReplot();
     }
@@ -735,6 +644,133 @@ void MainWindow::MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,fl
 {
     PlotAcc.Graph_AppendData(FrameId,AccX,FrameId,AccY,FrameId,AccZ);
 }
+
+
+
+void MainWindow::MainWinPlot_PlotEulerAgAReplot(void)
+{
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 3)
+    {
+        PlotEulerAg.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.eulerAgPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotEulerAgAppendData(uint32_t FrameId,float yaw,float pitch,float roll)
+{
+    PlotEulerAg.Graph_AppendData(FrameId,yaw,FrameId,pitch,FrameId,roll);
+}
+
+
+
+void MainWindow::MainWinPlot_PlotFildAccReplot(void)
+{
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 2)
+    {
+        PlotFildAcc.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.fildAccPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotFildAccAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotFildAcc.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+
+
+void MainWindow::MainWinPlot_PlotAccJerkReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 3)
+    {
+        PlotJrk.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.accJerkPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotAccJerkAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotJrk.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+void MainWindow::MainWinPlot_PlotGyroReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 1)
+    {
+        PlotGyro.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.gyroPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotGyroAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotGyro.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+
+
+void MainWindow::MainWinPlot_PlotNormAccReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 2)
+    {
+        PlotNacc.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.normAccPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotNormAccAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotNacc.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+void MainWindow::MainWinPlot_PlotVelReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 4)
+    {
+        PlotVelo.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.velPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotVelAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotVelo.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
 
 
 
@@ -774,70 +810,70 @@ void MainWindow::MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,fl
 
 void MainWindow::MainWinPlot_DrawMarkersAtDataIndexInfo(int DataIndex)
 {
-//    static uint32_t CallCounter = 0;
+    static uint32_t CallCounter = 0;
 
-//    PlotMap.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotYawRate.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotSpd.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotPosErr.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotPidRegVal.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotTrvDistance.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotOrientation.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotLinePosConfidence.Graph_DrawMarkersAtDataIndex(DataIndex);
+    qDebug() << "MainWinPlot_DrawMarkersAtDataIndexInfo DataIndex:" << DataIndex;
 
-//    float ClickedPosX = PlotMap.DataVector_X1.at(DataIndex);
-//    float ClickedPosY = PlotMap.DataVector_Y1.at(DataIndex);
+    //PlotMap.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotAcc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotFildAcc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotEulerAg.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotGyro.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotNacc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotJrk.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotVelo.Graph_DrawMarkersAtDataIndex(DataIndex);
 
-//    float ClickedOri = PlotOrientation.DataVector_Y1.at(DataIndex);
-//    MainWin_DrawOrientationIndicator(ClickedOri);
+    float ClickedYaw = PlotEulerAg.DataVector_Y1.at(DataIndex);
+    float ClickedPitch = PlotEulerAg.DataVector_Y2.at(DataIndex);
+    float ClickedRoll = PlotEulerAg.DataVector_Y3.at(DataIndex);
+    float ClickedAccX = PlotAcc.DataVector_Y1.at(DataIndex);
+    float ClickedAccY = PlotAcc.DataVector_Y2.at(DataIndex);
+    float ClickedAccZ = PlotAcc.DataVector_Y3.at(DataIndex);
+    float ClickedGyroX = PlotGyro.DataVector_Y1.at(DataIndex);
+    float ClickedGyroY = PlotGyro.DataVector_Y2.at(DataIndex);
+    float ClickedGyroZ = PlotGyro.DataVector_Y3.at(DataIndex);
 
-//    float ClickedTrvDist = PlotTrvDistance.DataVector_Y1.at(DataIndex);
-//    uint8_t PlotLinePosConfidenceLeft = PlotLinePosConfidence.DataVector_Y1.at(DataIndex);
-//    uint8_t PlotLinePosConfidenceRight = PlotLinePosConfidence.DataVector_Y2.at(DataIndex);
-
-//    float ClickedYr = PlotYawRate.DataVector_Y1.at(DataIndex);
-//    float ClickedSpdL = PlotSpd.DataVector_Y1.at(DataIndex);
-//    float ClickedSpdR = PlotSpd.DataVector_Y2.at(DataIndex);
-//    float ClickedPosErr = PlotPosErr.DataVector_Y1.at(DataIndex);
-//    float ClickedPid = PlotPidRegVal.DataVector_Y1.at(DataIndex);
-
-//    QString ClickedPointString = QString("Clicked at point: PosX:%1  |PosY:%2  |Yr:%3  |SpdL:%4  |SpdR:%5  |PosErr:%6  |PidV:%7"
-//                                         " |Ori:%8 |TrvDist:%9 |LineConfL:%10  |LineConfR:%11")
-//                                     .arg(ClickedPosX).arg(ClickedPosY).arg(ClickedYr)
-//                                     .arg(ClickedSpdL).arg(ClickedSpdR).arg(ClickedPosErr)
-//                                     .arg(ClickedPid).arg(ClickedOri).arg(ClickedTrvDist)
-//                                     .arg(PlotLinePosConfidenceLeft).arg(PlotLinePosConfidenceRight);
-
-//    if(CallCounter % 2 == 0)
-//    {
-//        QVariant variant= QColor (35,35,45,255);
-//        QString colcode = variant.toString();
-//        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
-//        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
-//    }
-//    else{
-//        QVariant variant= QColor (25,45,45,255);
-//        QString colcode = variant.toString();
-//        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
-//        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
-//    }
+    QString ClickedPointString = QString("Clicked at point: Yaw:%1  |Pitch:%2  |Roll:%3"
+                                         "   |rAccX:%4  |rAccY:%5  |rAccZ:%6"
+                                         "   |gX:%7  |gY:%8  |gZ:%9"
+                                         )
+                                     .arg(ClickedYaw).arg(ClickedPitch).arg(ClickedRoll)
+                                     .arg(ClickedAccX).arg(ClickedAccY).arg(ClickedAccZ)
+                                     .arg(ClickedGyroX).arg(ClickedGyroY).arg(ClickedGyroZ);
 
 
-//    ui->ClickedPointInfo_lb->setText(ClickedPointString);
+    MainWinVis_Update3DOrientation(ClickedYaw,ClickedPitch,ClickedRoll);
 
-//    CallCounter++;
+    if(CallCounter % 2 == 0)
+    {
+        QVariant variant= QColor (35,35,45,255);
+        QString colcode = variant.toString();
+        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
+        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
+    }
+    else{
+        QVariant variant= QColor (25,45,45,255);
+        QString colcode = variant.toString();
+        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
+        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
+    }
+
+
+    ui->ClickedPointInfo_lb->setText(ClickedPointString);
+
+    CallCounter++;
 }
 
 void MainWindow::on_RemoveMarkers_pb_clicked()
 {
-//    PlotMap.Graph_DrawMarkersAtDataIndex(0);
-//    PlotYawRate.Graph_DrawMarkersAtDataIndex(0);
-//    PlotSpd.Graph_DrawMarkersAtDataIndex(0);
-//    PlotPosErr.Graph_DrawMarkersAtDataIndex(0);
-//    PlotPidRegVal.Graph_DrawMarkersAtDataIndex(0);
-//    PlotTrvDistance.Graph_DrawMarkersAtDataIndex(0);
-//    PlotOrientation.Graph_DrawMarkersAtDataIndex(0);
-//    PlotLinePosConfidence.Graph_DrawMarkersAtDataIndex(0);
+    //PlotMap.Graph_DrawMarkersAtDataIndex(0);
+    PlotAcc.Graph_DrawMarkersAtDataIndex(0);
+    PlotFildAcc.Graph_DrawMarkersAtDataIndex(0);
+    PlotEulerAg.Graph_DrawMarkersAtDataIndex(0);
+    PlotGyro.Graph_DrawMarkersAtDataIndex(0);
+    PlotNacc.Graph_DrawMarkersAtDataIndex(0);
+    PlotJrk.Graph_DrawMarkersAtDataIndex(0);
+    PlotVelo.Graph_DrawMarkersAtDataIndex(0);
 }
 
 
@@ -883,19 +919,19 @@ void MainWindow::on_ClearLoggerButton_clicked()
 
 void MainWindow::on_GeneraReplotAllPlots_pb_clicked()
 {
-//    PlotPosErr.Graph_UpdateReplot();
-//    PlotPidRegVal.Graph_UpdateReplot();
-//    PlotYawRate.Graph_UpdateReplot();
-//    PlotSpd.Graph_UpdateReplot();
-//    PlotMap.Graph_UpdateReplot();
-//    PlotTrvDistance.Graph_UpdateReplot();
-//    PlotOrientation.Graph_UpdateReplot();
-//    PlotLinePosConfidence.Graph_UpdateReplot();
+    PlotMap.Graph_UpdateReplot();
+    PlotAcc.Graph_UpdateReplot();
+    PlotFildAcc.Graph_UpdateReplot();
+    PlotEulerAg.Graph_UpdateReplot();
+    PlotGyro.Graph_UpdateReplot();
+    PlotNacc.Graph_UpdateReplot();
+    PlotJrk.Graph_UpdateReplot();
+    PlotVelo.Graph_UpdateReplot();
 }
 
 void MainWindow::on_SaveAppState_pb_clicked()
 {
-    QString filter = "LfProject (*.lfp) ;; All files (*)";
+    QString filter = "ImuProject (*.imu) ;; All files (*)";
     QString desktopPath = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     QString file_name = QFileDialog::getSaveFileName(this,"choose file to overwrite",desktopPath,filter);
 
@@ -908,9 +944,113 @@ void MainWindow::on_SaveAppState_pb_clicked()
 
     QJsonObject object;
 
-    //saveFile.write(QJsonDocument(object).toJson() );
+    {
+        QJsonArray PlotImuScatter_JsArr;
 
-    QString MessageBoxString = QString("Sucessfully saved \n NvM Data \n Plot Data \n Logger Table Data \n to file:\n %1").arg(file_name);
+        int DataCountImuScatter = ImuDataseries.dataProxy()->itemCount();
+
+        for(int i=0; i< DataCountImuScatter; i++)
+        {
+                QScatterDataItem DataItem = *ImuDataseries.dataProxy()->itemAt(i);
+                QVector3D position = DataItem.position();
+                qDebug() << "position:" << position;
+
+                QJsonObject pointObject;
+                pointObject["X"]=position.x();
+                pointObject["Y"]=position.y();
+                pointObject["Z"]=position.z();
+                PlotImuScatter_JsArr.append(pointObject);
+        }
+        object["ImuScatter3D"] = PlotImuScatter_JsArr;
+    }
+    {
+        QJsonArray PlotRawAcc_JsArr;
+        for(int i=0; i< PlotAcc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotAcc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotAcc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotAcc.DataVector_Y3.at(i);
+                PlotRawAcc_JsArr.append(pointObject);
+        }
+        object["rawAcc"] = PlotRawAcc_JsArr;
+    }
+    {
+        QJsonArray PlotFildAcc_JsArr;
+        for(int i=0; i< PlotFildAcc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotFildAcc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotFildAcc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotFildAcc.DataVector_Y3.at(i);
+                PlotFildAcc_JsArr.append(pointObject);
+        }
+        object["fildAcc"] = PlotFildAcc_JsArr;
+    }
+    {
+        QJsonArray PlotEulerAg_JsArr;
+        for(int i=0; i< PlotEulerAg.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["yaw"]=PlotEulerAg.DataVector_Y1.at(i);
+                pointObject["pitch"]=PlotEulerAg.DataVector_Y2.at(i);
+                pointObject["roll"]=PlotEulerAg.DataVector_Y3.at(i);
+                PlotEulerAg_JsArr.append(pointObject);
+        }
+        object["eulerAg"] = PlotEulerAg_JsArr;
+    }
+    {
+        QJsonArray PlotGyro_JsArr;
+        for(int i=0; i< PlotGyro.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotGyro.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotGyro.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotGyro.DataVector_Y3.at(i);
+                PlotGyro_JsArr.append(pointObject);
+        }
+        object["gyro"] = PlotGyro_JsArr;
+    }
+    {
+        QJsonArray PlotNacc_JsArr;
+        for(int i=0; i< PlotNacc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotNacc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotNacc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotNacc.DataVector_Y3.at(i);
+                PlotNacc_JsArr.append(pointObject);
+        }
+        object["normalizedAcc"] = PlotNacc_JsArr;
+    }
+    {
+        QJsonArray PlotJrk_JsArr;
+        for(int i=0; i< PlotJrk.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotJrk.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotJrk.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotJrk.DataVector_Y3.at(i);
+                PlotJrk_JsArr.append(pointObject);
+        }
+        object["accJerk"] = PlotJrk_JsArr;
+    }
+    {
+        QJsonArray PlotVelo_JsArr;
+        for(int i=0; i< PlotVelo.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotVelo.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotVelo.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotVelo.DataVector_Y3.at(i);
+                PlotVelo_JsArr.append(pointObject);
+        }
+        object["velo"] = PlotVelo_JsArr;
+    }
+
+    saveFile.write(QJsonDocument(object).toJson() );
+
+    QString MessageBoxString = QString("Sucessfully saved \n Plot Data \n to file:\n %1").arg(file_name);
     QMessageBox::about(this,"Success!", MessageBoxString);
 }
 
@@ -926,11 +1066,204 @@ void MainWindow::LoadDataImuDataVisualiserProject(QString FilePath)
     QByteArray loadedData = loadFile.readAll();
 
     QJsonDocument loadDoc( QJsonDocument::fromJson(loadedData));
-    /*
-    .
-    .
-    .
-    */
+
+    if (loadDoc.object().contains("rawAcc") && loadDoc.object()["rawAcc"].isArray())
+    {
+        {
+                QJsonArray PlotImuScatter_JsArr = loadDoc.object()["ImuScatter3D"].toArray();;
+
+                int item3dCount = ImuDataseries.dataProxy()->itemCount();
+                ImuDataseries.dataProxy()->removeItems(0,item3dCount);
+
+                for (const QJsonValue &v : PlotImuScatter_JsArr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                    QScatterDataArray tempImuDataArr;
+                    tempImuDataArr << QVector3D(DataPoint1,DataPoint2,DataPoint3);
+                    ImuDataseries.dataProxy()->addItems(tempImuDataArr);
+                }
+        }
+        {
+                QJsonArray rawAcc_Arr = loadDoc.object()["rawAcc"].toArray();
+                PlotAcc.DataVector_Y1.clear();
+                PlotAcc.DataVector_X1.clear();
+                PlotAcc.DataVector_Y2.clear();
+                PlotAcc.DataVector_X2.clear();
+                PlotAcc.DataVector_Y3.clear();
+                PlotAcc.DataVector_X3.clear();
+
+                //qDebug() << rawAcc_Arr;
+                int IterCounter = 0;
+                for (const QJsonValue &v : rawAcc_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                     //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotAcc.DataVector_X1.append(IterCounter);
+                    PlotAcc.DataVector_Y1.append(DataPoint1);
+                    PlotAcc.DataVector_X2.append(IterCounter);
+                    PlotAcc.DataVector_Y2.append(DataPoint2);
+                    PlotAcc.DataVector_X3.append(IterCounter);
+                    PlotAcc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray velo_Arr = loadDoc.object()["velo"].toArray();
+                PlotVelo.DataVector_Y1.clear();
+                PlotVelo.DataVector_X1.clear();
+                PlotVelo.DataVector_Y2.clear();
+                PlotVelo.DataVector_X2.clear();
+                PlotVelo.DataVector_Y3.clear();
+                PlotVelo.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : velo_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotVelo.DataVector_X1.append(IterCounter);
+                    PlotVelo.DataVector_Y1.append(DataPoint1);
+                    PlotVelo.DataVector_X2.append(IterCounter);
+                    PlotVelo.DataVector_Y2.append(DataPoint2);
+                    PlotVelo.DataVector_X3.append(IterCounter);
+                    PlotVelo.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+
+                QJsonArray accJerk_Arr = loadDoc.object()["accJerk"].toArray();
+                PlotJrk.DataVector_Y1.clear();
+                PlotJrk.DataVector_X1.clear();
+                PlotJrk.DataVector_Y2.clear();
+                PlotJrk.DataVector_X2.clear();
+                PlotJrk.DataVector_Y3.clear();
+                PlotJrk.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : accJerk_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotJrk.DataVector_X1.append(IterCounter);
+                    PlotJrk.DataVector_Y1.append(DataPoint1);
+                    PlotJrk.DataVector_X2.append(IterCounter);
+                    PlotJrk.DataVector_Y2.append(DataPoint2);
+                    PlotJrk.DataVector_X3.append(IterCounter);
+                    PlotJrk.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray normalizedAcc_Arr = loadDoc.object()["normalizedAcc"].toArray();
+                PlotNacc.DataVector_Y1.clear();
+                PlotNacc.DataVector_X1.clear();
+                PlotNacc.DataVector_Y2.clear();
+                PlotNacc.DataVector_X2.clear();
+                PlotNacc.DataVector_Y3.clear();
+                PlotNacc.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : normalizedAcc_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotNacc.DataVector_X1.append(IterCounter);
+                    PlotNacc.DataVector_Y1.append(DataPoint1);
+                    PlotNacc.DataVector_X2.append(IterCounter);
+                    PlotNacc.DataVector_Y2.append(DataPoint2);
+                    PlotNacc.DataVector_X3.append(IterCounter);
+                    PlotNacc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray gyro_Arr = loadDoc.object()["gyro"].toArray();
+                PlotGyro.DataVector_Y1.clear();
+                PlotGyro.DataVector_X1.clear();
+                PlotGyro.DataVector_Y2.clear();
+                PlotGyro.DataVector_X2.clear();
+                PlotGyro.DataVector_Y3.clear();
+                PlotGyro.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : gyro_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotGyro.DataVector_X1.append(IterCounter);
+                    PlotGyro.DataVector_Y1.append(DataPoint1);
+                    PlotGyro.DataVector_X2.append(IterCounter);
+                    PlotGyro.DataVector_Y2.append(DataPoint2);
+                    PlotGyro.DataVector_X3.append(IterCounter);
+                    PlotGyro.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray eulerAg_Arr = loadDoc.object()["eulerAg"].toArray();
+                PlotEulerAg.DataVector_Y1.clear();
+                PlotEulerAg.DataVector_X1.clear();
+                PlotEulerAg.DataVector_Y2.clear();
+                PlotEulerAg.DataVector_X2.clear();
+                PlotEulerAg.DataVector_Y3.clear();
+                PlotEulerAg.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : eulerAg_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["yaw"].toDouble();
+                    float DataPoint2 =  DataPoint_json["pitch"].toDouble();
+                    float DataPoint3 =  DataPoint_json["roll"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotEulerAg.DataVector_X1.append(IterCounter);
+                    PlotEulerAg.DataVector_Y1.append(DataPoint1);
+                    PlotEulerAg.DataVector_X2.append(IterCounter);
+                    PlotEulerAg.DataVector_Y2.append(DataPoint2);
+                    PlotEulerAg.DataVector_X3.append(IterCounter);
+                    PlotEulerAg.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray eulerAg_Arr = loadDoc.object()["fildAcc"].toArray();
+                PlotFildAcc.DataVector_Y1.clear();
+                PlotFildAcc.DataVector_X1.clear();
+                PlotFildAcc.DataVector_Y2.clear();
+                PlotFildAcc.DataVector_X2.clear();
+                PlotFildAcc.DataVector_Y3.clear();
+                PlotFildAcc.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : eulerAg_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotFildAcc.DataVector_X1.append(IterCounter);
+                    PlotFildAcc.DataVector_Y1.append(DataPoint1);
+                    PlotFildAcc.DataVector_X2.append(IterCounter);
+                    PlotFildAcc.DataVector_Y2.append(DataPoint2);
+                    PlotFildAcc.DataVector_X3.append(IterCounter);
+                    PlotFildAcc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+    }
+
 
     NvM_DataLoadedFromExternalSourceFlag = true;
     on_GeneraReplotAllPlots_pb_clicked();
@@ -942,7 +1275,7 @@ void MainWindow::LoadDataImuDataVisualiserProject(QString FilePath)
 
 void MainWindow::on_LoadProject_pb_clicked()
 {
-    QString filter = "LfProject (*.lfp) ;; All files (*)";
+    QString filter = "ImuProject (*.imu) ;; All files (*)";
     QString desktopPath = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     QString file_name = QFileDialog::getOpenFileName(this,"choose file to overwrite",desktopPath,filter);
     LoadDataImuDataVisualiserProject(file_name);

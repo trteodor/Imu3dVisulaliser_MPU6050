@@ -5,8 +5,8 @@ import QtQuick3D
 
 Rectangle {
     id: root
-    width: 220
-    height: 220
+    width: 340
+    height: 340
     visible: true
     color: "black"
 
@@ -49,13 +49,10 @@ Rectangle {
                         z: 50
                     }
                 }
-                eulerRotation.x: 40
-                eulerRotation.y: 20
-                eulerRotation.z: 0
             }
-//            eulerRotation.x: 52 + 90 + 90
-//            eulerRotation.y: 0
-//            eulerRotation.z: 90 + 90
+            eulerRotation.x: 40
+            eulerRotation.y: 20
+            eulerRotation.z: 0
         }
         OrthographicCamera {
             id: cameraOrthographicFront
@@ -65,7 +62,7 @@ Rectangle {
             scale: Qt.vector3d(1, 2, 1)
         }
 
-        scale: Qt.vector3d(1.3,1.3,1.3)
+        scale: Qt.vector3d(2.3,2.3,2.3)
     }
 
     View3D {
