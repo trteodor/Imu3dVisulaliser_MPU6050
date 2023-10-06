@@ -49,13 +49,10 @@ Rectangle {
                         z: 50
                     }
                 }
-                eulerRotation.x: 40
-                eulerRotation.y: 20
-                eulerRotation.z: 0
+//                eulerRotation.x: 40
+//                eulerRotation.y: 20
+//                eulerRotation.z: 0
             }
-//            eulerRotation.x: 52 + 90 + 90
-//            eulerRotation.y: 0
-//            eulerRotation.z: 90 + 90
         }
         OrthographicCamera {
             id: cameraOrthographicFront

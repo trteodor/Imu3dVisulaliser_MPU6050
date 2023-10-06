@@ -484,16 +484,26 @@ void GenericQCP::Graph_graphClicked(QCPAbstractPlottable *plottable, int dataInd
                 resVectorDataIndex = i;
                 break;
             }
+            if(DataVector_X2.at(i) == ValX && DataVector_Y2.at(i) == ValY)
+            {
+                resVectorDataIndex = i;
+                break;
+            }
+            if(DataVector_X3.at(i) == ValX && DataVector_Y3.at(i) == ValY)
+            {
+                resVectorDataIndex = i;
+                break;
+            }
         }
     }
 
-//    QString message = QString("Clicked on graph '%1' at data point #%2 with value ValX %3: ValY %4: VecDataIndex %5")
-//                          .arg(plottable->name()).arg(dataIndex).arg(ValX).arg(ValY).arg(resVectorDataIndex);
-//    qDebug() << message;
+    QString message = QString("Clicked on graph '%1' at data point #%2 with value ValX %3: ValY %4: VecDataIndex %5")
+                          .arg(plottable->name()).arg(dataIndex).arg(ValX).arg(ValY).arg(resVectorDataIndex);
+    qDebug() << message;
 
-    if(resVectorDataIndex > 0)
+    if(resVectorDataIndex > 1)
     {
-        emit LfGraphSignal_graphClicked(resVectorDataIndex);
+        emit LfGraphSignal_graphClicked(resVectorDataIndex-1);
     }
 }
 

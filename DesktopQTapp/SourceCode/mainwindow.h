@@ -50,25 +50,27 @@ private slots:
 
     void MainWinVis_Update3DOrientation(float yaw,float pitch,float roll);
 
+    void MainWinPlot_3DPosUpdateAppendData(float PosX,float PosY,float PosZ);
+
 //    void MainWinPlot_PlotMapReplot(void);
     void MainWinPlot_PlotRawAccReplot(void);
-//    void MainWinPlot_PlotSpdReplot(void);
-//    void MainWinPlot_PlotPosErrReplot(void);
-//    void MainWinPlot_PlotPidRegValReplot(void);
-//    void MainWinPlot_PlotOrientationReplot(void);
-//    void MainWinPlot_PlotTrvDistanceReplot(void);
-//    void MainWinPlot_PlotPosConfidenceReplot(void);
+    void MainWinPlot_PlotEulerAgAReplot(void);
+    void MainWinPlot_PlotFildAccReplot(void);
+    void MainWinPlot_PlotAccJerkReplot(void);
+    void MainWinPlot_PlotGyroReplot(void);
+    void MainWinPlot_PlotNormAccReplot(void);
+    void MainWinPlot_PlotVelReplot(void);
+
 
 
 //    void MainWinPlot_PlotMapAppendData(float PosX, float PosY);
     void MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,float AccY,float AccZ);
-//    void MainWinPlot_PlotSpdAppendData(uint32_t FrameId, float SpdValueLeftWh,float SpdValueRightWh);
-//    void MainWinPlot_PlotPosErrAppendData(uint32_t FrameId, float PossErrValue);
-//    void MainWinPlot_PlotPidRegValAppendData(uint32_t FrameId, float PidRegVal);
-//    void MainWinPlot_PlotOrientationAppendData(uint32_t FrameId, float Orientation);
-//    void MainWinPlot_PlotTrvDistanceAppendData(uint32_t FrameId, float TrvDistance);
-//    void MainWinPlot_PlotPosConfidenceAppendData(uint32_t FrameId, uint8_t LeftPosConf, uint8_t RightPosConf);
-
+    void MainWinPlot_PlotEulerAgAppendData(uint32_t FrameId,float yaw,float pitch,float roll);
+    void MainWinPlot_PlotFildAccAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void MainWinPlot_PlotAccJerkAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void MainWinPlot_PlotGyroAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void MainWinPlot_PlotNormAccAppendData(uint32_t FrameId,float X,float Y,float Z);
+    void MainWinPlot_PlotVelAppendData(uint32_t FrameId,float X,float Y,float Z);
 
     void MainWinPlot_DrawMarkersAtDataIndexInfo(int DataIndex);
 

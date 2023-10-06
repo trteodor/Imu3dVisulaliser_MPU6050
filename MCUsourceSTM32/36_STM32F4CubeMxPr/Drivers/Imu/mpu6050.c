@@ -98,13 +98,13 @@ static float invSqrt(float x) {
   return y;
 }
 
-static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float invSampleFreq)//float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq, float* roll_IMU, float* pitch_IMU, float* yaw_IMU) {
+static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *yaw, const float invSampleFreq)
 {
 	static float q0 = 1.0f; //initialize quaternion for madgwick filter
 	static float q1 = 0.0f;
 	static float q2 = 0.0f;
 	static float q3 = 0.0f;
-	static float B_madgwick = 0.04;  //Madgwick filter parameter
+	static float B_madgwick = 0.4;  //Madgwick filter parameter
 
 	//DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
 	/*
@@ -234,21 +234,43 @@ static void computeObjectVelocity(MpuData_t *RecMpuData)
     static uint32_t timerTest1 = 0;
     static bool oneTimeFlag = 0;
 
-    RecMpuData->jerkX = RecMpuData->fildAccX - RecMpuData->normalizedAccX;
-    RecMpuData->jerkY = RecMpuData->fildAccY - RecMpuData->normalizedAccY;
-    RecMpuData->jerkZ = RecMpuData->fildAccZ - RecMpuData->normalizedAccZ;
+	static float litFiltAccX,litFiltAccY,litFiltAccZ;
 
-    RecMpuData->velX = RecMpuData->velX + (RecMpuData->jerkX * (9.81F) * CONF_SAMPLE_FREQ);
-    RecMpuData->velY = RecMpuData->velY + (RecMpuData->jerkY * (9.81F) * CONF_SAMPLE_FREQ);
-    RecMpuData->velZ = RecMpuData->velZ + (RecMpuData->jerkZ * (9.81F) * CONF_SAMPLE_FREQ);
+    litFiltAccX = lowPassAlfaFiltering(litFiltAccX, RecMpuData->accX, 0.05);
+    litFiltAccY = lowPassAlfaFiltering(litFiltAccY, RecMpuData->accY, 0.05);
+    litFiltAccZ = lowPassAlfaFiltering(litFiltAccZ, RecMpuData->accZ, 0.05);
 
-    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX * CONF_SAMPLE_FREQ);
-    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY * CONF_SAMPLE_FREQ);
-    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ * CONF_SAMPLE_FREQ);
+    RecMpuData->jerkX = RecMpuData->fildAccX - litFiltAccX;
+    RecMpuData->jerkY = RecMpuData->fildAccY - litFiltAccY;
+    RecMpuData->jerkZ = RecMpuData->fildAccZ - litFiltAccZ;
 
-    RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX, RecMpuData->normalizedAccX, 0.01);
-    RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY, RecMpuData->normalizedAccY, 0.01);
-    RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ, RecMpuData->normalizedAccZ, 0.01);
+    RecMpuData->velX = RecMpuData->velX + (RecMpuData->jerkX * (9.81F)  * 0.01);
+    RecMpuData->velY = RecMpuData->velY + (RecMpuData->jerkY * (9.81F)  * 0.01);
+    RecMpuData->velZ = RecMpuData->velZ + (RecMpuData->jerkZ * (9.81F)  * 0.01);
+
+	if(RecMpuData->velX > 0.0F){
+		RecMpuData->velX = RecMpuData->velX - 0.002;
+	}else if(RecMpuData->velX < 0.0F){
+		RecMpuData->velX = RecMpuData->velX + 0.002;
+	}
+	if(RecMpuData->velY > 0.0F){
+		RecMpuData->velY = RecMpuData->velY - 0.002;
+	}else if(RecMpuData->velY < 0.0F){
+		RecMpuData->velY = RecMpuData->velY + 0.002;
+	}
+		if(RecMpuData->velZ > 0.0F){
+		RecMpuData->velZ = RecMpuData->velZ - 0.002;
+	}else if(RecMpuData->velZ < 0.0F){
+		RecMpuData->velZ = RecMpuData->velZ + 0.002;
+	}
+
+    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX* 0.01);
+    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY* 0.01);
+    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ* 0.01);
+
+    RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX, RecMpuData->accX, 0.007);
+    RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY, RecMpuData->accY, 0.007);
+    RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ, RecMpuData->accZ, 0.007);
 
 
     if(HAL_GetTick() - timerTest1 > 5000 && oneTimeFlag == 0)

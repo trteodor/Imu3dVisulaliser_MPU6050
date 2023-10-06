@@ -164,8 +164,8 @@ void MainWindow::Plot3DInit3DScatter3DPosVisualser(void)
     ImuDataseries.setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
     ImuDataseries.setMeshSmooth(true);
 
-    ImuDataArray << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
-    ImuDataseries.dataProxy()->addItems(ImuDataArray);
+    //ImuDataArray << QVector3D(0.5f, 0.5f, 0.5f) << QVector3D(-0.3f, -0.5f, -0.4f) << QVector3D(0.0f, -0.3f, 0.2f);
+    //ImuDataseries.dataProxy()->addItems(ImuDataArray);
     ImuDataseries.setItemSize(0.1F);
 
     Imuscatter.addSeries(&ImuDataseries);
@@ -173,38 +173,32 @@ void MainWindow::Plot3DInit3DScatter3DPosVisualser(void)
     QWidget *container = QWidget::createWindowContainer(&Imuscatter);
     ui->D3_LayoutTest->addWidget(container);
 
-    connect(&RealTimeData3DTimer, SIGNAL(timeout()), this, SLOT(Plot3DDelayTimerTimeout()));
-    RealTimeData3DTimer.setSingleShot(true);
-    RealTimeData3DTimer.start(100);
+
+//    connect(&RealTimeData3DTimer, SIGNAL(timeout()), this, SLOT(Plot3DDelayTimerTimeout()));
+//    RealTimeData3DTimer.setSingleShot(true);
+//    RealTimeData3DTimer.start(100);
 }
 
 void MainWindow::Plot3DDelayTimerTimeout()
 {
-    static float iterData=0;
+//    static float iterData=0;
+//    QScatterDataArray tempImuDataArr;
+//    tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
+//    ImuDataseries.dataProxy()->addItems(tempImuDataArr);
+
+//    QString returnedValue;
+
+//    iterData = iterData + 0.1F;
+//    RealTimeData3DTimer.setSingleShot(true);
+//    RealTimeData3DTimer.start(100);
+}
+
+void MainWindow::MainWinPlot_3DPosUpdateAppendData(float PosX,float PosY,float PosZ)
+{
     QScatterDataArray tempImuDataArr;
-    tempImuDataArr << QVector3D(5*sin(iterData+ 0.5f),iterData+  0.5f, iterData+ 0.5f);
+    tempImuDataArr << QVector3D(PosX,PosY,PosZ);
+    qDebug() << "PosX" << PosX << "PosY" << PosY << "PosZ" << PosZ;
     ImuDataseries.dataProxy()->addItems(tempImuDataArr);
-
-    QString returnedValue;
-    //QString msg = "Hello from C++";
-
-//    static uint32_t yaw,pitch,roll;
-//    yaw = yaw + 10;
-//    pitch = pitch +20;
-//    roll = roll + 5;
-
-//    QMetaObject::invokeMethod(object3dview, "updateCubeOrientation",
-//                            Q_ARG(QVariant, yaw),
-//                            Q_ARG(QVariant, pitch),
-//                            Q_ARG(QVariant, roll)   );
-
-    //qDebug() << "QML function returned:" << returnedValue;
-
-    iterData = iterData + 0.1F;
-    RealTimeData3DTimer.setSingleShot(true);
-    RealTimeData3DTimer.start(100);
-
-
 }
 
 void MainWindow::changeEvent( QEvent* e )
@@ -258,7 +252,7 @@ void MainWindow::MainWin_bluetoothSlotDeviceDiscovered(QString name)
     }
     else
     {
-        ui->statusbar->showMessage("Please select BLE device",1000);
+        ui->statusbar->showMessage("Please select BLU device",1000);
     }
 }
 
@@ -403,52 +397,11 @@ void MainWindow::BLU_InitializeQTConnections(void)
 
 
 
-
-
-
-
-
-
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotMapUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotMapReplot() ));
-
     connect(
         &BluInputDataProcessingWrapper,
         SIGNAL(BluDatMngrSignal_PlotRawAccUpdate() )
         ,this
         ,SLOT(MainWinPlot_PlotRawAccReplot() ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotSpdUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotSpdReplot() ));
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosErrUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosErrReplot() ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPidRegValUpdate() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPidRegValReplot() ));
-
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotMapAppendData(float,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotMapAppendData(float,float) ));
 
     connect(
         &BluInputDataProcessingWrapper,
@@ -456,70 +409,78 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,this
         ,SLOT(MainWinPlot_PlotRawAccAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotSpdAppendData(uint32_t,float,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotSpdAppendData(uint32_t,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosErrAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosErrAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotEulerAgAUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotEulerAgAReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPidRegValAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPidRegValAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotEulerAgAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotEulerAgAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotFildAccUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotFildAccReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotFildAccAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotFildAccAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotAccJerkUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotAccJerkReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotAccJerkAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotAccJerkAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotOrientationAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotOrientationAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotGyroUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotGyroReplot() ));
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotGyroAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotGyroAppendData(uint32_t,float,float,float) ) );
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotOrientationReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotOrientationReplot() ));
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotNormAccUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotNormAccReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotTrvDistanceAppendData(uint32_t,float) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotTrvDistanceAppendData(uint32_t,float) ) );
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotNormAccAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotNormAccAppendData(uint32_t,float,float,float) ) );
 
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotVelUpdate() )
+        ,this
+        ,SLOT(MainWinPlot_PlotVelReplot() ));
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotTrvDistanceReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotTrvDistanceReplot() ));
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosConfidenceAppendData(uint32_t, uint8_t, uint8_t) )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosConfidenceAppendData(uint32_t, uint8_t, uint8_t) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_PlotPosConfidenceReplot() )
-//        ,this
-//        ,SLOT(MainWinPlot_PlotPosConfidenceReplot() ));
-
-
-
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_PlotVelAppendData(uint32_t,float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_PlotVelAppendData(uint32_t,float,float,float) ) );
 
     connect(
         &BluInputDataProcessingWrapper,
@@ -534,20 +495,6 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,SLOT(MainWin_DebugTable_ScrollToBottom() ) );
 
 
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_RefreshErrorIndicatorView(uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                                          uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                                          uint8_t,uint8_t,
-//                                                          float) )
-//        ,this
-//        ,SLOT(MainWin_RefreshErrorIndicatorView(uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                               uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t,
-//                                               uint8_t,uint8_t,
-//                                               float) )
-//        );
-
     connect(
         &BluInputDataProcessingWrapper,
         SIGNAL(BluDatMngrSignal_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) )
@@ -555,60 +502,28 @@ void MainWindow::BLU_InitializeQTConnections(void)
         ,SLOT(MainWin_CommunicationStatisticsUpdate(uint32_t,uint16_t,uint16_t,uint16_t,uint16_t) ) );
 
 
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateErrorWeigthData(float,float,float,float,float,float,float,float,float,float,float,float))
-//        ,this
-//        ,SLOT(MainWin_UpdateNvmErrorWeigthData(float,float,float,float,float,float,float,float,float,float,float,float) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateVehCfgData(float,uint32_t,uint32_t,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateNvM_VehCfgData(float, uint32_t, uint32_t,uint32_t) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdatePidData(float,float,float,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateNvM_PidData(float,float,float,uint32_t) ) );
-
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateMotorsFactors(uint32_t,uint32_t,uint32_t,uint32_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateMotorsFactors(uint32_t, uint32_t, uint32_t,uint32_t) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateEncoderCfgData(float,float) )
-//        ,this
-//        ,SLOT(MainWin_UpdateEncoderCfgData(float,float) ) );
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateSpeedProfileData(BluDataManager::BLU_NvM_SpdProfileData_t) )
-//        ,this
-//        ,SLOT(MainWin_UpdateSpeedProfileData(BluDataManager::BLU_NvM_SpdProfileData_t) ));
-
-//    connect(
-//        &BluInputDataProcessingWrapper,
-//        SIGNAL(BluDatMngrSignal_UpdateOrientation(float) )
-//        ,this
-//        ,SLOT(MainWin_DrawOrientationIndicator(float) ) );
-
         connect(
             &BluInputDataProcessingWrapper,
             SIGNAL(BluDatMngrSignal_Update3DOrientation(float,float,float) )
             ,this
             ,SLOT(MainWinVis_Update3DOrientation(float,float,float) ) );
 
+
+
+
+    connect(
+        &BluInputDataProcessingWrapper,
+        SIGNAL(BluDatMngrSignal_3DPosUpdateAppendData(float,float,float) )
+        ,this
+        ,SLOT(MainWinPlot_3DPosUpdateAppendData(float,float,float) ) );
+
+
+
 }
 
 void MainWindow::MainWinVis_Update3DOrientation(float yaw, float pitch, float roll)
 {
+        //qDebug() << "Hello from update 3D Ori!";
         if(yaw != NAN && pitch != NAN && roll != NAN)
         {
         if( ( yaw > (-1.0F * (M_PI) ) && yaw < (1.0F * (M_PI) ) ) &&
@@ -702,25 +617,19 @@ void MainWindow::on_GeneralPlotDataClear_pb_clicked()
     PlotNacc.Graph_ClearData();
     PlotJrk.Graph_ClearData();
     PlotVelo.Graph_ClearData();
+
+    int item3dCount = ImuDataseries.dataProxy()->itemCount();
+    ImuDataseries.dataProxy()->removeItems(0,item3dCount);
 }
 
 
 
 /*********************************************************************************************************/
 
-//GenericQCP PlotMap;
-//GenericQCP PlotAcc;
-//GenericQCP PlotFildAcc;
-//GenericQCP PlotEulerAg;
-//GenericQCP PlotGyro;
-//GenericQCP PlotNacc;
-//GenericQCP PlotJrk;
-//GenericQCP PlotVelo;
-
 void MainWindow::MainWinPlot_PlotRawAccReplot(void)
 {
-    int Index = ui->tabWidget_4->currentIndex();
-    if(Index== 2)
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 1)
     {
         PlotAcc.Graph_UpdateReplot();
     }
@@ -735,6 +644,133 @@ void MainWindow::MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,fl
 {
     PlotAcc.Graph_AppendData(FrameId,AccX,FrameId,AccY,FrameId,AccZ);
 }
+
+
+
+void MainWindow::MainWinPlot_PlotEulerAgAReplot(void)
+{
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 3)
+    {
+        PlotEulerAg.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.eulerAgPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotEulerAgAppendData(uint32_t FrameId,float yaw,float pitch,float roll)
+{
+    PlotEulerAg.Graph_AppendData(FrameId,yaw,FrameId,pitch,FrameId,roll);
+}
+
+
+
+void MainWindow::MainWinPlot_PlotFildAccReplot(void)
+{
+    int Index = ui->PlotWidgetTab1->currentIndex();
+    if(Index== 2)
+    {
+        PlotFildAcc.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.fildAccPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotFildAccAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotFildAcc.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+
+
+void MainWindow::MainWinPlot_PlotAccJerkReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 3)
+    {
+        PlotJrk.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.accJerkPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotAccJerkAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotJrk.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+void MainWindow::MainWinPlot_PlotGyroReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 1)
+    {
+        PlotGyro.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.gyroPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotGyroAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotGyro.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
+
+
+void MainWindow::MainWinPlot_PlotNormAccReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 2)
+    {
+        PlotNacc.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.normAccPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotNormAccAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotNacc.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+void MainWindow::MainWinPlot_PlotVelReplot(void)
+{
+    int Index = ui->tabWidget_4->currentIndex();
+    if(Index== 4)
+    {
+        PlotVelo.Graph_UpdateReplot();
+    }
+
+    BluInputDataProcessingWrapper.PlottingInfoMutex.lock();
+    BluInputDataProcessingWrapper.velPlotPlottingState = FALSE;
+    BluInputDataProcessingWrapper.PlottingInfoMutex.unlock();
+}
+
+
+void MainWindow::MainWinPlot_PlotVelAppendData(uint32_t FrameId,float X,float Y,float Z)
+{
+    PlotVelo.Graph_AppendData(FrameId,X,FrameId,Y,FrameId,Z);
+}
+
+
 
 
 
@@ -774,70 +810,67 @@ void MainWindow::MainWinPlot_PlotRawAccAppendData(uint32_t FrameId,float AccX,fl
 
 void MainWindow::MainWinPlot_DrawMarkersAtDataIndexInfo(int DataIndex)
 {
-//    static uint32_t CallCounter = 0;
+    static uint32_t CallCounter = 0;
 
-//    PlotMap.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotYawRate.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotSpd.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotPosErr.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotPidRegVal.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotTrvDistance.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotOrientation.Graph_DrawMarkersAtDataIndex(DataIndex);
-//    PlotLinePosConfidence.Graph_DrawMarkersAtDataIndex(DataIndex);
+    qDebug() << "MainWinPlot_DrawMarkersAtDataIndexInfo DataIndex:" << DataIndex;
 
-//    float ClickedPosX = PlotMap.DataVector_X1.at(DataIndex);
-//    float ClickedPosY = PlotMap.DataVector_Y1.at(DataIndex);
+    //PlotMap.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotAcc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotFildAcc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotEulerAg.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotGyro.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotNacc.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotJrk.Graph_DrawMarkersAtDataIndex(DataIndex);
+    PlotVelo.Graph_DrawMarkersAtDataIndex(DataIndex);
 
-//    float ClickedOri = PlotOrientation.DataVector_Y1.at(DataIndex);
-//    MainWin_DrawOrientationIndicator(ClickedOri);
+    float ClickedYaw = PlotEulerAg.DataVector_Y1.at(DataIndex);
+    float ClickedPitch = PlotEulerAg.DataVector_Y2.at(DataIndex);
+    float ClickedRoll = PlotEulerAg.DataVector_Y3.at(DataIndex);
+    float ClickedAccX = PlotAcc.DataVector_Y1.at(DataIndex);
+    float ClickedAccY = PlotAcc.DataVector_Y2.at(DataIndex);
+    float ClickedAccZ = PlotAcc.DataVector_Y3.at(DataIndex);
+    float ClickedGyroX = PlotGyro.DataVector_Y1.at(DataIndex);
+    float ClickedGyroY = PlotGyro.DataVector_Y2.at(DataIndex);
+    float ClickedGyroZ = PlotGyro.DataVector_Y3.at(DataIndex);
 
-//    float ClickedTrvDist = PlotTrvDistance.DataVector_Y1.at(DataIndex);
-//    uint8_t PlotLinePosConfidenceLeft = PlotLinePosConfidence.DataVector_Y1.at(DataIndex);
-//    uint8_t PlotLinePosConfidenceRight = PlotLinePosConfidence.DataVector_Y2.at(DataIndex);
+    QString ClickedPointString = QString("Clicked at point: Yaw:%1  |Pitch:%2  |Roll:%3"
+                                         "   |rAccX:%4  |rAccY:%5  |rAccZ:%6"
+                                         "   |gX:%7  |gY:%8  |gZ:%9"
+                                         )
+                                     .arg(ClickedYaw).arg(ClickedPitch).arg(ClickedRoll)
+                                     .arg(ClickedAccX).arg(ClickedAccY).arg(ClickedAccZ)
+                                     .arg(ClickedGyroX).arg(ClickedGyroY).arg(ClickedGyroZ);
 
-//    float ClickedYr = PlotYawRate.DataVector_Y1.at(DataIndex);
-//    float ClickedSpdL = PlotSpd.DataVector_Y1.at(DataIndex);
-//    float ClickedSpdR = PlotSpd.DataVector_Y2.at(DataIndex);
-//    float ClickedPosErr = PlotPosErr.DataVector_Y1.at(DataIndex);
-//    float ClickedPid = PlotPidRegVal.DataVector_Y1.at(DataIndex);
-
-//    QString ClickedPointString = QString("Clicked at point: PosX:%1  |PosY:%2  |Yr:%3  |SpdL:%4  |SpdR:%5  |PosErr:%6  |PidV:%7"
-//                                         " |Ori:%8 |TrvDist:%9 |LineConfL:%10  |LineConfR:%11")
-//                                     .arg(ClickedPosX).arg(ClickedPosY).arg(ClickedYr)
-//                                     .arg(ClickedSpdL).arg(ClickedSpdR).arg(ClickedPosErr)
-//                                     .arg(ClickedPid).arg(ClickedOri).arg(ClickedTrvDist)
-//                                     .arg(PlotLinePosConfidenceLeft).arg(PlotLinePosConfidenceRight);
-
-//    if(CallCounter % 2 == 0)
-//    {
-//        QVariant variant= QColor (35,35,45,255);
-//        QString colcode = variant.toString();
-//        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
-//        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
-//    }
-//    else{
-//        QVariant variant= QColor (25,45,45,255);
-//        QString colcode = variant.toString();
-//        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
-//        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
-//    }
+    if(CallCounter % 2 == 0)
+    {
+        QVariant variant= QColor (35,35,45,255);
+        QString colcode = variant.toString();
+        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
+        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
+    }
+    else{
+        QVariant variant= QColor (25,45,45,255);
+        QString colcode = variant.toString();
+        ui->ClickedPointInfo_lb->setAutoFillBackground(true);
+        ui->ClickedPointInfo_lb->setStyleSheet("QLabel { background-color :"+colcode+" ; color : white; }");
+    }
 
 
-//    ui->ClickedPointInfo_lb->setText(ClickedPointString);
+    ui->ClickedPointInfo_lb->setText(ClickedPointString);
 
-//    CallCounter++;
+    CallCounter++;
 }
 
 void MainWindow::on_RemoveMarkers_pb_clicked()
 {
-//    PlotMap.Graph_DrawMarkersAtDataIndex(0);
-//    PlotYawRate.Graph_DrawMarkersAtDataIndex(0);
-//    PlotSpd.Graph_DrawMarkersAtDataIndex(0);
-//    PlotPosErr.Graph_DrawMarkersAtDataIndex(0);
-//    PlotPidRegVal.Graph_DrawMarkersAtDataIndex(0);
-//    PlotTrvDistance.Graph_DrawMarkersAtDataIndex(0);
-//    PlotOrientation.Graph_DrawMarkersAtDataIndex(0);
-//    PlotLinePosConfidence.Graph_DrawMarkersAtDataIndex(0);
+    //PlotMap.Graph_DrawMarkersAtDataIndex(0);
+    PlotAcc.Graph_DrawMarkersAtDataIndex(0);
+    PlotFildAcc.Graph_DrawMarkersAtDataIndex(0);
+    PlotEulerAg.Graph_DrawMarkersAtDataIndex(0);
+    PlotGyro.Graph_DrawMarkersAtDataIndex(0);
+    PlotNacc.Graph_DrawMarkersAtDataIndex(0);
+    PlotJrk.Graph_DrawMarkersAtDataIndex(0);
+    PlotVelo.Graph_DrawMarkersAtDataIndex(0);
 }
 
 
@@ -883,14 +916,14 @@ void MainWindow::on_ClearLoggerButton_clicked()
 
 void MainWindow::on_GeneraReplotAllPlots_pb_clicked()
 {
-//    PlotPosErr.Graph_UpdateReplot();
-//    PlotPidRegVal.Graph_UpdateReplot();
-//    PlotYawRate.Graph_UpdateReplot();
-//    PlotSpd.Graph_UpdateReplot();
-//    PlotMap.Graph_UpdateReplot();
-//    PlotTrvDistance.Graph_UpdateReplot();
-//    PlotOrientation.Graph_UpdateReplot();
-//    PlotLinePosConfidence.Graph_UpdateReplot();
+    PlotMap.Graph_UpdateReplot();
+    PlotAcc.Graph_UpdateReplot();
+    PlotFildAcc.Graph_UpdateReplot();
+    PlotEulerAg.Graph_UpdateReplot();
+    PlotGyro.Graph_UpdateReplot();
+    PlotNacc.Graph_UpdateReplot();
+    PlotJrk.Graph_UpdateReplot();
+    PlotVelo.Graph_UpdateReplot();
 }
 
 void MainWindow::on_SaveAppState_pb_clicked()

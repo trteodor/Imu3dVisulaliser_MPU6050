@@ -1,5 +1,7 @@
 #include "bluetoothclassic.h"
 
+#define BLU_SINGLE_MESSAGE_SIZE        120
+
 bluetoothClassic::bluetoothClassic()
 {
     connect(bluetoothDiscoveryAgent, SIGNAL(deviceDiscovered(QBluetoothDeviceInfo)),
@@ -127,7 +129,7 @@ void bluetoothClassic::bluetoothSocketReadyToRead(void)
 //                    //        }
 //    }
   //while(this->bluetoothClassicSocket->canReadLine())
-            while(bluetoothClassicSocket->bytesAvailable() >99 )
+            while(bluetoothClassicSocket->bytesAvailable() > (BLU_SINGLE_MESSAGE_SIZE -1) )
             {
               char Data[255] = {0};
               uint32_t Size = bluetoothClassicSocket->read(Data,255);

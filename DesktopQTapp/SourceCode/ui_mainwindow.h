@@ -567,8 +567,8 @@ public:
         retranslateUi(MainWindow);
 
         MainTabWidget->setCurrentIndex(0);
-        PlotWidgetTab1->setCurrentIndex(0);
-        tabWidget_4->setCurrentIndex(2);
+        PlotWidgetTab1->setCurrentIndex(1);
+        tabWidget_4->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(MainWindow);
@@ -608,7 +608,7 @@ public:
         label->setText(QCoreApplication::translate("MainWindow", "DataLogging:", nullptr));
         BLU_AutoConnCheckBox->setText(QCoreApplication::translate("MainWindow", "LookFor:", nullptr));
         BLU_AutoConnDevNameL->setText(QCoreApplication::translate("MainWindow", "ANDRZEJ", nullptr));
-        BLU_ScanButton->setText(QCoreApplication::translate("MainWindow", "Scan BLE", nullptr));
+        BLU_ScanButton->setText(QCoreApplication::translate("MainWindow", "Scan BLU", nullptr));
         BLU_SimulatorSuspendButton->setText(QCoreApplication::translate("MainWindow", "Suspend", nullptr));
         BLU_TrueLogStartButton->setText(QCoreApplication::translate("MainWindow", "Activate", nullptr));
         dockWidget789->setWindowTitle(QCoreApplication::translate("MainWindow", "ManualMoveDockWindow", nullptr));

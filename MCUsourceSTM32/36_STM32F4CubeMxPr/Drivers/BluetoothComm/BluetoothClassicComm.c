@@ -87,7 +87,7 @@ typedef enum LoggingState_t
 static void (*NvmUpdateCallBacks[BLU_NVM_UPDATE_MAX_CALL_BACKS_COUNT])(void) = {0};
 
 
-static LoggingState_t LoggingState = Suspended;
+static LoggingState_t LoggingState = TrueDataLogging;
 
 static bool LogDroppedFlag =false;
 static uint16_t RetransmissionCounter = 0U;
@@ -319,7 +319,7 @@ static BLU_CallStatus_t TransmitImuBaseDataReport(void)
 	DataBuffer[0] = BLU_ImuData;
 	DataBuffer[1] = NewestImuDataReport.SyncId;
 
-	memcpy(&DataBuffer[2], &NewestImuDataReport.ucTimeStamp,sizeof(BLU_ImuBaseDataReport_t) -2 );
+	memcpy(&DataBuffer[2], &NewestImuDataReport.ucTimeStamp,sizeof(BLU_ImuBaseDataReport_t)-1);
 
 	if(RB_Transmit_Write(&BluMainTransmitRingBuffer, (uint8_t *)DataBuffer, BLU_SINGLE_MESSAGE_SIZE) != RB_OK)
 	{
