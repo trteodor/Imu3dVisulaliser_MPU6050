@@ -173,11 +173,11 @@ int main(void)
     {
       LogAccelTimer = HAL_GetTick();
 
-      BLU_DbgMsgTransmit("posX %.2f posY: %.2f posZ: %.2f", 
-                                    MpuData.posX, 
-                                    MpuData.posY,
-                                    MpuData.posZ
-                                    );
+      // BLU_DbgMsgTransmit("posX %.2f posY: %.2f posZ: %.2f", 
+      //                               MpuData.posX, 
+      //                               MpuData.posY,
+      //                               MpuData.posZ
+      //                               );
 
       
       // BLU_DbgMsgTransmit("RecDataCnt %d ",RecMpuDataCounter);

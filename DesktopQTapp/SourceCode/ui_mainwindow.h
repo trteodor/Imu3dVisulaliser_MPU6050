@@ -54,12 +54,12 @@ public:
     QSplitter *PlotVerticalSplitter;
     QTabWidget *MainTabWidget;
     QWidget *tab_7;
-    QWidget *MapViewTabViewOrg;
-    QGridLayout *gridLayout_5;
-    QCustomPlot *MapViewWidget;
     QWidget *tab_6;
     QGridLayout *gridLayout_6;
     QGridLayout *D3_LayoutTest;
+    QWidget *MapViewTabViewOrg;
+    QGridLayout *gridLayout_5;
+    QCustomPlot *MapViewWidget;
     QSplitter *lPlotHorizontaSpliter;
     QTabWidget *PlotWidgetTab1;
     QWidget *tab_5;
@@ -203,6 +203,18 @@ public:
         tab_7 = new QWidget();
         tab_7->setObjectName("tab_7");
         MainTabWidget->addTab(tab_7, QString());
+        tab_6 = new QWidget();
+        tab_6->setObjectName("tab_6");
+        gridLayout_6 = new QGridLayout(tab_6);
+        gridLayout_6->setObjectName("gridLayout_6");
+        D3_LayoutTest = new QGridLayout();
+        D3_LayoutTest->setSpacing(0);
+        D3_LayoutTest->setObjectName("D3_LayoutTest");
+        D3_LayoutTest->setContentsMargins(-1, 20, -1, -1);
+
+        gridLayout_6->addLayout(D3_LayoutTest, 0, 0, 1, 1);
+
+        MainTabWidget->addTab(tab_6, QString());
         MapViewTabViewOrg = new QWidget();
         MapViewTabViewOrg->setObjectName("MapViewTabViewOrg");
         gridLayout_5 = new QGridLayout(MapViewTabViewOrg);
@@ -217,18 +229,6 @@ public:
         gridLayout_5->addWidget(MapViewWidget, 0, 0, 1, 1);
 
         MainTabWidget->addTab(MapViewTabViewOrg, QString());
-        tab_6 = new QWidget();
-        tab_6->setObjectName("tab_6");
-        gridLayout_6 = new QGridLayout(tab_6);
-        gridLayout_6->setObjectName("gridLayout_6");
-        D3_LayoutTest = new QGridLayout();
-        D3_LayoutTest->setSpacing(0);
-        D3_LayoutTest->setObjectName("D3_LayoutTest");
-        D3_LayoutTest->setContentsMargins(-1, 20, -1, -1);
-
-        gridLayout_6->addLayout(D3_LayoutTest, 0, 0, 1, 1);
-
-        MainTabWidget->addTab(tab_6, QString());
         PlotVerticalSplitter->addWidget(MainTabWidget);
         lPlotHorizontaSpliter = new QSplitter(PlotVerticalSplitter);
         lPlotHorizontaSpliter->setObjectName("lPlotHorizontaSpliter");
@@ -567,7 +567,7 @@ public:
         retranslateUi(MainWindow);
 
         MainTabWidget->setCurrentIndex(0);
-        PlotWidgetTab1->setCurrentIndex(1);
+        PlotWidgetTab1->setCurrentIndex(0);
         tabWidget_4->setCurrentIndex(0);
 
 
@@ -586,8 +586,8 @@ public:
         LoadProject_pb->setText(QCoreApplication::translate("MainWindow", "Load", nullptr));
         ClickedPointInfo_lb->setText(QCoreApplication::translate("MainWindow", "Clicked at point: ? (Please click at graph to show informations about cliked point)", nullptr));
         MainTabWidget->setTabText(MainTabWidget->indexOf(tab_7), QCoreApplication::translate("MainWindow", "nA", nullptr));
-        MainTabWidget->setTabText(MainTabWidget->indexOf(MapViewTabViewOrg), QCoreApplication::translate("MainWindow", "MapView", nullptr));
         MainTabWidget->setTabText(MainTabWidget->indexOf(tab_6), QCoreApplication::translate("MainWindow", "Imu3D", nullptr));
+        MainTabWidget->setTabText(MainTabWidget->indexOf(MapViewTabViewOrg), QCoreApplication::translate("MainWindow", "r1", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(tab_5), QCoreApplication::translate("MainWindow", "nA", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(PlotAccRaw), QCoreApplication::translate("MainWindow", "acc", nullptr));
         PlotWidgetTab1->setTabText(PlotWidgetTab1->indexOf(PlotFildAcc), QCoreApplication::translate("MainWindow", "fAcc", nullptr));
