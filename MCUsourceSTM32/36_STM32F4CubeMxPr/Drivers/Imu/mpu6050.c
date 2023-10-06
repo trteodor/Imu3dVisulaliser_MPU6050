@@ -22,7 +22,7 @@
 /******************************************************************************************/
 #define I2C_TIMEOUT 1000
 
-#define MPU_ERR_SAMPLING_COUNTER	10000// max: 65536
+#define MPU_ERR_SAMPLING_COUNTER	1000// max: 65536
 
 #define CONF_SAMPLE_FREQ 0.001F
 
@@ -393,7 +393,7 @@ extern uint8_t* MPU6050_Calibrate_Gyro(void)
 		gyroBias[X] += gyroRaw[X];
 		gyroBias[Y] += gyroRaw[Y];
 		gyroBias[Z] += gyroRaw[Z];
-		HAL_Delay(5);
+		HAL_Delay(2);
 	}
 	
 	gyroBias[X] /= MPU_ERR_SAMPLING_COUNTER;
