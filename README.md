@@ -5,7 +5,7 @@ Simple 3D Imu visualiser - in prepared example data is transmitted through Bluet
 
 
  Qt_AppOverView:
-![QtAppOverwier](https://github.com/trteodor/Imu_3D_Visulaliser/blob/master/Pictures/Qt_DesktopAppOverView.jpg)
+![QtAppOverwier](https://github.com/trteodor/Imu_3D_Visulaliser/blob/master/Pictures/Qt_DesktopAppOverVieww.jpg)
 
 After installation of the app (file: ImuVIsualiser1.01_Installer.exe) extension ".imu" will be associated to ImuVisualiser projects...
 
