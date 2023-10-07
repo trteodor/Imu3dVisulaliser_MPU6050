@@ -22,7 +22,7 @@
 /******************************************************************************************/
 #define I2C_TIMEOUT 1000
 
-#define MPU_ERR_SAMPLING_COUNTER	10000// max: 65536
+#define MPU_ERR_SAMPLING_COUNTER	1000// max: 65536
 
 #define CONF_SAMPLE_FREQ 0.001F
 
@@ -109,7 +109,7 @@ static void computeEulerAnglesMadgwickFilter(float *roll, float *pitch, float *y
 	static float q1 = 0.0f;
 	static float q2 = 0.0f;
 	static float q3 = 0.0f;
-	static float B_madgwick = 0.1;  //Madgwick filter parameter
+	static float B_madgwick = 0.2;  //Madgwick filter parameter
 
 	//DESCRIPTION: Attitude estimation through sensor fusion - 6DOF
 	/*
@@ -198,7 +198,7 @@ double theta = RecMpuData->roll ;// some aribitar values for testing //roll
 double accel[3]=   {RecMpuData->accX,    RecMpuData->accY,      RecMpuData->accZ};
 double gravity[3]= {0.0,    0.0,      1.0};// always vertically downwards at g = 1.0
 double rG[3];
-// double rA[3];
+//double rA[3];
 double mA[3];
 
 double R[3][3] =
@@ -233,60 +233,47 @@ static float lowPassAlfaFiltering(float FilteredState, float newRawVal,float alf
 
 static void TryComputeObjectPosition(MpuData_t *RecMpuData)
 {
-    // static uint32_t timerTest1 = 0;
-    // static bool oneTimeFlag = 0;
+	static float pAccX,pAccY,pAccZ;
+	static const float alfaHighPassF = 0.72F;
 
-	static float litFiltAccX,litFiltAccY,litFiltAccZ;
+	RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX,RecMpuData->accX,0.3);
+	RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY,RecMpuData->accY,0.3);
+	RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ,RecMpuData->accZ,0.3);
 
-    litFiltAccX = lowPassAlfaFiltering(litFiltAccX, RecMpuData->normalizedAccX, 0.1);
-    litFiltAccY = lowPassAlfaFiltering(litFiltAccY, RecMpuData->normalizedAccY, 0.1);
-    litFiltAccZ = lowPassAlfaFiltering(litFiltAccZ, RecMpuData->normalizedAccZ, 0.1);
+    RecMpuData->jerkX = alfaHighPassF * (RecMpuData->jerkX + RecMpuData->fildAccX - pAccX);
+    RecMpuData->jerkY = alfaHighPassF * (RecMpuData->jerkY + RecMpuData->fildAccY - pAccY);
+    RecMpuData->jerkZ = alfaHighPassF * (RecMpuData->jerkZ + RecMpuData->fildAccZ - pAccZ);
 
-    RecMpuData->jerkX = RecMpuData->fildAccX - litFiltAccX;
-    RecMpuData->jerkY = RecMpuData->fildAccY - litFiltAccY;
-    RecMpuData->jerkZ = RecMpuData->fildAccZ - litFiltAccZ;
+	pAccX = RecMpuData->fildAccX;
+	pAccY = RecMpuData->fildAccY;
+	pAccZ = RecMpuData->fildAccZ;
 
-    RecMpuData->velX = RecMpuData->velX + (-1.0F * RecMpuData->jerkX * (9.81F)  * 0.01); //CONF_SAMPLE_FREQ
-    RecMpuData->velY = RecMpuData->velY + (-1.0F * RecMpuData->jerkY * (9.81F)  * 0.01);
-    RecMpuData->velZ = RecMpuData->velZ + (-1.0F * RecMpuData->jerkZ * (9.81F)  * 0.01);
+	static const float alfaVelo = 0.99;
+
+    RecMpuData->velX = alfaVelo* RecMpuData->velX + ( (1.0F - alfaVelo) * RecMpuData->jerkX * (9.81F) ); //CONF_SAMPLE_FREQ
+    RecMpuData->velY = alfaVelo* RecMpuData->velY + ( (1.0F - alfaVelo) * RecMpuData->jerkY * (9.81F) );
+    RecMpuData->velZ = alfaVelo* RecMpuData->velZ + ( (1.0F - alfaVelo) * RecMpuData->jerkZ * (9.81F) );
 
 	if(RecMpuData->velX > 0.0F){
-		RecMpuData->velX = RecMpuData->velX - 0.0002;
+		RecMpuData->velX = RecMpuData->velX - 0.0001;
 	}else if(RecMpuData->velX < 0.0F){
-		RecMpuData->velX = RecMpuData->velX + 0.0002;
+		RecMpuData->velX = RecMpuData->velX + 0.0001;
 	}
 	if(RecMpuData->velY > 0.0F){
-		RecMpuData->velY = RecMpuData->velY - 0.0002;
+		RecMpuData->velY = RecMpuData->velY - 0.0001;
 	}else if(RecMpuData->velY < 0.0F){
-		RecMpuData->velY = RecMpuData->velY + 0.0002;
+		RecMpuData->velY = RecMpuData->velY + 0.0001;
 	}
 		if(RecMpuData->velZ > 0.0F){
-		RecMpuData->velZ = RecMpuData->velZ - 0.0002;
+		RecMpuData->velZ = RecMpuData->velZ - 0.0001;
 	}else if(RecMpuData->velZ < 0.0F){
-		RecMpuData->velZ = RecMpuData->velZ + 0.0002;
+		RecMpuData->velZ = RecMpuData->velZ + 0.0001;
 	}
 
-    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX* 0.01);
-    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY* 0.01);
-    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ* 0.01);
+    RecMpuData->posX = RecMpuData->posX + (RecMpuData->velX* 0.1);
+    RecMpuData->posY = RecMpuData->posY + (RecMpuData->velY* 0.1);
+    RecMpuData->posZ = RecMpuData->posZ + (RecMpuData->velZ* 0.1);
 
-    RecMpuData->fildAccX = lowPassAlfaFiltering(RecMpuData->fildAccX, RecMpuData->normalizedAccX, 0.05);
-    RecMpuData->fildAccY = lowPassAlfaFiltering(RecMpuData->fildAccY, RecMpuData->normalizedAccY, 0.05);
-    RecMpuData->fildAccZ = lowPassAlfaFiltering(RecMpuData->fildAccZ, RecMpuData->normalizedAccZ, 0.05);
-
-// y[i] := α × (y[i−1] + x[i] − x[i−1])
-
-    // if(HAL_GetTick() - timerTest1 > 5000 && oneTimeFlag == 0)
-    // {
-    //     oneTimeFlag = 1;
-
-    //     RecMpuData->velX = 0;
-    //     RecMpuData->velY = 0;
-    //     RecMpuData->velZ = 0;
-    //     RecMpuData->posX = 0;
-    //     RecMpuData->posY = 0;
-    //     RecMpuData->posZ = 0;
-    // }
 
 }
 
@@ -396,7 +383,7 @@ extern uint8_t* MPU6050_Calibrate_Gyro(void)
 		gyroBias[X] += gyroRaw[X];
 		gyroBias[Y] += gyroRaw[Y];
 		gyroBias[Z] += gyroRaw[Z];
-		HAL_Delay(1);
+		HAL_Delay(5);
 	}
 	
 	gyroBias[X] /= MPU_ERR_SAMPLING_COUNTER;

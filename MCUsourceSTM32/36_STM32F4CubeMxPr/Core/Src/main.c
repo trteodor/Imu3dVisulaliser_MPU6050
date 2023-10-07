@@ -105,8 +105,8 @@ void ReportBaseImuData(void)
   BluImuBaseDataReport.velY                = MpuData.velY;
   BluImuBaseDataReport.velZ                = MpuData.velZ;
   BluImuBaseDataReport.posX                = MpuData.posX;
-  BluImuBaseDataReport.posY                = MpuData.posY;
-  BluImuBaseDataReport.posZ                = MpuData.posZ;
+  BluImuBaseDataReport.posY                = MpuData.posZ; /*!!!Intended!!!*/
+  BluImuBaseDataReport.posZ                = MpuData.posY; 
 
   BLU_ReportImuData(&BluImuBaseDataReport);
 
