@@ -27,7 +27,7 @@ public:
     ~MainWindow();
 
 
-    QString CurrentLfProjectFilePath;
+    QString CurrentImuProjectFilePath;
 
 private slots:
 

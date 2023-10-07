@@ -156,8 +156,8 @@ int main(void)
   //   // MPU6050_DeviceReset(1);
   // }
 
-  uint8_t *NewCalibData = MPU6050_Calibrate_Gyro();
-  MPU6050Set_Calibrate_Gyro(NewCalibData);
+  // uint8_t *NewCalibData = MPU6050_Calibrate_Gyro();
+  MPU6050Set_Calibrate_Gyro(gyroCalibValues);
   MPU6050_Start_IRQ();
   MPU6050_Read_DMA();
 

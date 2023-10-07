@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
 
-    this->setWindowTitle("Imu Data 3D Visuliser QT");
+    this->setWindowTitle("Imu Data 3D Visuliser | Bluetooth HC-05 | QT");
 
 
 //    /*All declared plots/ graph must be initialized!!!*/
@@ -53,8 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     #endif
     // Create a container widget for the QQuickView
     QWidget *container3DOri = QWidget::createWindowContainer(view3DOri, this);
-    container3DOri->setMinimumSize(220, 220);
-    container3DOri->setMaximumSize(220, 220);
+    container3DOri->setMinimumSize(340, 340);
+    container3DOri->setMaximumSize(340, 340);
     container3DOri->setFocusPolicy(Qt::TabFocus);
     ui->Orientation3DLayout->addWidget(container3DOri);
 
@@ -100,13 +100,13 @@ MainWindow::MainWindow(QWidget *parent)
 //        qDebug() << "argumentsCount" << qApp->arguments().at(0);
 //    }
 
-    if(qApp->arguments().count() > 1  && qApp->arguments().at(1).endsWith(".lfp") ==true)
+    if(qApp->arguments().count() > 1  && qApp->arguments().at(1).endsWith(".imu") ==true)
     {
-        CurrentLfProjectFilePath = qApp->arguments().at(1);
-        QString LoadedProjectInfo = QString("DataLoadedFromProjectFile: %1").arg(CurrentLfProjectFilePath);
+        CurrentImuProjectFilePath = qApp->arguments().at(1);
+        QString LoadedProjectInfo = QString("DataLoadedFromProjectFile: %1").arg(CurrentImuProjectFilePath);
         MainWin_DebugTable_InsertDataRow(0, 0, 0, LoadedProjectInfo);
 
-        LoadDataImuDataVisualiserProject(CurrentLfProjectFilePath);
+        LoadDataImuDataVisualiserProject(CurrentImuProjectFilePath);
     }
 
 
@@ -197,7 +197,7 @@ void MainWindow::MainWinPlot_3DPosUpdateAppendData(float PosX,float PosY,float P
 {
     QScatterDataArray tempImuDataArr;
     tempImuDataArr << QVector3D(PosX,PosY,PosZ);
-    qDebug() << "PosX" << PosX << "PosY" << PosY << "PosZ" << PosZ;
+    //qDebug() << "PosX" << PosX << "PosY" << PosY << "PosZ" << PosZ;
     ImuDataseries.dataProxy()->addItems(tempImuDataArr);
 }
 
@@ -841,6 +841,9 @@ void MainWindow::MainWinPlot_DrawMarkersAtDataIndexInfo(int DataIndex)
                                      .arg(ClickedAccX).arg(ClickedAccY).arg(ClickedAccZ)
                                      .arg(ClickedGyroX).arg(ClickedGyroY).arg(ClickedGyroZ);
 
+
+    MainWinVis_Update3DOrientation(ClickedYaw,ClickedPitch,ClickedRoll);
+
     if(CallCounter % 2 == 0)
     {
         QVariant variant= QColor (35,35,45,255);
@@ -928,7 +931,7 @@ void MainWindow::on_GeneraReplotAllPlots_pb_clicked()
 
 void MainWindow::on_SaveAppState_pb_clicked()
 {
-    QString filter = "LfProject (*.lfp) ;; All files (*)";
+    QString filter = "ImuProject (*.imu) ;; All files (*)";
     QString desktopPath = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     QString file_name = QFileDialog::getSaveFileName(this,"choose file to overwrite",desktopPath,filter);
 
@@ -941,9 +944,94 @@ void MainWindow::on_SaveAppState_pb_clicked()
 
     QJsonObject object;
 
-    //saveFile.write(QJsonDocument(object).toJson() );
+    {
+        QJsonArray PlotRawAcc_JsArr;
+        for(int i=0; i< PlotAcc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotAcc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotAcc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotAcc.DataVector_Y3.at(i);
+                PlotRawAcc_JsArr.append(pointObject);
+        }
+        object["rawAcc"] = PlotRawAcc_JsArr;
+    }
+    {
+        QJsonArray PlotFildAcc_JsArr;
+        for(int i=0; i< PlotFildAcc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotFildAcc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotFildAcc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotFildAcc.DataVector_Y3.at(i);
+                PlotFildAcc_JsArr.append(pointObject);
+        }
+        object["fildAcc"] = PlotFildAcc_JsArr;
+    }
+    {
+        QJsonArray PlotEulerAg_JsArr;
+        for(int i=0; i< PlotEulerAg.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["yaw"]=PlotEulerAg.DataVector_Y1.at(i);
+                pointObject["pitch"]=PlotEulerAg.DataVector_Y2.at(i);
+                pointObject["roll"]=PlotEulerAg.DataVector_Y3.at(i);
+                PlotEulerAg_JsArr.append(pointObject);
+        }
+        object["eulerAg"] = PlotEulerAg_JsArr;
+    }
+    {
+        QJsonArray PlotGyro_JsArr;
+        for(int i=0; i< PlotGyro.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotGyro.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotGyro.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotGyro.DataVector_Y3.at(i);
+                PlotGyro_JsArr.append(pointObject);
+        }
+        object["gyro"] = PlotGyro_JsArr;
+    }
+    {
+        QJsonArray PlotNacc_JsArr;
+        for(int i=0; i< PlotNacc.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotNacc.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotNacc.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotNacc.DataVector_Y3.at(i);
+                PlotNacc_JsArr.append(pointObject);
+        }
+        object["normalizedAcc"] = PlotNacc_JsArr;
+    }
+    {
+        QJsonArray PlotJrk_JsArr;
+        for(int i=0; i< PlotJrk.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotJrk.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotJrk.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotJrk.DataVector_Y3.at(i);
+                PlotJrk_JsArr.append(pointObject);
+        }
+        object["accJerk"] = PlotJrk_JsArr;
+    }
+    {
+        QJsonArray PlotVelo_JsArr;
+        for(int i=0; i< PlotVelo.DataVector_Y1.size(); i++)
+        {
+                QJsonObject pointObject;
+                pointObject["X"]=PlotVelo.DataVector_Y1.at(i);
+                pointObject["Y"]=PlotVelo.DataVector_Y2.at(i);
+                pointObject["Z"]=PlotVelo.DataVector_Y3.at(i);
+                PlotVelo_JsArr.append(pointObject);
+        }
+        object["velo"] = PlotVelo_JsArr;
+    }
 
-    QString MessageBoxString = QString("Sucessfully saved \n NvM Data \n Plot Data \n Logger Table Data \n to file:\n %1").arg(file_name);
+    saveFile.write(QJsonDocument(object).toJson() );
+
+    QString MessageBoxString = QString("Sucessfully saved \n Plot Data \n to file:\n %1").arg(file_name);
     QMessageBox::about(this,"Success!", MessageBoxString);
 }
 
@@ -959,11 +1047,188 @@ void MainWindow::LoadDataImuDataVisualiserProject(QString FilePath)
     QByteArray loadedData = loadFile.readAll();
 
     QJsonDocument loadDoc( QJsonDocument::fromJson(loadedData));
-    /*
-    .
-    .
-    .
-    */
+
+    if (loadDoc.object().contains("rawAcc") && loadDoc.object()["rawAcc"].isArray())
+    {
+        {
+                QJsonArray rawAcc_Arr = loadDoc.object()["rawAcc"].toArray();
+                PlotAcc.DataVector_Y1.clear();
+                PlotAcc.DataVector_X1.clear();
+                PlotAcc.DataVector_Y2.clear();
+                PlotAcc.DataVector_X2.clear();
+                PlotAcc.DataVector_Y3.clear();
+                PlotAcc.DataVector_X3.clear();
+
+                //qDebug() << rawAcc_Arr;
+                int IterCounter = 0;
+                for (const QJsonValue &v : rawAcc_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                     //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotAcc.DataVector_X1.append(IterCounter);
+                    PlotAcc.DataVector_Y1.append(DataPoint1);
+                    PlotAcc.DataVector_X2.append(IterCounter);
+                    PlotAcc.DataVector_Y2.append(DataPoint2);
+                    PlotAcc.DataVector_X3.append(IterCounter);
+                    PlotAcc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray velo_Arr = loadDoc.object()["velo"].toArray();
+                PlotVelo.DataVector_Y1.clear();
+                PlotVelo.DataVector_X1.clear();
+                PlotVelo.DataVector_Y2.clear();
+                PlotVelo.DataVector_X2.clear();
+                PlotVelo.DataVector_Y3.clear();
+                PlotVelo.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : velo_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotVelo.DataVector_X1.append(IterCounter);
+                    PlotVelo.DataVector_Y1.append(DataPoint1);
+                    PlotVelo.DataVector_X2.append(IterCounter);
+                    PlotVelo.DataVector_Y2.append(DataPoint2);
+                    PlotVelo.DataVector_X3.append(IterCounter);
+                    PlotVelo.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+
+                QJsonArray accJerk_Arr = loadDoc.object()["accJerk"].toArray();
+                PlotJrk.DataVector_Y1.clear();
+                PlotJrk.DataVector_X1.clear();
+                PlotJrk.DataVector_Y2.clear();
+                PlotJrk.DataVector_X2.clear();
+                PlotJrk.DataVector_Y3.clear();
+                PlotJrk.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : accJerk_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotJrk.DataVector_X1.append(IterCounter);
+                    PlotJrk.DataVector_Y1.append(DataPoint1);
+                    PlotJrk.DataVector_X2.append(IterCounter);
+                    PlotJrk.DataVector_Y2.append(DataPoint2);
+                    PlotJrk.DataVector_X3.append(IterCounter);
+                    PlotJrk.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray normalizedAcc_Arr = loadDoc.object()["normalizedAcc"].toArray();
+                PlotNacc.DataVector_Y1.clear();
+                PlotNacc.DataVector_X1.clear();
+                PlotNacc.DataVector_Y2.clear();
+                PlotNacc.DataVector_X2.clear();
+                PlotNacc.DataVector_Y3.clear();
+                PlotNacc.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : normalizedAcc_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotNacc.DataVector_X1.append(IterCounter);
+                    PlotNacc.DataVector_Y1.append(DataPoint1);
+                    PlotNacc.DataVector_X2.append(IterCounter);
+                    PlotNacc.DataVector_Y2.append(DataPoint2);
+                    PlotNacc.DataVector_X3.append(IterCounter);
+                    PlotNacc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray gyro_Arr = loadDoc.object()["gyro"].toArray();
+                PlotGyro.DataVector_Y1.clear();
+                PlotGyro.DataVector_X1.clear();
+                PlotGyro.DataVector_Y2.clear();
+                PlotGyro.DataVector_X2.clear();
+                PlotGyro.DataVector_Y3.clear();
+                PlotGyro.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : gyro_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotGyro.DataVector_X1.append(IterCounter);
+                    PlotGyro.DataVector_Y1.append(DataPoint1);
+                    PlotGyro.DataVector_X2.append(IterCounter);
+                    PlotGyro.DataVector_Y2.append(DataPoint2);
+                    PlotGyro.DataVector_X3.append(IterCounter);
+                    PlotGyro.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray eulerAg_Arr = loadDoc.object()["eulerAg"].toArray();
+                PlotEulerAg.DataVector_Y1.clear();
+                PlotEulerAg.DataVector_X1.clear();
+                PlotEulerAg.DataVector_Y2.clear();
+                PlotEulerAg.DataVector_X2.clear();
+                PlotEulerAg.DataVector_Y3.clear();
+                PlotEulerAg.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : eulerAg_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["yaw"].toDouble();
+                    float DataPoint2 =  DataPoint_json["pitch"].toDouble();
+                    float DataPoint3 =  DataPoint_json["roll"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotEulerAg.DataVector_X1.append(IterCounter);
+                    PlotEulerAg.DataVector_Y1.append(DataPoint1);
+                    PlotEulerAg.DataVector_X2.append(IterCounter);
+                    PlotEulerAg.DataVector_Y2.append(DataPoint2);
+                    PlotEulerAg.DataVector_X3.append(IterCounter);
+                    PlotEulerAg.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+        {
+                QJsonArray eulerAg_Arr = loadDoc.object()["fildAcc"].toArray();
+                PlotFildAcc.DataVector_Y1.clear();
+                PlotFildAcc.DataVector_X1.clear();
+                PlotFildAcc.DataVector_Y2.clear();
+                PlotFildAcc.DataVector_X2.clear();
+                PlotFildAcc.DataVector_Y3.clear();
+                PlotFildAcc.DataVector_X3.clear();
+
+                int IterCounter = 0;
+                for (const QJsonValue &v : eulerAg_Arr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                        //qDebug() << "LoadPlotDataTestYawRate DataPointValue: " << DataPoint1;
+                    PlotFildAcc.DataVector_X1.append(IterCounter);
+                    PlotFildAcc.DataVector_Y1.append(DataPoint1);
+                    PlotFildAcc.DataVector_X2.append(IterCounter);
+                    PlotFildAcc.DataVector_Y2.append(DataPoint2);
+                    PlotFildAcc.DataVector_X3.append(IterCounter);
+                    PlotFildAcc.DataVector_Y3.append(DataPoint3);
+                    IterCounter++;
+                }
+        }
+    }
+
 
     NvM_DataLoadedFromExternalSourceFlag = true;
     on_GeneraReplotAllPlots_pb_clicked();
@@ -975,7 +1240,7 @@ void MainWindow::LoadDataImuDataVisualiserProject(QString FilePath)
 
 void MainWindow::on_LoadProject_pb_clicked()
 {
-    QString filter = "LfProject (*.lfp) ;; All files (*)";
+    QString filter = "ImuProject (*.imu) ;; All files (*)";
     QString desktopPath = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     QString file_name = QFileDialog::getOpenFileName(this,"choose file to overwrite",desktopPath,filter);
     LoadDataImuDataVisualiserProject(file_name);

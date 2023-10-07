@@ -118,6 +118,17 @@ void BluDataManager::BluDatMngr_BaseDataHandler(char *data,uint32_t Size)
     ImuDataRep.posY = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[94])) ;
     ImuDataRep.posZ = ieee_uint32_AsBitsTo_float32(ConvToUint32(&data[98])) ;
 
+    if(fabs(ImuDataRep.accX) > 2.5F || fabs(ImuDataRep.accY) > 2.5F || fabs(ImuDataRep.accZ) > 2.5F ||
+        fabs(ImuDataRep.normalizedAccX) > 2.5F || fabs(ImuDataRep.normalizedAccY) > 2.5F || fabs(ImuDataRep.normalizedAccZ) > 2.5F ||
+        fabs(ImuDataRep.fildAccX) > 2.5F || fabs(ImuDataRep.fildAccY) > 2.5F || fabs(ImuDataRep.fildAccZ) > 2.5F ||
+        fabs(ImuDataRep.jerkX) > 2.5F || fabs(ImuDataRep.jerkY) > 2.5F || fabs(ImuDataRep.jerkZ) > 2.5F ||
+        fabs(ImuDataRep.accX) > 2.5F || fabs(ImuDataRep.accY) > 2.5F || fabs(ImuDataRep.accZ) > 2.5F
+        )
+    {
+        return;
+    }
+
+
     FullFrameCounter++;
 
     //qDebug() << "BaseDatHndlr";

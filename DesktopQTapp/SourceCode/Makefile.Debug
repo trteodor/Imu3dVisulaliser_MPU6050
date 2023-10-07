@@ -19,7 +19,7 @@ CXXFLAGS      = -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStri
 INCPATH       = -I. -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtQuick -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtDataVisualization -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtOpenGL -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtPrintSupport -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtWidgets -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtGui -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtBluetooth -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtQmlModels -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtQml -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtNetwork -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtConcurrent -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtQmlIntegration -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\include\QtCore -Idebug -I. -I/include -I..\..\..\..\QT6_5Full\6.5.1\msvc2019_64\mkspecs\win32-msvc 
 LINKER        = link
 LFLAGS        = /NOLOGO /DYNAMICBASE /NXCOMPAT /DEBUG /SUBSYSTEM:WINDOWS "/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'"
-LIBS          = E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Quickd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6DataVisualizationd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6OpenGLd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6PrintSupportd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Widgetsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Guid.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Bluetoothd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6QmlModelsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Qmld.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Networkd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Concurrentd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Cored.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6EntryPointd.lib shell32.lib  
+LIBS          = E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Quickd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6DataVisualizationd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6OpenGLd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6PrintSupportd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Widgetsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Guid.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Bluetoothd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6QmlModelsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Qmld.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Networkd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Concurrentd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Cored.lib debug\ImuVisualiser_resource.res E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6EntryPointd.lib shell32.lib  
 QMAKE         = E:\QT6_5Full\6.5.1\msvc2019_64\bin\qmake.exe
 DEL_FILE      = del
 CHK_DIR_EXISTS= if not exist
@@ -40,7 +40,7 @@ IDC           = idc
 IDL           = midl
 ZIP           = zip -r -9
 DEF_FILE      = 
-RES_FILE      = 
+RES_FILE      = debug\ImuVisualiser_resource.res
 SED           = $(QMAKE) -install sed
 MOVE          = move
 
@@ -163,11 +163,14 @@ DESTDIR_TARGET = debug\ImuVisualiser.exe
 first: all
 all: Makefile.Debug  debug\ImuVisualiser.exe
 
-debug\ImuVisualiser.exe: E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Quickd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6DataVisualizationd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6OpenGLd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6PrintSupportd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Widgetsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Guid.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Bluetoothd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6QmlModelsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Qmld.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Networkd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Concurrentd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Cored.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6EntryPointd.lib ui_mainwindow.h $(OBJECTS) 
+debug\ImuVisualiser.exe: E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Quickd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6DataVisualizationd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6OpenGLd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6PrintSupportd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Widgetsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Guid.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Bluetoothd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6QmlModelsd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Qmld.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Networkd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Concurrentd.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6Cored.lib E:\QT6_5Full\6.5.1\msvc2019_64\lib\Qt6EntryPointd.lib ui_mainwindow.h $(OBJECTS) debug\ImuVisualiser_resource.res
 	$(LINKER) $(LFLAGS) /MANIFEST:embed /OUT:$(DESTDIR_TARGET) @<<
 debug\GenericQCP.obj debug\bluetoothDataManager.obj debug\bluetoothclassic.obj debug\main.obj debug\mainwindow.obj debug\deviceinfo.obj debug\qcustomplot.obj debug\scatterdatamodifier.obj debug\CubeDiffFacesQML_CubeDiffFaces_qml.obj debug\qmlcache_loader.obj debug\qrc_darkstyle.obj debug\qrc_RobotOriRes.obj debug\qrc_lightstyle.obj debug\qrc_CubeDiffFacesQML_resCubeDiff_qmlcache.obj debug\qrc_qmake_qmake_qm_files.obj debug\moc_GenericQCP.obj debug\moc_bluetoothDataManager.obj debug\moc_bluetoothclassic.obj debug\moc_mainwindow.obj debug\moc_deviceinfo.obj debug\moc_qcustomplot.obj debug\moc_scatterdatamodifier.obj
 $(LIBS)
 <<
+
+debug\ImuVisualiser_resource.res: ImuVisualiser_resource.rc
+	rc /NOLOGO -D_DEBUG $(DEFINES) -fo debug\ImuVisualiser_resource.res ImuVisualiser_resource.rc
 
 qmake: FORCE
 	@$(QMAKE) -o Makefile.Debug ImuVisualiser.pro -spec win32-msvc "CONFIG+=qtquickcompiler"
@@ -180,6 +183,7 @@ dist:
 clean: compiler_clean 
 	-$(DEL_FILE) debug\GenericQCP.obj debug\bluetoothDataManager.obj debug\bluetoothclassic.obj debug\main.obj debug\mainwindow.obj debug\deviceinfo.obj debug\qcustomplot.obj debug\scatterdatamodifier.obj debug\CubeDiffFacesQML_CubeDiffFaces_qml.obj debug\qmlcache_loader.obj debug\qrc_darkstyle.obj debug\qrc_RobotOriRes.obj debug\qrc_lightstyle.obj debug\qrc_CubeDiffFacesQML_resCubeDiff_qmlcache.obj debug\qrc_qmake_qmake_qm_files.obj debug\moc_GenericQCP.obj debug\moc_bluetoothDataManager.obj debug\moc_bluetoothclassic.obj debug\moc_mainwindow.obj debug\moc_deviceinfo.obj debug\moc_qcustomplot.obj debug\moc_scatterdatamodifier.obj
 	-$(DEL_FILE) debug\ImuVisualiser.vc.pdb debug\ImuVisualiser.ilk debug\ImuVisualiser.idb
+	-$(DEL_FILE) debug\ImuVisualiser_resource.res
 
 distclean: clean 
 	-$(DEL_FILE) .qmake.stash debug\ImuVisualiser.pdb
