@@ -945,6 +945,25 @@ void MainWindow::on_SaveAppState_pb_clicked()
     QJsonObject object;
 
     {
+        QJsonArray PlotImuScatter_JsArr;
+
+        int DataCountImuScatter = ImuDataseries.dataProxy()->itemCount();
+
+        for(int i=0; i< DataCountImuScatter; i++)
+        {
+                QScatterDataItem DataItem = *ImuDataseries.dataProxy()->itemAt(i);
+                QVector3D position = DataItem.position();
+                qDebug() << "position:" << position;
+
+                QJsonObject pointObject;
+                pointObject["X"]=position.x();
+                pointObject["Y"]=position.y();
+                pointObject["Z"]=position.z();
+                PlotImuScatter_JsArr.append(pointObject);
+        }
+        object["ImuScatter3D"] = PlotImuScatter_JsArr;
+    }
+    {
         QJsonArray PlotRawAcc_JsArr;
         for(int i=0; i< PlotAcc.DataVector_Y1.size(); i++)
         {
@@ -1050,6 +1069,22 @@ void MainWindow::LoadDataImuDataVisualiserProject(QString FilePath)
 
     if (loadDoc.object().contains("rawAcc") && loadDoc.object()["rawAcc"].isArray())
     {
+        {
+                QJsonArray PlotImuScatter_JsArr = loadDoc.object()["ImuScatter3D"].toArray();;
+
+                int item3dCount = ImuDataseries.dataProxy()->itemCount();
+                ImuDataseries.dataProxy()->removeItems(0,item3dCount);
+
+                for (const QJsonValue &v : PlotImuScatter_JsArr) {
+                    QJsonObject DataPoint_json = v.toObject();
+                    float DataPoint1 =  DataPoint_json["X"].toDouble();
+                    float DataPoint2 =  DataPoint_json["Y"].toDouble();
+                    float DataPoint3 =  DataPoint_json["Z"].toDouble();
+                    QScatterDataArray tempImuDataArr;
+                    tempImuDataArr << QVector3D(DataPoint1,DataPoint2,DataPoint3);
+                    ImuDataseries.dataProxy()->addItems(tempImuDataArr);
+                }
+        }
         {
                 QJsonArray rawAcc_Arr = loadDoc.object()["rawAcc"].toArray();
                 PlotAcc.DataVector_Y1.clear();
