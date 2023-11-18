@@ -16,7 +16,7 @@
 #include "mpu6050.h"
 #include "mpu6050defs.h"
 
-
+#define EXTRA_GYRO_Z_OFF_SET 0.0046
 /******************************************************************************************/
 /*                                 DEFINES                                                */
 /******************************************************************************************/
@@ -94,6 +94,7 @@ static void scaleReceivedDataByDMA(void)
 	mpuDataScaled[gyro][X] *= 0.0174533f;
 	mpuDataScaled[gyro][Y] *= 0.0174533f;
 	mpuDataScaled[gyro][Z] *= 0.0174533f;
+	mpuDataScaled[gyro][Z] = mpuDataScaled[gyro][Z] + EXTRA_GYRO_Z_OFF_SET;
 }
 
 static float invSqrt(float x) {
